@@ -1,0 +1,2 @@
+
+FRAME_RATE=60
