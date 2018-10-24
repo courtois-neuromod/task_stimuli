@@ -1,19 +1,39 @@
-from psychopy import visual, core
+import os, sys
+from psychopy import visual, core, data
 
-from ..global import fmri
+#from shared import fmri, config
 
-win = visual.Window()
+FRAMERATE = 60
+STIMULI_DURATION=2
+ISI=4
+IMAGES_FOLDER = '/home/basile/data/projects/task_stimuli/BOLD5000_Stimuli/Scene_Stimuli/Presented_Stimuli/ImageNet'
 
-image_names = data.importConditions('')
+def image_task():
+    experiment_window = visual.Window()
 
-instruction_text = """Please keep your eyes focused on the middle of the screen at all times.
+    image_names = data.importConditions('test_conditions.csv')
 
-You will see pictures of scenes and objects.
-Please press the right index key for like, middle for neutral,
-ring finger for dislike. Please respond after the image is shown."""
+    instruction_text = """Please keep your eyes open an focused on the screen all the time.
+You will see pictures of scenes and objects."""
 
-screen_text = visual.TextStim(
-    experiment_window, text=instruction_text,
-    alignHoriz="center", color = 'white')
+    screen_text = visual.TextStim(
+        experiment_window, text=instruction_text,
+        alignHoriz="center", color = 'white')
 
-trials = data.TrialHandler(image_names,20, method='random')
+    for frameN in range(FRAMERATE * STIMULI_DURATION):
+        screen_text.draw()
+        experiment_window.flip()
+
+    trials = data.TrialHandler(image_names, 1, method='sequential')
+
+    for trial in trials:
+        image_path = os.path.join(IMAGES_FOLDER,trial['image_path'])
+        img = visual.ImageStim(experiment_window, image_path)
+        for frameN in range(FRAMERATE * STIMULI_DURATION):
+            img.draw()
+            experiment_window.flip()
+        for frameN in range(FRAMERATE * ISI):
+            experiment_window.flip()
+
+
+image_task()
