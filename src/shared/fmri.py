@@ -1,4 +1,4 @@
-from psychopy import core, event
+from psychopy import core, event, logging
 from psychopy.hardware.emulator import launchScan
 
 MR_settings = {
@@ -11,9 +11,12 @@ MR_settings = {
 
 globalClock = core.Clock()
 
-def wait_for_ttl():
+def wait_for_ttl(window):
     while True:
         allKeys = event.getKeys()
         for key in allKeys:
             if key == MR_settings['sync']:
+                window.logOnFlip(
+                    level=logging.EXP,
+                    msg="fMRI TTL")
                 return True
