@@ -1,25 +1,40 @@
 import os, sys
-import pyglet
-pyglet.options['audio']=('pulse','directsound', 'openal', 'silent')
+#import pyglet
+#pyglet.options['audio']=('pulse','directsound', 'openal', 'silent')
+
 from psychopy import visual, core, data
+from .task_base import Task
 
-print(pyglet.options['audio'])
+from ..shared import config
 
-from shared import fmri, config
+INSTRUCTION_DURATION = 1
 
-def play_video(filename,window=None):
-    if window is None:
-        window = visual.Window()
-    mov = visual.MovieStim(window, filename)
-    print(mov.duration)
-    # give the original size of the movie in pixels:
-    print(mov.format.width, mov.format.height)
+class SingleVideo(Task):
 
-    fmri.wait_for_ttl()
-    while True:
-        mov.draw()
-        window.flip()
+    def __init__(self, filepath, *args,**kwargs):
+        super().__init__(**kwargs)
+        #TODO: image lists as params, subjects ....
+        self.filepath = filepath
 
-window = visual.Window(screen=1,fullscr=True)
-play_video('videos/Inscapes-67962604.mp4',
-    window=window)
+
+    def instructions(self, exp_win, ctl_win):
+        instruction_text = """You are about to watch a video. Please keep your eyes opened."""
+        screen_text = visual.TextStim(
+            exp_win, text=instruction_text,
+            alignHoriz="center", color = 'white')
+
+        for frameN in range(config.FRAME_RATE * INSTRUCTION_DURATION):
+            screen_text.draw(exp_win)
+            screen_text.draw(ctl_win)
+            yield
+
+    def run(self, exp_win, ctl_win):
+        self.movie_stim = visual.MovieStim3(exp_win, self.filepath, size=exp_win.size, units='pixels')
+        print(self.movie_stim.duration)
+        # give the original size of the movie in pixels:
+        #print(self.movie_stim.format.width, self.movie_stim.format.height)
+
+        while True:
+            self.movie_stim.draw(exp_win)
+            self.movie_stim.draw(ctl_win)
+            yield
