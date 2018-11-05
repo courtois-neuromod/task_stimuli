@@ -33,7 +33,7 @@ class SingleVideo(Task):
         print(self.movie_stim.duration)
         # give the original size of the movie in pixels:
         #print(self.movie_stim.format.width, self.movie_stim.format.height)
-
+        exp_win.logOnFlip(level=logging.EXP,msg='video: task starting at %f'%time.time())
         while True:
             self.movie_stim.draw(exp_win)
             self.movie_stim.draw(ctl_win)

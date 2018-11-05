@@ -10,3 +10,8 @@ Run a short calibration task where the subjects have to look at points shown on 
 - corners
 - center
 - ...
+
+
+# INSTALL
+
+pip3 install git+https://github.com/atareao/python3-v4l2capture.git

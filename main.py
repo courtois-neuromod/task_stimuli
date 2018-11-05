@@ -8,14 +8,17 @@ def main():
     exp_win = visual.Window(**config.EXP_WINDOW)
 
     if config.EYETRACKING:
-        eyetracker = eyetracking.EyeTracker(ctl_win)#,video_input=1)
+        roi = eyetracking.Roi((560,420))
+        roi.set((40,30,600,450,(560,420)))
+        eyetracker = eyetracking.EyeTracker(ctl_win,roi=roi,video_input="/dev/video1")
         eyetracker.start()
         #TODO: setup stuff here
 
     all_tasks = [
-        #eyetracking.EyetrackerCalibration(eyetracker),
-        #video.SingleVideo('videos/Inscapes-67962604.mp4'),
-        images.Image(use_fmri=True, use_eyetracking=True)]
+        eyetracking.EyetrackerCalibration(eyetracker),
+        video.SingleVideo('data/videos/Inscapes-67962604.mp4',use_fmri=True, use_eyetracking=True),
+        images.Images('data/images/test_conditions.csv',use_fmri=True, use_eyetracking=True)
+        ]
 
     for task in all_tasks:
         use_eyetracking = False
@@ -23,7 +26,7 @@ def main():
             use_eyetracking = True
             #eyetracker.draw_gazepoint(exp_win)
         if hasattr(task, 'instructions'):
-            for _ in task.instructions(exp_win, ctl_win):
+            for _ in task.instructions(ctl_win, ctl_win):
                 exp_win.flip()
                 ctl_win.flip()
 
@@ -36,13 +39,13 @@ def main():
                         msg="fMRI TTL")
                     break
                 if use_eyetracking:
-                    eyetracker.draw_gazepoint(ctl_win)
+                    eyetracker.draw_gazepoint(exp_win)
                 exp_win.flip()
                 ctl_win.flip()
 
         for _ in task.run(exp_win, ctl_win):
             if use_eyetracking:
-                eyetracker.draw_gazepoint(ctl_win)
+                eyetracker.draw_gazepoint(exp_win)
             exp_win.flip()
             ctl_win.flip()
         logging.flush()
