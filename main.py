@@ -9,19 +9,26 @@ def main():
 
     if config.EYETRACKING:
         roi = eyetracking.Roi((560,420))
-        roi.set((40,30,600,450,(560,420)))
-        eyetracker = eyetracking.EyeTracker(ctl_win,roi=roi,video_input="/dev/video1")
+        roi.set((60,30,660,450,(600,420)))
+        #roi.set((40,30,620,450,(560,420)))
+        eyetracker = eyetracking.EyeTracker(
+            ctl_win,
+            roi=roi,
+            video_input="/dev/video1",
+            detector='2d')
         eyetracker.start()
         #TODO: setup stuff here
 
     all_tasks = [
-        eyetracking.EyetrackerCalibration(eyetracker),
+        #eyetracking.EyetrackerCalibration(eyetracker),
+        video.SingleVideo('data/videos/Climbing Ice - The Iceland Trifecta-79s5BD0301o.mkv',use_fmri=True, use_eyetracking=True),
         video.SingleVideo('data/videos/Inscapes-67962604.mp4',use_fmri=True, use_eyetracking=True),
         images.Images('data/images/test_conditions.csv',use_fmri=True, use_eyetracking=True)
         ]
 
     for task in all_tasks:
         use_eyetracking = False
+        task.preload(exp_win)
         if config.EYETRACKING and task.use_eyetracking:
             use_eyetracking = True
             #eyetracker.draw_gazepoint(exp_win)
@@ -45,7 +52,7 @@ def main():
 
         for _ in task.run(exp_win, ctl_win):
             if use_eyetracking:
-                eyetracker.draw_gazepoint(exp_win)
+                eyetracker.draw_gazepoint(ctl_win)
             exp_win.flip()
             ctl_win.flip()
         logging.flush()

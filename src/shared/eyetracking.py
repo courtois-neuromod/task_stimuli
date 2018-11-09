@@ -1,6 +1,7 @@
 import os, sys, datetime, time
 import numpy as np
 from psychopy import visual, core, data, logging, event
+from .ellipse import Ellipse
 
 from ..tasks.task_base import Task
 from . import config
@@ -140,15 +141,16 @@ class EyeTracker(threading.Thread):
         self.ctl_win = ctl_win
         self.eye_win = visual.Window(**config.EYE_WINDOW)
 
-        #self._videocap = cv2.VideoCapture(video_input)
-        self._videocap = v4l2capture.Video_device(video_input)
-        #ret, self.cv_frame = self._videocap.read()
+        self._videocap = cv2.VideoCapture(video_input)
+        #self._videocap = v4l2capture.Video_device(video_input)
+        ret, self.cv_frame = self._videocap.read()
 
-        #self._width = int(self._videocap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        #self._height = int(self._videocap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        self._width, self._height = self._videocap.set_format(640, 480, fourcc='GREY')
-        self._videocap.create_buffers(30)
-        self._videocap.queue_all_buffers()
+        self._width = int(self._videocap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self._height = int(self._videocap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        #self._width, self._height = self._videocap.set_format(640, 480, fourcc='GREY')
+        #self._width, self._height = 720,480
+        #self._videocap.create_buffers(30)
+        #self._videocap.queue_all_buffers()
         self._frame_index = -1
 
         print(self._width, self._height)
@@ -177,11 +179,12 @@ class EyeTracker(threading.Thread):
             units='pixels',
             lineColor=(1,0,0),fillColor=None,
             autoLog=False)
-        self._pupil_stim = visual.Circle(
+        self._pupil_stim = Ellipse(
             self.eye_win,
             radius=0,
+            radius2=0,
             units='pixels',
-            lineColor=(1,0,0),fillColor=None,
+            lineColor=(1,0,0),fillColor=None, lineWidth=1,
             autoLog=False)
 
         self._gazepoint_stim = visual.Circle(
@@ -197,9 +200,11 @@ class EyeTracker(threading.Thread):
             self._detector = Detector_3D()
 
         #TODO: load settings and/or GUI
-        self._detector.get_settings()["pupil_size_min"] = 50
-        self._detector.get_settings()["pupil_size_max"] = 200
-        self._detector.get_settings()["intensity_range"] = 10
+        settings = self._detector.get_settings()
+        settings["pupil_size_min"] = 50
+        settings["pupil_size_max"] = 200
+        settings["intensity_range"] = 10
+        #settings["ellipse_roundness_ratio"] = .01
         print(self._detector.get_settings())
 
         self.pupils = None
@@ -223,7 +228,7 @@ class EyeTracker(threading.Thread):
             eyetracking_output_name+'.mp4',
             {'-pix_fmt':'gray','-r':'30'},
             {'-pix_fmt':'gray','-c:v': 'libx264','-r':'30'})
-        self._videocap.start()
+        #self._videocap.start()
         with open(eyetracking_output_name+'.log', 'w') as eyetracking_outfile:
             while not self.stoprequest.isSet():
                 self.update()
@@ -236,22 +241,21 @@ class EyeTracker(threading.Thread):
 
     def update(self):
         #capture
-        #ret, self.cv_frame = self._videocap.read()
+        ret, self.cv_frame = self._videocap.read()
         #self._capture_timestamp = self._videocap.get(cv2.CAP_PROP_POS_MSEC)
-        select.select((self._videocap,), (), ())
-        raw_frame = self._videocap.read_and_queue()
+        #select.select((self._videocap,), (), ())
+        #raw_frame = self._videocap.read_and_queue()
         self._frame_index += 1
         self._capture_timestamp = time.time()
-        self.cv_frame = np.frombuffer(raw_frame,dtype=np.uint8).reshape(self._height, self._width).copy()
+        #self.cv_frame = np.frombuffer(raw_frame,dtype=np.uint8).reshape(self._height, self._width, 3).copy()
         #detect
-        #p_frame = Frame(0, self.cv_frame, 0)
         p_frame = Frame(0, self.cv_frame, 0)
         pupils = self._detector.detect(p_frame, self.roi, False)
         with self.lock:
             self.pupils = pupils
             if hasattr(self,'map_fn'):
                 self.pos_cal = self.map_fn(self.pupils['norm_pos'])
-        self._videowriter.writeFrame(self.cv_frame)
+        self._videowriter.writeFrame(p_frame.gray)
 
     def draw(self):
         #render image roi pupil
@@ -260,10 +264,14 @@ class EyeTracker(threading.Thread):
 
         self._roi_stim.draw(self.eye_win)
 
-        center = self.pupils['ellipse']['center']
-        self._pupil_stim.pos = (center[0]-self._width/2, center[1]-self._height/2)
-        self._pupil_stim.radius = self.pupils['diameter']/2
-        self._pupil_stim.draw(self.eye_win)
+        if self.pupils['confidence'] > 0:
+            #print(self.pupils)
+            center = self.pupils['ellipse']['center']
+            self._pupil_stim.pos = (center[0]-self._width/2, center[1]-self._height/2)
+            self._pupil_stim.radius = self.pupils['ellipse']['axes'][0]/2
+            self._pupil_stim.radius2 = self.pupils['ellipse']['axes'][1]/2
+            self._pupil_stim.ori = -self.pupils['ellipse']['angle']
+            self._pupil_stim.draw(self.eye_win)
 
         self.eye_win.flip()
 
@@ -271,18 +279,22 @@ class EyeTracker(threading.Thread):
         if hasattr(self,'map_fn'):
             with self.lock:
                 pos_cal = self.pos_cal
+            if np.isnan(pos_cal[0]) or np.isnan(pos_cal[0]):
+                return
             self._gazepoint_stim.pos = (int(pos_cal[0]/2*self.ctl_win.size[0]),
                                         int(pos_cal[1]/2*self.ctl_win.size[1]))
             #self._gazepoint_stim.radius = self.pupils['diameter']/2
             #print(self._gazepoint_stim.pos, self._gazepoint_stim.radius)
-        self._gazepoint_stim.draw(win)
+            self._gazepoint_stim.draw(win)
 
     def release(self):
-        #self._videocap.release()
-        self._videocap.close()
+        self._videocap.release()
+        #self._videocap.close()
         self._videowriter.close()
 
     def calibrate(self, all_refs_per_flip, all_pupils_normpos):
+        if len(all_refs_per_flip) < 100:
+            return
         all_points = np.hstack([all_pupils_normpos, all_refs_per_flip])
         np.savetxt('calibration_data.txt',all_points, fmt='%f')
         self.map_fn, inliers, self.calib_params = calibration_routines.calibrate.calibrate_2d_polynomial(

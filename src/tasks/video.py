@@ -1,13 +1,13 @@
-import os, sys
+import os, sys, time
 #import pyglet
 #pyglet.options['audio']=('pulse','directsound', 'openal', 'silent')
 
-from psychopy import visual, core, data
+from psychopy import visual, core, data, logging
 from .task_base import Task
 
 from ..shared import config
 
-INSTRUCTION_DURATION = 1
+INSTRUCTION_DURATION = 5
 
 class SingleVideo(Task):
 
@@ -28,13 +28,24 @@ class SingleVideo(Task):
             screen_text.draw(ctl_win)
             yield
 
+    def preload(self, exp_win):
+        self.movie_stim = visual.MovieStim3(exp_win, self.filepath, units='pixels')
+
     def run(self, exp_win, ctl_win):
-        self.movie_stim = visual.MovieStim3(exp_win, self.filepath, size=exp_win.size, units='pixels')
+        print(self.movie_stim.size)
         print(self.movie_stim.duration)
+        min_ratio = min(
+            exp_win.size[0]/ self.movie_stim.size[0],
+            exp_win.size[1]/ self.movie_stim.size[1])
+        self.movie_stim.size = (
+            min_ratio*self.movie_stim.size[0],
+            min_ratio*self.movie_stim.size[1])
         # give the original size of the movie in pixels:
         #print(self.movie_stim.format.width, self.movie_stim.format.height)
         exp_win.logOnFlip(level=logging.EXP,msg='video: task starting at %f'%time.time())
+        exp_win.setColor([-1,-1,-1])
         while True:
             self.movie_stim.draw(exp_win)
             self.movie_stim.draw(ctl_win)
             yield
+        exp_win.setColor([0,0,0])

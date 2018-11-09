@@ -14,7 +14,7 @@ CTL_WINDOW = dict(
 
 
 EYE_WINDOW = dict(
-    size = (640,480),
+    size = (720,480),
     screen=0,
 )
 
