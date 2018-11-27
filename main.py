@@ -1,7 +1,7 @@
-from psychopy import visual, logging
+from psychopy import visual, logging, event
 
 from src.shared import config, fmri, eyetracking
-from src.tasks import images, video
+from src.tasks import images, video, memory
 
 def main():
     ctl_win = visual.Window(**config.CTL_WINDOW)
@@ -21,41 +21,56 @@ def main():
 
     all_tasks = [
         #eyetracking.EyetrackerCalibration(eyetracker),
+        memory.ImagePosition('data/memory/stimuli.csv', use_fmri=True, use_eyetracking=True),
         video.SingleVideo('data/videos/Climbing Ice - The Iceland Trifecta-79s5BD0301o.mkv',use_fmri=True, use_eyetracking=True),
         video.SingleVideo('data/videos/Inscapes-67962604.mp4',use_fmri=True, use_eyetracking=True),
         images.Images('data/images/test_conditions.csv',use_fmri=True, use_eyetracking=True)
         ]
 
+
     for task in all_tasks:
+
+        # ensure to clear the screen if task aborted
+        exp_win.flip()
+        ctl_win.flip()
+
         use_eyetracking = False
-        task.preload(exp_win)
         if config.EYETRACKING and task.use_eyetracking:
             use_eyetracking = True
-            #eyetracker.draw_gazepoint(exp_win)
-        if hasattr(task, 'instructions'):
-            for _ in task.instructions(ctl_win, ctl_win):
-                exp_win.flip()
-                ctl_win.flip()
 
-        if task.use_fmri:
-            while True:
-                if fmri.get_ttl():
-                    #TODO: log real timing of TTL?
-                    exp_win.logOnFlip(
-                        level=logging.EXP,
-                        msg="fMRI TTL")
+        #preload task files (eg. video)
+        task.preload(exp_win)
+
+        allKeys = []
+
+        while True:
+
+            if hasattr(task, 'instructions'):
+                for _ in task.instructions(ctl_win, ctl_win):
+                    exp_win.flip()
+                    ctl_win.flip()
+
+            for _ in task.run(exp_win, ctl_win):
+                # check for global event keys
+                allKeys = event.getKeys(['r','s','q'])
+                if len(allKeys):
                     break
                 if use_eyetracking:
-                    eyetracker.draw_gazepoint(exp_win)
+                    eyetracker.draw_gazepoint(ctl_win)
                 exp_win.flip()
                 ctl_win.flip()
+            else: # task completed
+                break
 
-        for _ in task.run(exp_win, ctl_win):
-            if use_eyetracking:
-                eyetracker.draw_gazepoint(ctl_win)
-            exp_win.flip()
-            ctl_win.flip()
-        logging.flush()
+            logging.flush()
+
+            if not 'r' in allKeys:
+                break
+            print('restart')
+        if 'q' in allKeys:
+            print('quit')
+            break
+        print('skip')
 
 if __name__ == "__main__":
     lastLog = logging.LogFile("lastRun.log", level=logging.INFO, filemode='w')

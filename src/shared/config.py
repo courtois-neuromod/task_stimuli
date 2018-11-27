@@ -1,5 +1,5 @@
 
-EYETRACKING = True
+EYETRACKING = False
 
 EXP_WINDOW = dict(
     size = (800,600),
