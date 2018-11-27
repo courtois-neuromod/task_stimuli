@@ -30,7 +30,7 @@ You will see pictures of scenes and objects."""
             screen_text.draw(ctl_win)
             yield()
 
-    def run(self, exp_win, ctl_win):
+    def _run(self, exp_win, ctl_win):
 
         trials = data.TrialHandler(self.image_names, 1, method='sequential')
         img = visual.ImageStim(exp_win,size=(1,1),units='height')

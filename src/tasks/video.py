@@ -31,7 +31,7 @@ class SingleVideo(Task):
     def preload(self, exp_win):
         self.movie_stim = visual.MovieStim3(exp_win, self.filepath, units='pixels')
 
-    def run(self, exp_win, ctl_win):
+    def _run(self, exp_win, ctl_win):
         print(self.movie_stim.size)
         print(self.movie_stim.duration)
         min_ratio = min(

@@ -42,7 +42,7 @@ Please look at the markers that appear on the screen."""
 
     def run(self, exp_win, ctl_win, order='random', marker_fill_color=MARKER_FILL_COLOR):
         while True:
-            allKeys = event.getKeys()
+            allKeys = event.getKeys([CALIBRATE_HOTKEY])
             start_calibration = False
             for key in allKeys:
                 if key == CALIBRATE_HOTKEY:

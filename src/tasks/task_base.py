@@ -1,4 +1,6 @@
+from psychopy import logging
 
+from ..shared import fmri
 
 class Task(object):
 
@@ -8,3 +10,17 @@ class Task(object):
 
     def preload(self, exp_win):
         pass
+
+
+    def run(self, exp_win, ctl_win):
+        if self.use_fmri:
+            while True:
+                if fmri.get_ttl():
+                    #TODO: log real timing of TTL?
+                    exp_win.logOnFlip(
+                        level=logging.EXP,
+                        msg="fMRI TTL")
+                    break
+                yield()
+        for _ in self._run(exp_win, ctl_win):
+            yield()
