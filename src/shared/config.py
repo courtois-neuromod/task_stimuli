@@ -1,5 +1,6 @@
 
 EYETRACKING = False
+EYETRACKING_ROI = (60,30,660,450,(600,420))
 
 EXP_WINDOW = dict(
     size = (800,600),

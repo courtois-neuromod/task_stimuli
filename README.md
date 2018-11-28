@@ -1,20 +1,17 @@
 # task_stimuli
 psychopy scripts for stimuli presentations
 
-Each \*_task folder contains scripts for tasks
-global folder should factorize the code common across tasks
+src/tasks contains scripts for tasks
+src/shared folder should factorize the code common across tasks
 
 ## eyetracking/calibrate
 
-Run a short calibration task where the subjects have to look at points shown on the screen including:
-- corners
-- center
-- ...
+Run a short calibration task where the subjects have to look at points shown on the screen
 
 
 # INSTALL
 
-apt install python3-pip
+apt install python3-pip git
 mkdir git
 cd git
 git clone https://github.com/pupil-labs/pupil.git
