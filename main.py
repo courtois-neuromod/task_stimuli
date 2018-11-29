@@ -1,13 +1,15 @@
+#!/usr/bin/python3
+
 from psychopy import visual, logging, event
 
 from src.shared import config, fmri, eyetracking
 from src.tasks import images, video, memory
 
-def main():
+def main(subject, session, eyetracking=False, use_fmri=False):
     ctl_win = visual.Window(**config.CTL_WINDOW)
     exp_win = visual.Window(**config.EXP_WINDOW)
 
-    if config.EYETRACKING:
+    if eyetracking:
         roi = eyetracking.Roi(config.EYETRACKING_ROI[-1])
         roi.set(config.EYETRACKING_ROI)
         eyetracker = eyetracking.EyeTracker(
@@ -34,7 +36,7 @@ def main():
         ctl_win.flip()
 
         use_eyetracking = False
-        if config.EYETRACKING and task.use_eyetracking:
+        if eyetracking and task.use_eyetracking:
             use_eyetracking = True
 
         #preload task files (eg. video)
@@ -67,6 +69,25 @@ def main():
             break
         print('skip')
 
+def parse_args():
+    import argparse
+    parser = argparse.ArgumentParser(
+        prog='main.py',
+        description=('Run all tasks in a session'),
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--subject', '-s',
+        help='Subject ID')
+    parser.add_argument('--session', '-ss',
+        help='Session ID')
+    parser.add_argument('--fmri', '-f',
+        help='Wait for fmri TTL to start each task',
+        default=False)
+    parser.add_argument('--eyetracking', '-e',
+        help='Enable eyetracking',
+        default=False)
+    return parser.parse_args()
+
 if __name__ == "__main__":
+    parsed = parse_args()
     lastLog = logging.LogFile("lastRun.log", level=logging.INFO, filemode='w')
-    main()
+    main(parsed.subject, parsed.session, parsed.eyetracking, parsed.fmri)
