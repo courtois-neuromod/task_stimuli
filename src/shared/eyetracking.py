@@ -203,9 +203,9 @@ class EyeTracker(threading.Thread):
         #TODO: load settings and/or GUI
         settings = self._detector.get_settings()
         settings["pupil_size_min"] = 50
-        settings["pupil_size_max"] = 200
+        settings["pupil_size_max"] = 250
         settings["intensity_range"] = 10
-        #settings["ellipse_roundness_ratio"] = .01
+        settings["ellipse_roundness_ratio"] = .01
         print(self._detector.get_settings())
 
         self.pupils = None
@@ -238,9 +238,9 @@ class EyeTracker(threading.Thread):
                 if hasattr(self,'map_fn'):
                     output += ', %f, %f'%(self.pos_cal)
                 eyetracking_outfile.write(output+'\n')
-                if self.mouse.mouse.getPressed():
-                    click_pos = self.mouse.getPos()
-                    print('mouse pressed at position %s'%str(click_pos))
+                #if self.mouse.getPressed():
+                #    click_pos = self.mouse.getPos()
+                #    print('mouse pressed at position %s'%str(click_pos))
                 self.draw()
 
     def update(self):

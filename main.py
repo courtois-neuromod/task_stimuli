@@ -5,11 +5,11 @@ from psychopy import visual, logging, event
 from src.shared import config, fmri, eyetracking
 from src.tasks import images, video, memory
 
-def main(subject, session, eyetracking=False, use_fmri=False):
+def main(subject, session, enable_eyetracker=False, use_fmri=False):
     ctl_win = visual.Window(**config.CTL_WINDOW)
     exp_win = visual.Window(**config.EXP_WINDOW)
 
-    if eyetracking:
+    if enable_eyetracker:
         roi = eyetracking.Roi(config.EYETRACKING_ROI[-1])
         roi.set(config.EYETRACKING_ROI)
         eyetracker = eyetracking.EyeTracker(
@@ -36,7 +36,7 @@ def main(subject, session, eyetracking=False, use_fmri=False):
         ctl_win.flip()
 
         use_eyetracking = False
-        if eyetracking and task.use_eyetracking:
+        if enable_eyetracker and task.use_eyetracking:
             use_eyetracking = True
 
         #preload task files (eg. video)
