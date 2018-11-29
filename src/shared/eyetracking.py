@@ -140,6 +140,7 @@ class EyeTracker(threading.Thread):
         super(EyeTracker, self).__init__()
         self.ctl_win = ctl_win
         self.eye_win = visual.Window(**config.EYE_WINDOW)
+        self.mouse = event.Mouse(win=self.eye_win)
 
         self._videocap = cv2.VideoCapture(video_input)
         #self._videocap = v4l2capture.Video_device(video_input)
@@ -237,6 +238,9 @@ class EyeTracker(threading.Thread):
                 if hasattr(self,'map_fn'):
                     output += ', %f, %f'%(self.pos_cal)
                 eyetracking_outfile.write(output+'\n')
+                if self.mouse.mouse.getPressed():
+                    click_pos = self.mouse.getPos()
+                    print('mouse pressed at position %s'%str(click_pos))
                 self.draw()
 
     def update(self):
