@@ -90,7 +90,6 @@ Please look at the markers that appear on the screen."""
 
 import threading
 import cv2
-sys.path.append('/home/basile/data/src/pupil/pupil_src/shared_modules/')
 from pupil_detectors.detector_2d import Detector_2D
 from pupil_detectors.detector_3d import Detector_3D
 import calibration_routines.calibrate
@@ -140,6 +139,7 @@ class EyeTracker(threading.Thread):
         super(EyeTracker, self).__init__()
         self.ctl_win = ctl_win
         self.eye_win = visual.Window(**config.EYE_WINDOW)
+        self.eye_win.winHandle.set_caption('Eyetracking')
         self.mouse = event.Mouse(win=self.eye_win)
 
         self._videocap = cv2.VideoCapture(video_input)
@@ -155,31 +155,17 @@ class EyeTracker(threading.Thread):
         self._frame_index = -1
 
         print(self._width, self._height)
-        self.roi = roi
         if roi is None:
-            self.roi = Roi((self._width, self._height))
-
-            #self.roi = Roi((75,50,self._width-150, self._height-100))
-            print(self.roi.get())
-
-        roi_width = self.roi.get()[4][0]
-        roi_height = self.roi.get()[4][1]
-        pos_roi_x =  self.roi.get()[0]
-        pos_roi_y =  self.roi.get()[1]
+            roi = (0, 0, self._width, self._height)
+        self._roi_stim = None
+        self.set_roi(*roi)
 
         self._image_stim = visual.ImageStim(
             self.eye_win,
             size=(self._width,self._height),
             units='pixels',
             autoLog=False)
-        self._roi_stim = visual.Rect(
-            self.eye_win,
-            pos=(pos_roi_x+(roi_width-self._width)/2,
-                 pos_roi_y+(roi_height-self._height)/2),
-            width=roi_width, height=roi_height,
-            units='pixels',
-            lineColor=(1,0,0),fillColor=None,
-            autoLog=False)
+
         self._pupil_stim = Ellipse(
             self.eye_win,
             radius=0,
@@ -205,12 +191,33 @@ class EyeTracker(threading.Thread):
         settings["pupil_size_min"] = 50
         settings["pupil_size_max"] = 250
         settings["intensity_range"] = 10
-        settings["ellipse_roundness_ratio"] = .01
+        settings["ellipse_roundness_ratio"] = .1
         print(self._detector.get_settings())
 
         self.pupils = None
         self.stoprequest = threading.Event()
         self.lock = threading.Lock()
+
+    def set_roi(self, lX, lY, uX, uY):
+        print('set roi: %d %d %d %d'%(lX, lY, uX, uY))
+        roi_width = uX-lX
+        roi_height = uY-lY
+        if roi_width<=0 or roi_height<=0:
+            return
+        self.roi = Roi((roi_width, roi_height))
+        self.roi.set((lX, lY, uX, uY, (roi_width, roi_height)))
+        if self._roi_stim is None:
+            self._roi_stim = visual.Rect(
+                self.eye_win,
+                units='pixels',
+                lineColor=(1,0,0),fillColor=None,
+                autoLog=False)
+
+        self._roi_stim.pos = (
+            lX+(roi_width-self._width)/2,
+            lY+(roi_height-self._height)/2),
+        self._roi_stim.width = roi_width
+        self._roi_stim.height = roi_height
 
     def join(self, timeout=None):
         self.stoprequest.set()
@@ -230,6 +237,7 @@ class EyeTracker(threading.Thread):
             {'-pix_fmt':'gray','-r':'30'},
             {'-pix_fmt':'gray','-c:v': 'libx264','-r':'30'})
         #self._videocap.start()
+        mouse_pressed = False
         with open(eyetracking_output_name+'.log', 'w') as eyetracking_outfile:
             while not self.stoprequest.isSet():
                 self.update()
@@ -238,9 +246,20 @@ class EyeTracker(threading.Thread):
                 if hasattr(self,'map_fn'):
                     output += ', %f, %f'%(self.pos_cal)
                 eyetracking_outfile.write(output+'\n')
-                #if self.mouse.getPressed():
-                #    click_pos = self.mouse.getPos()
-                #    print('mouse pressed at position %s'%str(click_pos))
+
+                ## update ROI
+                if any(self.mouse.getPressed()):
+                    if self.mouse.isPressedIn(self._image_stim):
+                        if not mouse_pressed:
+                            init_pos = self.mouse.getPos()
+                        mouse_pressed = True
+                else:
+                    if mouse_pressed:
+                        end_pos = self.mouse.getPos()
+                        mouse_pressed = False
+                        coords = (np.sort([init_pos, end_pos],0)+(self._width/2,self._height/2)).astype(np.int)
+                        coords = np.clip(coords, (0,0), (self._width,self._height))
+                        self.set_roi(coords[0,0], coords[0,1], coords[1,0], coords[1,1])
                 self.draw()
 
     def update(self):
