@@ -1,3 +1,9 @@
+from psychopy import prefs
+
+# avoids delay in movie3 audio seek
+prefs.general['audioLib'] = ['sounddevice']
+
+
 OUTPUT_DIR = 'output'
 
 EYETRACKING_ROI = (60,30,660,450)
