@@ -15,6 +15,7 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
     ctl_win = visual.Window(**config.CTL_WINDOW)
     ctl_win.winHandle.set_caption('Stimuli')
     exp_win = visual.Window(**config.EXP_WINDOW)
+    exp_win.mouseVisible = False
 
     if enable_eyetracker:
         eyetracker = eyetracking.EyeTracker(
@@ -38,6 +39,7 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
 
         #preload task files (eg. video)
         task.preload(exp_win)
+        print('READY')
 
         allKeys = []
 
@@ -45,23 +47,27 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
 
             for _ in task.run(exp_win, ctl_win):
                 # check for global event keys
+                exp_win.flip()
+                ctl_win.flip()
                 allKeys = event.getKeys(['r','s','q'])
                 if len(allKeys):
                     break
                 if use_eyetracking:
                     eyetracker.draw_gazepoint(ctl_win)
-                exp_win.flip()
-                ctl_win.flip()
+
             else: # task completed
                 break
 
             logging.flush()
+            task.stop()
+            
+            exp_win.flip()
+            ctl_win.flip()
 
             if not 'r' in allKeys:
                 break
-            exp_win.logOnFlip(
-                level=logging.EXP,
-                msg="task - %s: restart")
+            logging.exp(msg="task - %s: restart"%str(task))
+
         task.unload()
         if 'q' in allKeys:
             print('quit')

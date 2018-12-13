@@ -17,7 +17,7 @@ class Task(object):
         pass
 
     def __str__(self):
-        return '%s :'%self.__class__
+        return '%s : %s'%(self.__class__, self.name)
 
     def run(self, exp_win, ctl_win):
         print('Next task: %s'%str(self))
@@ -31,23 +31,27 @@ class Task(object):
             while True:
                 if fmri.get_ttl():
                     #TODO: log real timing of TTL?
-                    exp_win.logOnFlip(
-                        level=logging.EXP,
-                        msg="fMRI TTL %d"%ttl_index)
+                    logging.exp(msg="fMRI TTL %d"%ttl_index)
                     ttl_index += 1
                     break
-                yield()
+                yield
+        logging.info('GO')
         for _ in self._run(exp_win, ctl_win):
             if self.use_fmri:
                 if fmri.get_ttl():
-                    exp_win.logOnFlip(
-                        level=logging.EXP,
-                        msg="fMRI TTL %d"%ttl_index)
+                    logging.exp(msg="fMRI TTL %d"%ttl_index)
                     ttl_index += 1
-            yield()
+            yield
 
+    def stop(self):
+        pass
 
 class Pause(Task):
+
+    def __init__(self, **kwargs):
+        if not 'name' in kwargs:
+            kwargs['name'] = 'Pause'
+            super().__init__(**kwargs)
 
     def _run(self, exp_win, ctl_win):
         text = """Taking a short break, relax..."""
