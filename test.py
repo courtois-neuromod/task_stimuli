@@ -9,7 +9,6 @@ if __name__ == "__main__":
     parsed = cli.parse_args()
 
     all_tasks = [
-        #eyetracking.EyetrackerCalibration(eyetracker),
         #memory.ImagePosition('data/memory/stimuli.csv', use_fmri=parsed.fmri, use_eyetracking=True),
         video.SingleVideo(
             'data/videos/Inscapes-67962604.mp4', name='Inscapes',

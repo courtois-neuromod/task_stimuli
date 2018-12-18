@@ -23,8 +23,10 @@ PUPIL_CONFIDENCE_THRESHOLD = .4
 
 class EyetrackerCalibration(Task):
 
-    def __init__(self,eyetracker, *args,**kwargs):
+    def __init__(self,eyetracker, order='random', marker_fill_color=MARKER_FILL_COLOR, **kwargs):
         kwargs['use_eyetracking'] = True
+        self.order = order
+        self.marker_fill_color = marker_fill_color
         super().__init__(**kwargs)
         self.eyetracker = eyetracker
 
@@ -40,7 +42,7 @@ Please look at the markers that appear on the screen."""
             screen_text.draw(ctl_win)
             yield()
 
-    def run(self, exp_win, ctl_win, order='random', marker_fill_color=MARKER_FILL_COLOR):
+    def _run(self, exp_win, ctl_win):
         while True:
             allKeys = event.getKeys([CALIBRATE_HOTKEY])
             start_calibration = False
@@ -55,7 +57,7 @@ Please look at the markers that appear on the screen."""
         print(window_size_frame)
         circle_marker = visual.Circle(
             exp_win, edges=64, units='pixels',
-            lineColor=None,fillColor=marker_fill_color,
+            lineColor=None,fillColor=self.marker_fill_color,
             autoLog=False)
 
         random_order = np.random.permutation(np.arange(len(MARKER_POSITIONS)))
@@ -135,23 +137,23 @@ class Frame(object):
 
 class EyeTracker(threading.Thread):
 
-    def __init__(self, ctl_win, video_input=0, roi=None, detector='2d'):
+    def __init__(self, ctl_win, output_dir, video_input=0, roi=None, detector='2d'):
         super(EyeTracker, self).__init__()
         self.ctl_win = ctl_win
+        self.output_dir = output_dir
         self.eye_win = visual.Window(**config.EYE_WINDOW)
         self.eye_win.winHandle.set_caption('Eyetracking')
         self.mouse = event.Mouse(win=self.eye_win)
 
-        self._videocap = cv2.VideoCapture(video_input)
-        #self._videocap = v4l2capture.Video_device(video_input)
-        ret, self.cv_frame = self._videocap.read()
+        #self._videocap = cv2.VideoCapture(video_input)
+        self._videocap = v4l2capture.Video_device(video_input)
+        #ret, self.cv_frame = self._videocap.read()
 
-        self._width = int(self._videocap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        self._height = int(self._videocap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        #self._width, self._height = self._videocap.set_format(640, 480, fourcc='GREY')
-        #self._width, self._height = 720,480
-        #self._videocap.create_buffers(30)
-        #self._videocap.queue_all_buffers()
+        #self._width = int(self._videocap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        #self._height = int(self._videocap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        self._width, self._height = self._videocap.set_format(640, 480, fourcc='GREY')
+        self._videocap.create_buffers(30)
+        self._videocap.queue_all_buffers()
         self._frame_index = -1
 
         print(self._width, self._height)
@@ -188,10 +190,10 @@ class EyeTracker(threading.Thread):
 
         #TODO: load settings and/or GUI
         settings = self._detector.get_settings()
-        settings["pupil_size_min"] = 50
-        settings["pupil_size_max"] = 250
-        settings["intensity_range"] = 10
-        settings["ellipse_roundness_ratio"] = .1
+        settings["pupil_size_min"] = 30
+        settings["pupil_size_max"] = 200
+        #settings["intensity_range"] = 10
+        #settings["ellipse_roundness_ratio"] = .1
         print(self._detector.get_settings())
 
         self.pupils = None
@@ -230,13 +232,15 @@ class EyeTracker(threading.Thread):
 
     def run(self):
         eyetracking_output_name = os.path.join(
-            EYETRACKING_OUTDIR,
-            datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S'))
+            self.output_dir,
+            datetime.datetime.now().strftime('eyetrack_%Y%m%d_%H%M%S'))
         self._videowriter = skvideo.io.FFmpegWriter(
-            eyetracking_output_name+'.mp4',
+            eyetracking_output_name+'.mkv',
             {'-pix_fmt':'gray','-r':'30'},
-            {'-pix_fmt':'gray','-c:v': 'libx264','-r':'30'})
-        #self._videocap.start()
+            #{'-c:v': 'mpeg4','-r':'30','-pix_fmt':'yuv420p'}
+            {'-pix_fmt':'gray','-c:v': 'ffv1','-r':'30'}
+            )
+        self._videocap.start()
         mouse_pressed = False
         with open(eyetracking_output_name+'.log', 'w') as eyetracking_outfile:
             while not self.stoprequest.isSet():
@@ -264,13 +268,13 @@ class EyeTracker(threading.Thread):
 
     def update(self):
         #capture
-        ret, self.cv_frame = self._videocap.read()
+        #ret, self.cv_frame = self._videocap.read()
         #self._capture_timestamp = self._videocap.get(cv2.CAP_PROP_POS_MSEC)
-        #select.select((self._videocap,), (), ())
-        #raw_frame = self._videocap.read_and_queue()
+        select.select((self._videocap,), (), ())
+        raw_frame = self._videocap.read_and_queue()
         self._frame_index += 1
         self._capture_timestamp = time.time()
-        #self.cv_frame = np.frombuffer(raw_frame,dtype=np.uint8).reshape(self._height, self._width, 3).copy()
+        self.cv_frame = np.frombuffer(raw_frame,dtype=np.uint8).reshape(self._height, self._width).copy()
         #detect
         p_frame = Frame(0, self.cv_frame, 0)
         pupils = self._detector.detect(p_frame, self.roi, False)
@@ -282,7 +286,7 @@ class EyeTracker(threading.Thread):
 
     def draw(self):
         #render image roi pupil
-        self._image_stim.setImage(self.cv_frame/128-1)
+        self._image_stim.image = self.cv_frame/128.-1
         self._image_stim.draw(self.eye_win)
 
         self._roi_stim.draw(self.eye_win)

@@ -1,4 +1,4 @@
-import os
+import os, datetime
 from psychopy import visual, logging, event
 
 from src.shared import config, fmri, eyetracking
@@ -9,7 +9,8 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
     if not os.path.exists(log_path):
         os.makedirs(log_path, exist_ok=True)
     log_file = logging.LogFile(
-        os.path.join(log_path, 'sub-%s_ses-%s.log'%(subject,session)),
+        os.path.join(log_path, 'sub-%s_ses-%s_%s.log'%(subject,session,
+            datetime.datetime.now().strftime('%Y%m%d_%H%M%S'))),
         level=logging.INFO, filemode='w')
 
     ctl_win = visual.Window(**config.CTL_WINDOW)
@@ -20,10 +21,13 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
     if enable_eyetracker:
         eyetracker = eyetracking.EyeTracker(
             ctl_win,
+            output_dir=log_path,
             roi=config.EYETRACKING_ROI,
             video_input="/dev/video1",
             detector='2d')
         eyetracker.start()
+        all_tasks.insert(0,eyetracking.EyetrackerCalibration(eyetracker,name='EyeTracker-Calibration'))
+
 
     # list of tasks to be ran in a session
 
@@ -46,21 +50,21 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
         while True:
 
             for _ in task.run(exp_win, ctl_win):
+                if use_eyetracking:
+                    eyetracker.draw_gazepoint(exp_win)
                 # check for global event keys
                 exp_win.flip()
                 ctl_win.flip()
                 allKeys = event.getKeys(['r','s','q'])
                 if len(allKeys):
                     break
-                if use_eyetracking:
-                    eyetracker.draw_gazepoint(ctl_win)
 
             else: # task completed
                 break
 
             logging.flush()
             task.stop()
-            
+
             exp_win.flip()
             ctl_win.flip()
 
