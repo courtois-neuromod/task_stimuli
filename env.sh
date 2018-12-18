@@ -1,1 +1,1 @@
-export PUPIL_MODULES_PATH=$HOME/data/src/pupil/pupil_src/shared_modules/
+export PUPIL_MODULES_PATH=$HOME/git/pupil/pupil_src/shared_modules/
