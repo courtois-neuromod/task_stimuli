@@ -7,7 +7,7 @@ from .task_base import Task
 
 from ..shared import config
 
-INSTRUCTION_DURATION = 1
+INSTRUCTION_DURATION = 5
 
 class SingleVideo(Task):
 
