@@ -29,7 +29,7 @@ class SingleVideo(Task):
             yield
 
     def preload(self, exp_win):
-        self.movie_stim = visual.MovieStim3(exp_win, self.filepath, units='pixels',autoLog=True)
+        self.movie_stim = visual.MovieStim3(exp_win, self.filepath, units='pixels')
         min_ratio = min(
             exp_win.size[0]/ self.movie_stim.size[0],
             exp_win.size[1]/ self.movie_stim.size[1])
@@ -46,13 +46,10 @@ class SingleVideo(Task):
             level=logging.EXP,
             msg='video: task starting at %f'%time.time())
         exp_win.setColor([-1,-1,-1])
-        logging.info('PLAY')
         self.movie_stim.play()
-        logging.info('PLAY2')
         while True:
             self.movie_stim.draw(exp_win)
             self.movie_stim.draw(ctl_win)
-            logging.info('DRAW')
 
             yield
         exp_win.setColor([0,0,0])
@@ -60,5 +57,5 @@ class SingleVideo(Task):
 
     def stop(self):
         self.movie_stim.pause()
-        #self.movie_stim.seek(0)
+        self.movie_stim.seek(0)
         self.movie_stim.win.setColor([0,0,0])

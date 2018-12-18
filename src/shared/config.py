@@ -21,7 +21,7 @@ CTL_WINDOW = dict(
 )
 
 EYE_WINDOW = dict(
-    size = (720,480),
+    size = (640,480),
     screen=0,
     units='pix',
     pos=(CTL_WINDOW['size'][0]+CTL_WINDOW['pos'][0],0)
