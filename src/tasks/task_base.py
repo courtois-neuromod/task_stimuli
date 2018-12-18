@@ -22,7 +22,7 @@ class Task(object):
     def run(self, exp_win, ctl_win):
         print('Next task: %s'%str(self))
         if hasattr(self, 'instructions'):
-            for _ in self.instructions(ctl_win, ctl_win):
+            for _ in self.instructions(exp_win, ctl_win):
                 exp_win.flip()
                 ctl_win.flip()
 

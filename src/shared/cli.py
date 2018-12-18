@@ -50,8 +50,8 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
         while True:
 
             for _ in task.run(exp_win, ctl_win):
-                if use_eyetracking:
-                    eyetracker.draw_gazepoint(ctl_win)
+                #if use_eyetracking:
+                #    eyetracker.draw_gazepoint(ctl_win)
                 # check for global event keys
                 exp_win.flip()
                 ctl_win.flip()

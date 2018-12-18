@@ -8,6 +8,7 @@ from . import config
 
 EYETRACKING_OUTDIR = 'output/eyetracking/'
 CALIBRATE_HOTKEY = 'c'
+INSTRUCTION_DURATION = 5
 
 MARKER_SIZE = 50
 MARKER_FILL_COLOR = (.8,0,.5)
@@ -37,7 +38,7 @@ Please look at the markers that appear on the screen."""
             exp_win, text=instruction_text,
             alignHoriz="center", color = 'white')
 
-        for frameN in range(config.FRAME_RATE * 5):
+        for frameN in range(config.FRAME_RATE * INSTRUCTION_DURATION):
             screen_text.draw(exp_win)
             screen_text.draw(ctl_win)
             yield()
