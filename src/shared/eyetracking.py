@@ -315,8 +315,8 @@ class EyeTracker(threading.Thread):
             self._gazepoint_stim.draw(win)
 
     def release(self):
-        self._videocap.release()
-        #self._videocap.close()
+        #self._videocap.release()
+        self._videocap.close()
         self._videowriter.close()
 
     def calibrate(self, all_refs_per_flip, all_pupils_normpos):
