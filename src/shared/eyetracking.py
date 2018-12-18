@@ -172,15 +172,15 @@ class EyeTracker(threading.Thread):
             self.eye_win,
             radius=0,
             radius2=0,
+            lineColor=(1,0,0),fillColor=None, lineWidth=2,
             units='pixels',
-            lineColor=(1,0,0),fillColor=None, lineWidth=1,
             autoLog=False)
 
         self._gazepoint_stim = visual.Circle(
             self.ctl_win,
             radius=30,
             units='pixels',
-            lineColor=(1,0,0),fillColor=None,
+            lineColor=(1,0,0),fillColor=None, lineWidth=2,
             autoLog=False)
 
         if detector == '2d':
