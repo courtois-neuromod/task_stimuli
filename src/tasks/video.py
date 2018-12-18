@@ -15,7 +15,8 @@ class SingleVideo(Task):
         super().__init__(**kwargs)
         #TODO: image lists as params, subjects ....
         self.filepath = filepath
-
+        if not os.path.exists(self.filepath):
+            raise ValueError('File %s does not exists'%self.filepath)
 
     def instructions(self, exp_win, ctl_win):
         instruction_text = """You are about to watch a video. Please keep your eyes opened."""
