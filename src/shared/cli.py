@@ -5,7 +5,7 @@ from src.shared import config, fmri, eyetracking
 
 def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=False):
 
-    log_path = os.path.join(config.OUTPUT_DIR,  'sub-%s'%subject,'ses-%s'%session)
+    log_path = os.path.abspath(os.path.join(config.OUTPUT_DIR,  'sub-%s'%subject,'ses-%s'%session))
     if not os.path.exists(log_path):
         os.makedirs(log_path, exist_ok=True)
     log_file = logging.LogFile(
@@ -19,14 +19,12 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
     exp_win.mouseVisible = False
 
     if enable_eyetracker:
-        eyetracker = eyetracking.EyeTracker(
-            ctl_win,
-            output_dir=log_path,
-            roi=config.EYETRACKING_ROI,
-            video_input="/dev/video1",
-            detector='2d')
-        eyetracker.start()
-        all_tasks.insert(0,eyetracking.EyetrackerCalibration(eyetracker,name='EyeTracker-Calibration'))
+        eyetracker_client = eyetracking.EyeTrackerClient(
+            output_path=log_path,
+            )
+        eyetracker_client.start()
+        all_tasks.insert(0, eyetracking.EyetrackerCalibration(eyetracker_client,name='EyeTracker-Calibration'))
+        gaze_drawer = eyetracking.GazeDrawer(exp_win)
 
 
     # list of tasks to be ran in a session
@@ -51,7 +49,9 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
 
             for _ in task.run(exp_win, ctl_win):
                 if use_eyetracking:
-                    eyetracker.draw_gazepoint(ctl_win)
+                    gaze = eyetracker_client.get_gaze()
+                    if not gaze is None:
+                        gaze_drawer.draw_gazepoint(gaze)
                 # check for global event keys
                 exp_win.flip()
                 ctl_win.flip()
@@ -74,6 +74,8 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
 
         task.unload()
         if 'q' in allKeys:
+            if enable_eyetracker:
+                eyetracker_client.join()
             print('quit')
             break
         print('skip')
