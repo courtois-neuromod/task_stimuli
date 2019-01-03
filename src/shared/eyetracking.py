@@ -87,6 +87,8 @@ Please look at the markers that appear on the screen."""
                 circle_marker.draw(ctl_win)
 
                 pupil = self.eyetracker.get_pupil()
+                if pupil is None:
+                    return
                 exp_win.logOnFlip(level=logging.EXP,
                     msg="pupil: pos=(%f,%f), diameter=%d"%tuple(pupil['norm_pos']+[pupil['diameter']]))
                 if f > CALIBRATION_LEAD_IN and f < len(radius_anim)-CALIBRATION_LEAD_OUT:
@@ -147,23 +149,28 @@ class EyeTrackerClient(threading.Thread):
         self.send_recv_notification({'subject':'recording.stopped'})
 
         self.send_recv_notification({'subject':'service_process.should_stop'})
+        self._pupil_process.wait(timeout)
         super(EyeTrackerClient, self).join(timeout)
 
     def run(self):
-        #start recording the video of the eye
-        self.send_recv_notification({
-            'subject':'recording.started',
-            'record_eye':True,
-            'rec_path': self.output_path,
-            'compression':None,
-            'args':{'video_stream':{"codec": "mpeg4", "bit_rate": 15000 * 10e3}}
-            })
+
+        recording_started = False
 
         self._req_socket.send_string('SUB_PORT')
         ipc_sub_port = int(self._req_socket.recv())
         monitor = Msg_Receiver(self._ctx,'tcp://localhost:%d'%ipc_sub_port,topics=('gaze','pupil'))
         while not self.stoprequest.isSet():
             topic, tmp = monitor.recv()
+            if not recording_started:
+                #start recording the video of the eye
+                self.send_recv_notification({
+                    'subject':'recording.started',
+                    'record_eye':True,
+                    'rec_path': self.output_path,
+                    'compression':None,
+                    'args':{'video_stream':{"codec": "mpeg4", "bit_rate": 15000 * 10e3}}
+                    })
+                recording_started=True
             with self.lock:
                 if topic.startswith('pupil'):
                     self.pupil = tmp
