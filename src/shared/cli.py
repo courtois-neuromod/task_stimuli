@@ -8,9 +8,10 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
     log_path = os.path.abspath(os.path.join(config.OUTPUT_DIR,  'sub-%s'%subject,'ses-%s'%session))
     if not os.path.exists(log_path):
         os.makedirs(log_path, exist_ok=True)
+    logfile_path = os.path.join(log_path, 'sub-%s_ses-%s_%s.log'%(subject,session,
+                                datetime.datetime.now().strftime('%Y%m%d_%H%M%S')))
     log_file = logging.LogFile(
-        os.path.join(log_path, 'sub-%s_ses-%s_%s.log'%(subject,session,
-            datetime.datetime.now().strftime('%Y%m%d_%H%M%S'))),
+        logfile_path,
         level=logging.INFO, filemode='w')
 
     ctl_win = visual.Window(**config.CTL_WINDOW)
@@ -76,6 +77,11 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
         if 'q' in allKeys:
             if enable_eyetracker:
                 eyetracker_client.join()
+                eye_video_file = os.path.join(log_path, 'eye0.mp4')
+                timestamps_file = os.path.join(log_path, 'eye0_timestamps.npy')
+                # rename file in case we rerun the software
+                os.rename(eye_video_file, logfile_path[:-4] + '_eye0.mp4')
+                os.rename(timestamps_file, logfile_path[:-4] + '_eye0_timestamps.npy')
             print('quit')
             break
         print('skip')
