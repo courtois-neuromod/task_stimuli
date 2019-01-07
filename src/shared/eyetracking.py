@@ -107,7 +107,7 @@ from subprocess import Popen
 
 class EyeTrackerClient(threading.Thread):
 
-    def __init__(self, output_path):
+    def __init__(self, output_path, output_fname_base):
         super(EyeTrackerClient, self).__init__()
         self.stoprequest = threading.Event()
         self.lock = threading.Lock()
@@ -116,6 +116,7 @@ class EyeTrackerClient(threading.Thread):
         self.gaze = None
 
         self.output_path = output_path
+        self.output_fname_base = output_fname_base
 
         self._pupil_process = Popen([
             'python3',
@@ -150,11 +151,21 @@ class EyeTrackerClient(threading.Thread):
 
         self.send_recv_notification({'subject':'service_process.should_stop'})
         self._pupil_process.wait(timeout)
+        eye_video_file = os.path.join(self.output_path, 'eye0.mp4')
+        timestamps_file = os.path.join(self.output_path, 'eye0_timestamps.npy')
+        # rename file in case we rerun the software
+        os.rename(eye_video_file, os.path.join(self.output_path,'%s_eye0.mp4'%self.output_fname_base))
+        os.rename(timestamps_file, os.path.join(self.output_path,'%s_eye0_timestamps.npy'%self.output_fname_base))
         super(EyeTrackerClient, self).join(timeout)
 
     def run(self):
-
+        gaze_output_name = os.path.join(self.output_path, '%s_gaze0.pldata'%self.output_fname_base)
+        gaze_fh = open(gaze_output_name,'wb')
         recording_started = False
+
+        def write_msgpack_serialized(fh, data):
+            ser_data = msgpack.packb(data, use_bin_type=True)
+            fh.write(ser_data)
 
         self._req_socket.send_string('SUB_PORT')
         ipc_sub_port = int(self._req_socket.recv())
@@ -163,6 +174,7 @@ class EyeTrackerClient(threading.Thread):
             topic, tmp = monitor.recv()
             if not recording_started:
                 #start recording the video of the eye
+                logging.exp('first pupil received with timestamp %s'%tmp['timestamp'])
                 self.send_recv_notification({
                     'subject':'recording.started',
                     'record_eye':True,
@@ -176,6 +188,8 @@ class EyeTrackerClient(threading.Thread):
                     self.pupil = tmp
                 if topic.startswith('gaze'):
                     self.gaze = tmp
+            if topic.startswith('gaze'):
+                write_msgpack_serialized(gaze_fh, tmp)
 
         print('eyetracker listener: stopping')
 
@@ -227,7 +241,10 @@ class GazeDrawer():
 
 
 
-
+def read_pl_data(fname):
+    with open(fname, "rb") as fh:
+        for data in msgpack.Unpacker(fh, raw=False, use_list=False):
+            yield(data)
 
 
 

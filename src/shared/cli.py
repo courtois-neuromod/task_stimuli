@@ -1,5 +1,8 @@
 import os, datetime
-from psychopy import visual, logging, event
+from psychopy import core, visual, logging, event
+
+globalClock = core.MonotonicClock(0)
+logging.setDefaultClock(globalClock)
 
 from src.shared import config, fmri, eyetracking
 
@@ -8,8 +11,8 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
     log_path = os.path.abspath(os.path.join(config.OUTPUT_DIR,  'sub-%s'%subject,'ses-%s'%session))
     if not os.path.exists(log_path):
         os.makedirs(log_path, exist_ok=True)
-    logfile_path = os.path.join(log_path, 'sub-%s_ses-%s_%s.log'%(subject,session,
-                                datetime.datetime.now().strftime('%Y%m%d_%H%M%S')))
+    log_name_prefix = 'sub-%s_ses-%s_%s'%(subject,session, datetime.datetime.now().strftime('%Y%m%d_%H%M%S'))
+    logfile_path = os.path.join(log_path, log_name_prefix+'.log')
     log_file = logging.LogFile(
         logfile_path,
         level=logging.INFO, filemode='w')
@@ -22,10 +25,11 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
     if enable_eyetracker:
         eyetracker_client = eyetracking.EyeTrackerClient(
             output_path=log_path,
+            output_fname_base=log_name_prefix
             )
         eyetracker_client.start()
         all_tasks.insert(0, eyetracking.EyetrackerCalibration(eyetracker_client,name='EyeTracker-Calibration'))
-        gaze_drawer = eyetracking.GazeDrawer(exp_win)
+        gaze_drawer = eyetracking.GazeDrawer(ctl_win)
 
 
     # list of tasks to be ran in a session
@@ -77,11 +81,6 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
         if 'q' in allKeys:
             if enable_eyetracker:
                 eyetracker_client.join()
-                eye_video_file = os.path.join(log_path, 'eye0.mp4')
-                timestamps_file = os.path.join(log_path, 'eye0_timestamps.npy')
-                # rename file in case we rerun the software
-                os.rename(eye_video_file, logfile_path[:-4] + '_eye0.mp4')
-                os.rename(timestamps_file, logfile_path[:-4] + '_eye0_timestamps.npy')
             print('quit')
             break
         print('skip')
