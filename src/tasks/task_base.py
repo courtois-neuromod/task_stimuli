@@ -48,15 +48,15 @@ class Task(object):
 
 class Pause(Task):
 
-    def __init__(self, **kwargs):
+    def __init__(self, text="Taking a short break, relax...", **kwargs):
         if not 'name' in kwargs:
             kwargs['name'] = 'Pause'
-            super().__init__(**kwargs)
+        super().__init__(**kwargs)
+        self.text = text
 
     def _run(self, exp_win, ctl_win):
-        text = """Taking a short break, relax..."""
         screen_text = visual.TextStim(
-            exp_win, text=text,
+            exp_win, text=self.text,
             alignHoriz="center", color = 'white')
 
         while True:
