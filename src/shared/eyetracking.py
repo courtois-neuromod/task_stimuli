@@ -157,9 +157,9 @@ class EyeTrackerClient(threading.Thread):
     def join(self, timeout=None):
         self.stoprequest.set()
         # leave time to exit the infinite loop
+        self.send_recv_notification({'subject':'recording.should_stop',})
         time.sleep(.2)
         # stop recording
-        #self.send_recv_notification({'subject':'recording.stopped'})
 
         self.send_recv_notification({'subject':'world_process.should_stop'})
         self._pupil_process.wait(timeout)

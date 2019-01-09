@@ -9,9 +9,10 @@ class Task(object):
         self.use_fmri = use_fmri
         self.use_eyetracking = use_eyetracking
 
-    # preload large files for accurate start with other recordings (scanner, biopac...)
-    def preload(self, exp_win):
-        pass
+    # setup large files for accurate start with other recordings (scanner, biopac...)
+    def setup(self, exp_win, output_path, output_fname_base):
+        self.output_path = output_path
+        self.output_fname_base = output_fname_base
 
     def unload(self):
         pass

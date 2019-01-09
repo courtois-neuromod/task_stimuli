@@ -10,7 +10,11 @@ from ..shared import config
 import retro
 
 INSTRUCTION_DURATION = 3
-END_GAME_PAUSE = 3
+
+DEFAULT_GAME_NAME = 'ShinobiIIIReturnOfTheNinjaMaster-Genesis'
+
+#KEY_SET = 'zx__abudlr_y'
+KEY_SET = 'zx__udlry___'
 
 class SoundDeviceBlockStream(sound.backend_sounddevice.SoundDeviceSound):
 
@@ -41,19 +45,19 @@ class VideoGameBase(Task):
         self.game_vis_stim.draw(exp_win)
         self.game_vis_stim.draw(ctl_win)
         self.game_sound.add_block(sound_block[:735]/float(2**15))
-        if self.game_sound.status == constants.NOT_STARTED:
+        if not self.game_sound.status == constants.PLAYING:
             self.game_sound.play()
 
     def stop(self):
-        self.emulator.close()
         self.game_sound.stop()
+
+    def unload(self):
+        self.emulator.close()
 
 class VideoGame(VideoGameBase):
 
     def __init__(self,
-        output_path,
-        output_fname_base,
-        game_name='ShinobiIIIReturnOfTheNinjaMaster-Genesis',
+        game_name=DEFAULT_GAME_NAME,
         state_name=None,
         *args,**kwargs):
 
@@ -61,10 +65,6 @@ class VideoGame(VideoGameBase):
         self.game_name = game_name
         self.state_name = state_name
 
-        self.output_path = output_path
-        self.output_fname_base = output_fname_base
-        #self.record_dir = os.path.join(self.output_path, self.output_fname_base + '.pupil')
-        #os.makedirs(self.record_dir)
 
     def instructions(self, exp_win, ctl_win):
         instruction_text = "Let's play a video game.\n%s : %s\nHave fun!"%(self.game_name, self.state_name)
@@ -77,48 +77,56 @@ class VideoGame(VideoGameBase):
             screen_text.draw(ctl_win)
             yield
 
-    def preload(self, exp_win):
+    def setup(self, exp_win, output_path, output_fname_base):
+        super().setup(exp_win, output_path, output_fname_base)
         self.emulator = retro.make(
             self.game_name,
             state=self.state_name,
             record=False)
-        self.emulator.reset()
-        movie_path = os.path.join(
-            self.output_path,
-            "%s_%s_%s.bk2"%(self.output_fname_base,self.game_name,self.state_name))
-        logging.exp('VideoGame: recording movie in %s'%movie_path)
-        self.emulator.record_movie(movie_path)
+
         self.game_vis_stim = visual.ImageStim(exp_win,size=exp_win.size,units='pixels',autoLog=False)
         self.game_sound = SoundDeviceBlockStream(stereo=True, blockSize=735)
 
     def _run(self, exp_win, ctl_win):
-        # give the original size of the movie in pixels:
-        #print(self.movie_stim.format.width, self.movie_stim.format.height)
+        self.emulator.reset()
+        nnn = 0
+        while True:
+            movie_path = os.path.join(
+                self.output_path,
+                "%s_%s_%s_%03d.bk2"%(self.output_fname_base,self.game_name,self.state_name, nnn))
+            if not os.path.exists(movie_path):
+                break
+            nnn += 1
+        logging.exp('VideoGame: recording movie in %s'%movie_path)
+        self.emulator.record_movie(movie_path)
+
         total_reward = 0
         exp_win.logOnFlip(
             level=logging.EXP,
             msg='VideoGame %s: %s starting at %f'%(self.game_name, self.state_name, time.time()))
         while True:
             # TODO: get real action from controller
-            action = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            gamectrl_keys = event.getKeys('ABXYUDLR')
+            gamectrl_keys = event.getKeys(list(KEY_SET))
+            keys = [k in gamectrl_keys for k in KEY_SET]
 
-
-            _obs, _rew, _done, _info = self.emulator.step(action)
+            _obs, _rew, _done, _info = self.emulator.step(keys)
             total_reward += _rew
             if _rew > 0 :
                 exp_win.logOnFlip(level=logging.EXP, msg='Reward %f'%(total_reward))
-
             self._render_graphics_sound(_obs,self.emulator.em.get_audio(),exp_win, ctl_win)
             yield
+            if _done:
+                break
 
 
 class VideoGameReplay(VideoGameBase):
 
-    def __init__(self, movie_filename, game_name='ShinobiIIIReturnOfTheNinjaMaster-Genesis', *args,**kwargs):
+    def __init__(self, movie_filename, game_name=DEFAULT_GAME_NAME, *args,**kwargs):
         super().__init__(**kwargs)
         self.game_name = game_name
         self.movie_filename = movie_filename
+        if not os.path.exists(self.movie_filename):
+            raise ValueError('file %s does not exists'%self.movie_filename)
 
     def instructions(self, exp_win, ctl_win):
         instruction_text = "You are going to watch someone play %s."%self.game_name
@@ -131,13 +139,14 @@ class VideoGameReplay(VideoGameBase):
             screen_text.draw(ctl_win)
             yield
 
-    def preload(self, exp_win):
+    def setup(self, exp_win, output_path, output_fname_base):
+        super().setup(exp_win, output_path, output_fname_base)
         self.movie = retro.Movie(self.movie_filename)
         self.emulator = retro.make(
             self.game_name,
             record=False,
             state=retro.State.NONE,
-            use_restricted_actions=retro.Actions.ALL,
+            #use_restricted_actions=retro.Actions.ALL,
             players=self.movie.players)
         self.emulator.initial_state = self.movie.get_state()
         self.emulator.reset()
@@ -152,11 +161,12 @@ class VideoGameReplay(VideoGameBase):
         exp_win.logOnFlip(
             level=logging.EXP,
             msg='VideoGameReplay %s starting at %f'%(self.game_name, time.time()))
-        while self.movie.step:
+        while self.movie.step():
             keys = []
             for p in range(self.movie.players):
                 for i in range(self.emulator.num_buttons):
                     keys.append(self.movie.get_key(i, p))
+
             _obs, _rew, _done, _info = self.emulator.step(keys)
 
             total_reward += _rew
