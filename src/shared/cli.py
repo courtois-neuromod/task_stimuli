@@ -44,11 +44,12 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
         if enable_eyetracker and task.use_eyetracking:
             use_eyetracking = True
 
-        #preload task files (eg. video)
-        task.preload(exp_win)
+        #setup task files (eg. video)
+        task.setup(exp_win, log_path, log_name_prefix)
         print('READY')
 
         allKeys = []
+        ctrl_pressed = False
 
         while True:
 
@@ -60,10 +61,11 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
                 # check for global event keys
                 exp_win.flip()
                 ctl_win.flip()
-                allKeys = event.getKeys(['r','s','q'])
-                if len(allKeys):
+                allKeys = event.getKeys(['r','s','q'], modifiers=True)
+                ctrl_pressed = any([k[1]['ctrl'] for k in allKeys])
+                all_keys_only = [k[0] for k in allKeys]
+                if len(allKeys) and ctrl_pressed:
                     break
-
             else: # task completed
                 break
 
@@ -73,12 +75,12 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
             exp_win.flip()
             ctl_win.flip()
 
-            if not 'r' in allKeys:
+            if ctrl_pressed and ('s' in all_keys_only or 'q' in all_keys_only):
                 break
             logging.exp(msg="task - %s: restart"%str(task))
 
         task.unload()
-        if 'q' in allKeys:
+        if ctrl_pressed and ('q' in all_keys_only):
             if enable_eyetracker:
                 eyetracker_client.join()
             print('quit')
