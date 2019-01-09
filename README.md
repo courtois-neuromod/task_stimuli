@@ -6,9 +6,18 @@ src/tasks contains scripts for tasks
 
 src/shared folder should factorize the code common across tasks
 
-## eyetracking/calibrate
+## eyetracking
+
+The eyetracking part is managed by launching pupil capture software and launching a single recording for the whole session.
+
+###calibration
 
 Run a short calibration task where the subjects have to look at points shown on the screen
+
+### gazemapping
+
+Once the calibration has been run (though it seems that pupil reload previous calibration), pupil produces gaze information that corresponds to position on the screen.
+We then display that information in almost real-time on the experimenter screen.
 
 
 # INSTALL

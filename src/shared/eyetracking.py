@@ -117,19 +117,31 @@ class EyeTrackerClient(threading.Thread):
 
         self.output_path = output_path
         self.output_fname_base = output_fname_base
+        self.record_dir = os.path.join(self.output_path, self.output_fname_base + '.pupil')
+        os.makedirs(self.record_dir)
 
         self._pupil_process = Popen([
             'python3',
             os.path.join(os.environ['PUPIL_PATH'],'pupil_src','main.py'),
-            'service'])
+            'capture'])
 
         self._ctx = zmq.Context()
         self._req_socket = self._ctx.socket(zmq.REQ)
         self._req_socket.connect('tcp://localhost:50020')
 
-        print(self.send_recv_notification({
+        # start eye0 if not started yet (from pupil saved config)
+        self.send_recv_notification({
             'subject':'eye_process.should_start.0',
-            'eye_id':0, 'args':{}}))
+            'eye_id':0, 'args':{}})
+        # setup recorder output path
+        # quit existing plugin
+        self.send_recv_notification({
+            'subject':'stop_plugin',
+            'name':'Recorder',})
+        #restart with new params
+        self.send_recv_notification({
+            'subject':'start_plugin',
+            'name':'Recorder','args':{'rec_path':self.record_dir,'rec_root_dir':self.record_dir,'raw_jpeg':False}})
         # wait for the whole schmilblick to boot
         time.sleep(4)
 
@@ -147,20 +159,20 @@ class EyeTrackerClient(threading.Thread):
         # leave time to exit the infinite loop
         time.sleep(.2)
         # stop recording
-        self.send_recv_notification({'subject':'recording.stopped'})
+        #self.send_recv_notification({'subject':'recording.stopped'})
 
-        self.send_recv_notification({'subject':'service_process.should_stop'})
+        self.send_recv_notification({'subject':'world_process.should_stop'})
         self._pupil_process.wait(timeout)
-        eye_video_file = os.path.join(self.output_path, 'eye0.mp4')
-        timestamps_file = os.path.join(self.output_path, 'eye0_timestamps.npy')
+        #eye_video_file = os.path.join(self.output_path, 'eye0.mp4')
+        #timestamps_file = os.path.join(self.output_path, 'eye0_timestamps.npy')
         # rename file in case we rerun the software
-        os.rename(eye_video_file, os.path.join(self.output_path,'%s_eye0.mp4'%self.output_fname_base))
-        os.rename(timestamps_file, os.path.join(self.output_path,'%s_eye0_timestamps.npy'%self.output_fname_base))
+        #os.rename(eye_video_file, os.path.join(self.output_path,'%s_eye0.mp4'%self.output_fname_base))
+        #os.rename(timestamps_file, os.path.join(self.output_path,'%s_eye0_timestamps.npy'%self.output_fname_base))
         super(EyeTrackerClient, self).join(timeout)
 
     def run(self):
-        gaze_output_name = os.path.join(self.output_path, '%s_gaze0.pldata'%self.output_fname_base)
-        gaze_fh = open(gaze_output_name,'wb')
+        #gaze_output_name = os.path.join(self.output_path, '%s_gaze0.pldata'%self.output_fname_base)
+        #gaze_fh = open(gaze_output_name,'wb')
         recording_started = False
 
         def write_msgpack_serialized(fh, data):
@@ -175,21 +187,22 @@ class EyeTrackerClient(threading.Thread):
             if not recording_started:
                 #start recording the video of the eye
                 logging.exp('first pupil received with timestamp %s'%tmp['timestamp'])
-                self.send_recv_notification({
+                """self.send_recv_notification({
                     'subject':'recording.started',
                     'record_eye':True,
                     'rec_path': self.output_path,
                     'compression':None,
                     'args':{'video_stream':{"codec": "mpeg4", "bit_rate": 15000 * 10e3}}
-                    })
+                    })"""
+                self.send_recv_notification({'subject':'recording.should_start',})
                 recording_started=True
             with self.lock:
                 if topic.startswith('pupil'):
                     self.pupil = tmp
                 if topic.startswith('gaze'):
                     self.gaze = tmp
-            if topic.startswith('gaze'):
-                write_msgpack_serialized(gaze_fh, tmp)
+            #if topic.startswith('gaze'):
+            #    write_msgpack_serialized(gaze_fh, tmp)
 
         print('eyetracker listener: stopping')
 
