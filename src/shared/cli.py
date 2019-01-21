@@ -61,13 +61,15 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
                 # check for global event keys
                 exp_win.flip()
                 ctl_win.flip()
-                allKeys = event.getKeys(['r','s','q'], modifiers=True)
+                allKeys = event.getKeys(['n','s','q'], modifiers=True)
                 ctrl_pressed = any([k[1]['ctrl'] for k in allKeys])
                 all_keys_only = [k[0] for k in allKeys]
                 if len(allKeys) and ctrl_pressed:
                     break
             else: # task completed
+                task.save()
                 break
+            task.save()
 
             logging.flush()
             task.stop()
