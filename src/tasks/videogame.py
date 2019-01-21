@@ -15,6 +15,26 @@ DEFAULT_GAME_NAME = 'ShinobiIIIReturnOfTheNinjaMaster-Genesis'
 
 #KEY_SET = 'zx__abudlr_y'
 KEY_SET = 'zx__udlry___'
+KEY_SET = ['a','b','c','d','up','down','left','right','x','y','z','k']
+#KEY_SET = '0123456789'
+
+_keyPressBuffer = []
+_keyReleaseBuffer = []
+import pyglet
+
+def _onPygletKeyPress(symbol, modifier):
+    if modifier:
+        event._onPygletKey(symbol, modifier)
+    global _keyPressBuffer
+    keyTime = core.getTime()
+    key = pyglet.window.key.symbol_string(symbol).lower().lstrip('_').lstrip('NUM_')
+    _keyPressBuffer.append((key, keyTime))
+
+def _onPygletKeyRelease(symbol, modifier):
+    global _keyReleaseBuffer
+    keyTime = core.getTime()
+    key = pyglet.window.key.symbol_string(symbol).lower().lstrip('_').lstrip('NUM_')
+    _keyReleaseBuffer.append((key, keyTime))
 
 class SoundDeviceBlockStream(sound.backend_sounddevice.SoundDeviceSound):
 
@@ -78,6 +98,7 @@ class VideoGame(VideoGameBase):
             yield
 
     def setup(self, exp_win, output_path, output_fname_base):
+
         super().setup(exp_win, output_path, output_fname_base)
         self.emulator = retro.make(
             self.game_name,
@@ -88,7 +109,14 @@ class VideoGame(VideoGameBase):
         self.game_sound = SoundDeviceBlockStream(stereo=True, blockSize=735)
 
     def _run(self, exp_win, ctl_win):
+        global _keyReleaseBuffer, _keyPressBuffer
+        # activate repeat keys
+        exp_win.winHandle.on_key_press = _onPygletKeyPress
+        exp_win.winHandle.on_key_release = _onPygletKeyRelease
+        ctl_win.winHandle.on_key_press = _onPygletKeyPress
+        ctl_win.winHandle.on_key_release = _onPygletKeyRelease
         self.emulator.reset()
+        keys = [False]*12
         nnn = 0
         while True:
             movie_path = os.path.join(
@@ -106,8 +134,19 @@ class VideoGame(VideoGameBase):
             msg='VideoGame %s: %s starting at %f'%(self.game_name, self.state_name, time.time()))
         while True:
             # TODO: get real action from controller
-            gamectrl_keys = event.getKeys(list(KEY_SET))
-            keys = [k in gamectrl_keys for k in KEY_SET]
+            #gamectrl_keys = event.getKeys(list(KEY_SET))
+            #keys = [k in gamectrl_keys for k in KEY_SET]
+            for k in _keyReleaseBuffer:
+                #print('release',k)
+                if k[0] in KEY_SET:
+                    keys[KEY_SET.index(k[0])] = False
+            _keyReleaseBuffer.clear()
+            for k in _keyPressBuffer:
+                #print('press',k)
+                if k[0] in KEY_SET:
+                    keys[KEY_SET.index(k[0])] = True
+            _keyPressBuffer.clear()
+
 
             _obs, _rew, _done, _info = self.emulator.step(keys)
             total_reward += _rew
@@ -117,7 +156,11 @@ class VideoGame(VideoGameBase):
             yield
             if _done:
                 break
-
+        # deactivate custom keys handling
+        exp_win.winHandle.on_key_down = event._onPygletKey
+        exp_win.winHandle.on_key_release = None
+        ctl_win.winHandle.on_key_press = event._onPygletKey
+        ctl_win.winHandle.on_key_release = None
 
 class VideoGameReplay(VideoGameBase):
 
