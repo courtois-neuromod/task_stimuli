@@ -9,14 +9,17 @@ STIMULI_DURATION=3
 BASELINE_BEGIN=5
 BASELINE_END=5
 ISI=4
-IMAGES_FOLDER = '/home/basile/data/projects/task_stimuli/BOLD5000_Stimuli/Scene_Stimuli/Presented_Stimuli/ImageNet'
 
 class Images(Task):
 
-    def __init__(self, images_list,*args,**kwargs):
+    def __init__(self, images_list, images_path, *args,**kwargs):
         super().__init__(**kwargs)
         #TODO: image lists as params, subjects ....
         self.image_names = data.importConditions(images_list)
+        if os.path.exists(images_path) and os.path.exists(os.path.join(images_path, self.images_names[0]['images_path'])):
+            self.images_path = images_path
+        else:
+            raise ValueError('Cannot find the listed images in %s '%images_path)
 
     def instructions(self, exp_win, ctl_win):
         instruction_text = """Please keep your eyes open an focused on the screen all the time.
@@ -38,7 +41,7 @@ You will see pictures of scenes and objects."""
         for frameN in range(config.FRAME_RATE * BASELINE_BEGIN):
             yield()
         for trial in self.trials:
-            image_path = os.path.join(IMAGES_FOLDER,trial['image_path'])
+            image_path = os.path.join(self.images_path, trial['image_path'])
             img.image = image_path
             exp_win.logOnFlip(level=logging.EXP,msg='image: display %s'%image_path)
             trial['onset'] = self.task_timer.getTime()
