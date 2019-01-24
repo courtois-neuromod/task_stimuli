@@ -29,8 +29,7 @@ class SingleVideo(Task):
             screen_text.draw(ctl_win)
             yield
 
-    def setup(self, exp_win, output_path, output_fname_base):
-        super().setup(exp_win, output_path, output_fname_base)
+    def _setup(self, exp_win):
 
         self.movie_stim = visual.MovieStim3(exp_win, self.filepath, units='pixels')
         min_ratio = min(
