@@ -45,7 +45,7 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
             use_eyetracking = True
 
         #setup task files (eg. video)
-        task.setup(exp_win, log_path, log_name_prefix)
+        task.setup(exp_win, log_path, log_name_prefix, use_fmri=use_fmri, use_eyetracking=use_eyetracking)
         print('READY')
 
         allKeys = []
