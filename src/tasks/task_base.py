@@ -1,5 +1,5 @@
 import os
-from psychopy import logging, visual
+from psychopy import logging, visual, core
 
 from ..shared import fmri
 
