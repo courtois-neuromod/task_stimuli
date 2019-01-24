@@ -31,7 +31,7 @@ PUPIL_CONFIDENCE_THRESHOLD = .4
 class EyetrackerCalibration(Task):
 
     def __init__(self,eyetracker, order='random', marker_fill_color=MARKER_FILL_COLOR, **kwargs):
-        kwargs['use_eyetracking'] = True
+        self.use_eyetracking = True
         self.order = order
         self.marker_fill_color = marker_fill_color
         super().__init__(**kwargs)
