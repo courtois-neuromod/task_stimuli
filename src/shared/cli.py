@@ -54,6 +54,7 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
         while True:
 
             for _ in task.run(exp_win, ctl_win):
+
                 if use_eyetracking:
                     gaze = eyetracker_client.get_gaze()
                     if not gaze is None:
