@@ -9,18 +9,28 @@ if __name__ == "__main__":
     parsed = cli.parse_args()
 
     all_tasks = [
-        task_base.Pause("""Hi! We are about to start the MRI session.
+    task_base.Pause("""Hi! We are setting up for the MRI session.
 Make yourself comfortable.
-Ensure that you can see the full screen and that the image is sharp.
+Ensure that you can see the full screen and that the image is sharp."""),
+
+        task_base.Pause("""We are about to start the MRI session.
 Today you are going to watch videos.
-Please keep your eyes opened."""),
+Relax and please keep your eyes opened."""),
+
         video.SingleVideo(
-            'data/videos/Inscapes-67962604.mp4', name='Inscapes',
+            'data/videos/Inscapes_sound_normed.mp4', name='Inscapes',
             use_fmri=parsed.fmri, use_eyetracking=True),
         task_base.Pause(),
-        # source: https://drive.google.com/file/d/1prOM1QuPEAcqe_D-3rLYNu937A8VzbsB/view
         video.SingleVideo(
-            'data/videos/tammy/Oceans_1.mp4',
+            'data/videos/Oceans_fs_10m/Oceans_fs_10m_1.mp4',
+            name='Oceans_chunk1',
+            use_fmri=parsed.fmri, use_eyetracking=True),
+        video.SingleVideo(
+            'data/videos/Oceans_fs_10m/Oceans_fs_10m_2.mp4',
+            name='Oceans_chunk1',
+            use_fmri=parsed.fmri, use_eyetracking=True),
+        video.SingleVideo(
+            'data/videos/Oceans_fs_10m/Oceans_fs_10m_3.mp4',
             name='Oceans_chunk1',
             use_fmri=parsed.fmri, use_eyetracking=True),
         ]
