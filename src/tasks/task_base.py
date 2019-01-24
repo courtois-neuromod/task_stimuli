@@ -1,4 +1,5 @@
-from psychopy import logging, visual
+import os
+from psychopy import logging, visual, core
 
 from ..shared import fmri
 
@@ -9,9 +10,17 @@ class Task(object):
         self.use_fmri = use_fmri
         self.use_eyetracking = use_eyetracking
 
-    # preload large files for accurate start with other recordings (scanner, biopac...)
-    def preload(self, exp_win):
-        pass
+    # setup large files for accurate start with other recordings (scanner, biopac...)
+    def setup(self, exp_win, output_path, output_fname_base):
+        self.output_path = output_path
+        self.output_fname_base = output_fname_base
+
+    def _generate_tsv_filename(self):
+        for fi in range(1000):
+            fname = os.path.join(self.output_path, '%s_%s_%03d.tsv'%(self.output_fname_base, self.name,fi))
+            if not os.path.exists(fname):
+                break
+        return fname
 
     def unload(self):
         pass
@@ -36,6 +45,7 @@ class Task(object):
                     break
                 yield
         logging.info('GO')
+        self.task_timer = core.Clock()
         for _ in self._run(exp_win, ctl_win):
             if self.use_fmri:
                 if fmri.get_ttl():
@@ -46,18 +56,21 @@ class Task(object):
     def stop(self):
         pass
 
+    def save(self):
+        pass
+
 class Pause(Task):
 
-    def __init__(self, **kwargs):
+    def __init__(self, text="Taking a short break, relax...", **kwargs):
         if not 'name' in kwargs:
             kwargs['name'] = 'Pause'
-            super().__init__(**kwargs)
+        super().__init__(**kwargs)
+        self.text = text
 
     def _run(self, exp_win, ctl_win):
-        text = """Taking a short break, relax..."""
         screen_text = visual.TextStim(
-            exp_win, text=text,
-            alignHoriz="center", color = 'white')
+            exp_win, text=self.text,
+            alignHoriz="center", color = 'white',wrapWidth=1.6)
 
         while True:
             screen_text.draw(exp_win)
