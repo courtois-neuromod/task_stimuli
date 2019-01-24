@@ -9,6 +9,11 @@ if __name__ == "__main__":
     parsed = cli.parse_args()
 
     all_tasks = [
+        task_base.Pause("""Hi! We are about to start the MRI session.
+Make yourself comfortable.
+Ensure that you can see the full screen and that the image is sharp.
+Today you are going to watch videos.
+Please keep your eyes opened."""),
         video.SingleVideo(
             'data/videos/Inscapes-67962604.mp4', name='Inscapes',
             use_fmri=parsed.fmri, use_eyetracking=True),
