@@ -20,6 +20,7 @@ if __name__ == "__main__":
             use_fmri=parsed.fmri, use_eyetracking=True),
         images.Images(
             'data/images/test_conditions.csv',
+            '/home/basile/data/projects/task_stimuli/data/images/bold5000/Scene_Stimuli/Presented_Stimuli/ImageNet',
             name='bold5000',
             use_fmri=parsed.fmri, use_eyetracking=True)
         ]
