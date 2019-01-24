@@ -97,9 +97,8 @@ class VideoGame(VideoGameBase):
             screen_text.draw(ctl_win)
             yield
 
-    def setup(self, exp_win, output_path, output_fname_base):
+    def _setup(self, exp_win):
 
-        super().setup(exp_win, output_path, output_fname_base)
         self.emulator = retro.make(
             self.game_name,
             state=self.state_name,
