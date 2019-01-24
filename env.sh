@@ -1,2 +1,2 @@
 export PUPIL_PATH=$HOME/data/src/pupil
-export PYTHONPATH=$PYTHONPATH:/pupil_src/shared_modules/
+export PYTHONPATH=$PYTHONPATH:$PUPIL_PATH/pupil_src/shared_modules/
