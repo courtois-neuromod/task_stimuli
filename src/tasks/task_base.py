@@ -5,15 +5,19 @@ from ..shared import fmri
 
 class Task(object):
 
-    def __init__(self, name, use_fmri=False, use_eyetracking=False):
+    def __init__(self, name):
         self.name = name
-        self.use_fmri = use_fmri
-        self.use_eyetracking = use_eyetracking
 
     # setup large files for accurate start with other recordings (scanner, biopac...)
-    def setup(self, exp_win, output_path, output_fname_base):
+    def setup(self, exp_win, output_path, output_fname_base, use_fmri=False, use_eyetracking=False):
         self.output_path = output_path
         self.output_fname_base = output_fname_base
+        self.use_fmri = use_fmri
+        self.use_eyetracking = use_eyetracking
+        self._setup(exp_win)
+
+    def _setup(self, exp_win):
+        pass
 
     def _generate_tsv_filename(self):
         for fi in range(1000):
@@ -66,6 +70,10 @@ class Pause(Task):
             kwargs['name'] = 'Pause'
         super().__init__(**kwargs)
         self.text = text
+
+    def _setup(self, exp_win):
+        self.use_fmri = False
+        self.use_eyetracking = False
 
     def _run(self, exp_win, ctl_win):
         screen_text = visual.TextStim(
