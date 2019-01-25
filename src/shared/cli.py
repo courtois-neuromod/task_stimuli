@@ -23,11 +23,14 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
     exp_win.mouseVisible = False
 
     if enable_eyetracker:
+        print('creating et client')
         eyetracker_client = eyetracking.EyeTrackerClient(
             output_path=log_path,
             output_fname_base=log_name_prefix
             )
+        print('starting et client')
         eyetracker_client.start()
+        print('done')
         all_tasks.insert(0, eyetracking.EyetrackerCalibration(eyetracker_client,name='EyeTracker-Calibration'))
         gaze_drawer = eyetracking.GazeDrawer(ctl_win)
 
@@ -56,6 +59,7 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
             for _ in task.run(exp_win, ctl_win):
 
                 if use_eyetracking:
+                    print('blocking here2')
                     gaze = eyetracker_client.get_gaze()
                     if not gaze is None:
                         gaze_drawer.draw_gazepoint(gaze)

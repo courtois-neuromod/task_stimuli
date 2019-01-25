@@ -7,6 +7,7 @@ class Task(object):
 
     def __init__(self, name):
         self.name = name
+        self.use_eyetracking = False
 
     # setup large files for accurate start with other recordings (scanner, biopac...)
     def setup(self, exp_win, output_path, output_fname_base, use_fmri=False, use_eyetracking=False):
