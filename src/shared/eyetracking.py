@@ -59,6 +59,7 @@ Please look at the markers that appear on the screen."""
             if start_calibration:
                 break
             yield
+        print('calibration started')
 
         window_size_frame = exp_win.size-MARKER_SIZE*2
         print(window_size_frame)
@@ -202,8 +203,6 @@ class EyeTrackerClient(threading.Thread):
                     self.pupil = tmp
                 if topic.startswith('gaze'):
                     self.gaze = tmp
-            #if topic.startswith('gaze'):
-            #    write_msgpack_serialized(gaze_fh, tmp)
 
         print('eyetracker listener: stopping')
 

@@ -1,7 +1,7 @@
 from ..tasks import images, video, memory, task_base
 
 TASKS = [
-    task_base.Pause("""Hi! We are setting up for the MRI session.
+    task_base.Pause("""We are setting up for the MRI session.
 Make yourself comfortable.
 Ensure that you can see the full screen and that the image is sharp."""),
 

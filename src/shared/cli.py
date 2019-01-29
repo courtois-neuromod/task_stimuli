@@ -34,61 +34,70 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
 
     # list of tasks to be ran in a session
 
-    for task in all_tasks:
+    try:
+        for task in all_tasks:
 
-        # ensure to clear the screen if task aborted
-        exp_win.flip()
-        ctl_win.flip()
-
-        use_eyetracking = False
-        if enable_eyetracker and task.use_eyetracking:
-            use_eyetracking = True
-
-        #setup task files (eg. video)
-        task.setup(exp_win, log_path, log_name_prefix, use_fmri=use_fmri, use_eyetracking=use_eyetracking)
-        print('READY')
-
-        allKeys = []
-        ctrl_pressed = False
-
-        while True:
-
-            for _ in task.run(exp_win, ctl_win):
-
-                if use_eyetracking:
-                    gaze = eyetracker_client.get_gaze()
-                    if not gaze is None:
-                        gaze_drawer.draw_gazepoint(gaze)
-                # check for global event keys
-                exp_win.flip()
-                ctl_win.flip()
-                allKeys = event.getKeys(['n','s','q'], modifiers=True)
-                ctrl_pressed = any([k[1]['ctrl'] for k in allKeys])
-                all_keys_only = [k[0] for k in allKeys]
-                if len(allKeys) and ctrl_pressed:
-                    break
-            else: # task completed
-                task.save()
-                break
-            task.save()
-
-            logging.flush()
-            task.stop()
-
+            # ensure to clear the screen if task aborted
             exp_win.flip()
             ctl_win.flip()
 
-            if ctrl_pressed and ('s' in all_keys_only or 'q' in all_keys_only):
-                break
-            logging.exp(msg="task - %s: restart"%str(task))
+            use_eyetracking = False
+            if enable_eyetracker and task.use_eyetracking:
+                use_eyetracking = True
 
-        task.unload()
-        if ctrl_pressed and ('q' in all_keys_only):
-            if enable_eyetracker:
-                eyetracker_client.join()
-            print('quit')
-            break
-        print('skip')
+            #setup task files (eg. video)
+            task.setup(exp_win, log_path, log_name_prefix, use_fmri=use_fmri, use_eyetracking=use_eyetracking)
+            print('READY')
+
+            allKeys = []
+            ctrl_pressed = False
+
+            while True:
+
+                for _ in task.run(exp_win, ctl_win):
+
+                    if use_eyetracking:
+                        gaze = eyetracker_client.get_gaze()
+                        if not gaze is None:
+                            gaze_drawer.draw_gazepoint(gaze)
+                    # check for global event keys
+                    exp_win.flip()
+                    ctl_win.flip()
+                    allKeys = event.getKeys(['n','s','q'], modifiers=True)
+                    ctrl_pressed = any([k[1]['ctrl'] for k in allKeys])
+                    all_keys_only = [k[0] for k in allKeys]
+                    if len(allKeys) and ctrl_pressed:
+                        break
+                else: # task completed
+                    task.save()
+                    break
+                task.save()
+
+                logging.flush()
+                task.stop()
+
+                exp_win.flip()
+                ctl_win.flip()
+
+                if ctrl_pressed and ('s' in all_keys_only or 'q' in all_keys_only):
+                    break
+                logging.exp(msg="task - %s: restart"%str(task))
+
+            task.unload()
+            if ctrl_pressed and ('q' in all_keys_only):
+                if enable_eyetracker:
+                    eyetracker_client.join()
+                print('quit')
+                break
+            print('skip')
+
+    except KeyboardInterrupt:
+        logging.exp(msg="user killing the program")
+        print('you killing me!')
+    finally:
+        if enable_eyetracker:
+            eyetracker_client.join()
+
 
 def parse_args():
     import argparse
@@ -102,8 +111,8 @@ def parse_args():
         help='Session ID')
     parser.add_argument('--fmri', '-f',
         help='Wait for fmri TTL to start each task',
-        default=False)
+        action='store_true')
     parser.add_argument('--eyetracking', '-e',
         help='Enable eyetracking',
-        default=False)
+        action='store_true')
     return parser.parse_args()
