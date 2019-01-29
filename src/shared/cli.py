@@ -1,5 +1,7 @@
-import os, datetime
+import os, datetime, traceback
 from psychopy import core, visual, logging, event
+
+TIMEOUT = 5
 
 globalClock = core.MonotonicClock(0)
 logging.setDefaultClock(globalClock)
@@ -89,19 +91,17 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
 
             task.unload()
             if ctrl_pressed and ('q' in all_keys_only):
-                if enable_eyetracker:
-                    eyetracker_client.join()
                 print('quit')
                 break
             print('skip')
 
-    except KeyboardInterrupt:
+    except KeyboardInterrupt as ki:
+        print(traceback.format_exc())
         logging.exp(msg="user killing the program")
         print('you killing me!')
     finally:
         if enable_eyetracker:
-            eyetracker_client.join()
-
+            eyetracker_client.join(TIMEOUT)
 
 def parse_args():
     import argparse
