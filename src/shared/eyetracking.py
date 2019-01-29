@@ -49,6 +49,9 @@ Please look at the markers that appear on the screen."""
             screen_text.draw(ctl_win)
             yield()
 
+    def _setup(self, exp_win):
+        self.use_fmri = False
+
     def _run(self, exp_win, ctl_win):
         while True:
             allKeys = event.getKeys([CALIBRATE_HOTKEY])
@@ -135,15 +138,24 @@ class EyeTrackerClient(threading.Thread):
         self.send_recv_notification({
             'subject':'eye_process.should_start.0',
             'eye_id':0, 'args':{}})
+        print('stuff started')
         # setup recorder output path
         # quit existing plugin
         self.send_recv_notification({
             'subject':'stop_plugin',
             'name':'Recorder',})
+        self.send_recv_notification({
+            'subject':'stop_plugin',
+            'name':'Accuracy_Visualizer','args':{}})
+        print('stuff started')
+
         #restart with new params
         self.send_recv_notification({
             'subject':'start_plugin',
             'name':'Recorder','args':{'rec_path':self.record_dir,'rec_root_dir':self.record_dir,'raw_jpeg':False}})
+        self.send_recv_notification({
+            'subject':'start_plugin',
+            'name':'Pupil_Remote','args':{}})
         # wait for the whole schmilblick to boot
         time.sleep(4)
 
