@@ -42,7 +42,7 @@ class EyetrackerCalibration(Task):
 Please look at the markers that appear on the screen."""
         screen_text = visual.TextStim(
             exp_win, text=instruction_text,
-            alignHoriz="center", color = 'white')
+            alignHoriz="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
 
         for frameN in range(config.FRAME_RATE * INSTRUCTION_DURATION):
             screen_text.draw(exp_win)
@@ -174,8 +174,6 @@ class EyeTrackerClient(threading.Thread):
 
     def join(self, timeout=None):
         self.stoprequest.set()
-        # leave time to exit the infinite loop
-        time.sleep(1)
         # stop recording
         self.send_recv_notification({'subject':'recording.should_stop',})
         # stop world and children process

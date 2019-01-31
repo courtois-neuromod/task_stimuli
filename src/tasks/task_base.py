@@ -1,13 +1,19 @@
 import os
 from psychopy import logging, visual, core
 
-from ..shared import fmri
+from ..shared import fmri, config
 
 class Task(object):
 
-    def __init__(self, name):
+    DEFAULT_INSTRUCTION=''
+
+    def __init__(self, name, instruction=None):
         self.name = name
         self.use_eyetracking = False
+        if instruction is None:
+            self.instruction = self.__class__.DEFAULT_INSTRUCTION
+        else:
+            self.instruction = instruction
 
     # setup large files for accurate start with other recordings (scanner, biopac...)
     def setup(self, exp_win, output_path, output_fname_base, use_fmri=False, use_eyetracking=False):
@@ -79,7 +85,7 @@ class Pause(Task):
     def _run(self, exp_win, ctl_win):
         screen_text = visual.TextStim(
             exp_win, text=self.text,
-            alignHoriz="center", color = 'white',wrapWidth=1.6)
+            alignHoriz="center", color = 'white',wrapWidth=config.WRAP_WIDTH)
 
         while True:
             screen_text.draw(exp_win)

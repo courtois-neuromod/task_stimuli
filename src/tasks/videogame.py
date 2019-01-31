@@ -9,8 +9,6 @@ from ..shared import config
 
 import retro
 
-INSTRUCTION_DURATION = 3
-
 DEFAULT_GAME_NAME = 'ShinobiIIIReturnOfTheNinjaMaster-Genesis'
 
 #KEY_SET = 'zx__abudlr_y'
@@ -76,6 +74,8 @@ class VideoGameBase(Task):
 
 class VideoGame(VideoGameBase):
 
+    DEFAULT_INSTRUCTION = "Let's play a video game.\n%s : %s\nHave fun!"
+
     def __init__(self,
         game_name=DEFAULT_GAME_NAME,
         state_name=None,
@@ -84,15 +84,15 @@ class VideoGame(VideoGameBase):
         super().__init__(**kwargs)
         self.game_name = game_name
         self.state_name = state_name
-
+        self.instruction = self.instruction%(self.game_name, self.state_name)
 
     def instructions(self, exp_win, ctl_win):
-        instruction_text = "Let's play a video game.\n%s : %s\nHave fun!"%(self.game_name, self.state_name)
-        screen_text = visual.TextStim(
-            exp_win, text=instruction_text,
-            alignHoriz="center", color = 'white')
 
-        for frameN in range(config.FRAME_RATE * INSTRUCTION_DURATION):
+        screen_text = visual.TextStim(
+            exp_win, text=self.instruction,
+            alignHoriz="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
+
+        for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
             screen_text.draw(exp_win)
             screen_text.draw(ctl_win)
             yield
