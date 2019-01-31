@@ -4,13 +4,14 @@ from .task_base import Task
 
 from ..shared import config
 
-INSTRUCTION_DURATION=4
 STIMULI_DURATION=4
 BASELINE_BEGIN=5
 BASELINE_END=5
 ISI=4
 
 class Speech(Task):
+
+    DEFAULT_INSTRUCTION = """You will be presented text that you need to read out loud right when you see it."""
 
     def __init__(self, words_file,*args,**kwargs):
         super().__init__(**kwargs)
@@ -21,12 +22,11 @@ class Speech(Task):
             raise ValueError('File %s does not exists'%words_file)
 
     def instructions(self, exp_win, ctl_win):
-        instruction_text = """You will be presented text that you need to read out loud once it is presented to you."""
         screen_text = visual.TextStim(
-            exp_win, text=instruction_text,
-            alignHoriz="center", color = 'white')
+            exp_win, text=self.instruction,
+            alignHoriz="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
 
-        for frameN in range(config.FRAME_RATE * INSTRUCTION_DURATION):
+        for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
             screen_text.draw(exp_win)
             screen_text.draw(ctl_win)
             yield()

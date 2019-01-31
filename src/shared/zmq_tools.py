@@ -110,8 +110,8 @@ class Msg_Receiver(ZMQ_Socket):
             remaining_frames = self.recv_remaining_frames()
             payload = self.deserialize_payload(*remaining_frames)
             return topic, payload
-        except ZMQError:
-            return None 
+        except zmq.ZMQError:
+            return None
 
     def recv_topic(self):
         return self.socket.recv_string(zmq.NOBLOCK)

@@ -1,4 +1,4 @@
-import os, datetime, traceback
+import os, datetime, traceback, glob
 from psychopy import core, visual, logging, event
 
 TIMEOUT = 5
@@ -6,7 +6,8 @@ TIMEOUT = 5
 globalClock = core.MonotonicClock(0)
 logging.setDefaultClock(globalClock)
 
-from src.shared import config, fmri, eyetracking
+from . import config, fmri, eyetracking
+from ..tasks import task_base, video
 
 def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=False):
 
@@ -35,13 +36,21 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
         print('done')
         all_tasks.insert(0, eyetracking.EyetrackerCalibration(eyetracker_client,name='EyeTracker-Calibration'))
         gaze_drawer = eyetracking.GazeDrawer(ctl_win)
-
+    if use_fmri:
+        setup_video_path = glob.glob(os.path.join('data','videos','subject_setup_videos','sub-%s_*'%subject))
+        if not len(setup_video_path):
+            setup_video_path = [os.path.join('data','videos','subject_setup_videos','sub-default_setup_video.mp4')]
+        all_tasks.insert(0, video.VideoAudioCheckLoop(setup_video_path[0], name='setup_video'))
+        all_tasks.append(task_base.Pause("""We are done for today.
+Relax, we are coming to get you out of the scanner in a short time."""))
 
     # list of tasks to be ran in a session
 
     try:
         for task in all_tasks:
 
+            #clear events buffer in case the user pressed a lot of buttoons
+            event.clearEvents()
             # ensure to clear the screen if task aborted
             exp_win.flip()
             ctl_win.flip()
