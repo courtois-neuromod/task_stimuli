@@ -4,7 +4,6 @@ from .task_base import Task
 
 from ..shared import config
 
-INSTRUCTION_DURATION=1
 STIMULI_DURATION=4
 BASELINE_BEGIN=5
 BASELINE_END=5
@@ -22,19 +21,20 @@ quadrant_id_to_pos = [
 
 class ImagePosition(Task):
 
+    DEFAULT_INSTRUCTION = """You will be presented a set of items in different quadrant of the screen.
+Try to remember the items and their location on the screen."""
+
     def __init__(self, items_list,*args,**kwargs):
         super().__init__(**kwargs)
         #TODO: image lists as params, subjects ....
         self.item_list = data.importConditions(items_list)
 
     def instructions(self, exp_win, ctl_win):
-        instruction_text = """You will be presented a set of items in different quadrant of the screen.
-Try to remember the items and their location on the screen."""
         screen_text = visual.TextStim(
-            exp_win, text=instruction_text,
-            alignHoriz="center", color = 'white')
+            exp_win, text=self.instruction,
+            alignHoriz="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
 
-        for frameN in range(config.FRAME_RATE * INSTRUCTION_DURATION):
+        for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
             screen_text.draw(exp_win)
             screen_text.draw(ctl_win)
             yield()
