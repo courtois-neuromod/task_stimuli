@@ -4,13 +4,15 @@ from .task_base import Task
 
 from ..shared import config
 
-INSTRUCTION_DURATION=4
 STIMULI_DURATION=3
 BASELINE_BEGIN=5
 BASELINE_END=5
 ISI=4
 
 class Images(Task):
+
+    DEFAULT_INSTRUCTION = """Please keep your eyes open an focused on the screen all the time.
+You will see pictures of scenes and objects."""
 
     def __init__(self, images_list, images_path, *args,**kwargs):
         super().__init__(**kwargs)
@@ -22,13 +24,11 @@ class Images(Task):
             raise ValueError('Cannot find the listed images in %s '%images_path)
 
     def instructions(self, exp_win, ctl_win):
-        instruction_text = """Please keep your eyes open an focused on the screen all the time.
-You will see pictures of scenes and objects."""
         screen_text = visual.TextStim(
-            exp_win, text=instruction_text,
-            alignHoriz="center", color = 'white')
+            exp_win, text=self.instruction,
+            alignHoriz="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
 
-        for frameN in range(config.FRAME_RATE * INSTRUCTION_DURATION):
+        for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
             screen_text.draw(exp_win)
             screen_text.draw(ctl_win)
             yield()

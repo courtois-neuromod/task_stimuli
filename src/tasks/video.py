@@ -1,15 +1,16 @@
 import os, sys, time
-#import pyglet
-#pyglet.options['audio']=('pulse','directsound', 'openal', 'silent')
 
 from psychopy import visual, core, data, logging
 from .task_base import Task
 
 from ..shared import config
 
-INSTRUCTION_DURATION = 5
+
 
 class SingleVideo(Task):
+
+    DEFAULT_INSTRUCTION = """You are about to watch a video.
+Please keep your eyes opened."""
 
     def __init__(self, filepath, *args,**kwargs):
         super().__init__(**kwargs)
@@ -19,12 +20,11 @@ class SingleVideo(Task):
             raise ValueError('File %s does not exists'%self.filepath)
 
     def instructions(self, exp_win, ctl_win):
-        instruction_text = """You are about to watch a video. Please keep your eyes opened."""
         screen_text = visual.TextStim(
-            exp_win, text=instruction_text,
-            alignHoriz="center", color = 'white')
+            exp_win, text=self.instruction,
+            alignHoriz="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
 
-        for frameN in range(config.FRAME_RATE * INSTRUCTION_DURATION):
+        for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
             screen_text.draw(exp_win)
             screen_text.draw(ctl_win)
             yield
@@ -61,3 +61,18 @@ class SingleVideo(Task):
         self.movie_stim.pause()
         self.movie_stim.seek(0)
         self.movie_stim.win.setColor([0,0,0])
+
+
+class VideoAudioCheckLoop(SingleVideo):
+
+    DEFAULT_INSTRUCTION = """We are setting up for the MRI session.
+Make yourself comfortable.
+We will play you personalized video so that you can ensure that you can see the full screen and that the image is sharp."""
+
+
+    def _setup(self, exp_win):
+        super()._setup(exp_win)
+        # set infinite loop for setup, need to be skipped
+        self.movie_stim.loop = -1
+        self.use_fmri = False
+        self.use_eyetracking = False
