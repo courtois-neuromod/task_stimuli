@@ -4,7 +4,7 @@ TASKS = [
     task_base.Pause("""Hi! We are about to start the MRI session.
 Make yourself comfortable.
 Ensure that you can see the full screen and that the image is sharp.
-Please keep your eyes opened."""),
+Please keep your eyes open."""),
     speech.Speech('data/speech/motion_study_speech_words.csv', name='Speech'),
     video.SingleVideo(
         'data/videos/Inscapes-67962604.mp4', name='Inscapes'),

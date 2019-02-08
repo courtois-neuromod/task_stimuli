@@ -10,7 +10,7 @@ from ..shared import config
 class SingleVideo(Task):
 
     DEFAULT_INSTRUCTION = """You are about to watch a video.
-Please keep your eyes opened."""
+Please keep your eyes open."""
 
     def __init__(self, filepath, *args,**kwargs):
         super().__init__(**kwargs)
@@ -49,7 +49,7 @@ Please keep your eyes opened."""
             msg='video: task starting at %f'%time.time())
         exp_win.setColor([-1,-1,-1])
         self.movie_stim.play()
-        while True:
+        while self.movie_stim.status != visual.FINISHED:
             self.movie_stim.draw(exp_win)
             self.movie_stim.draw(ctl_win)
 
