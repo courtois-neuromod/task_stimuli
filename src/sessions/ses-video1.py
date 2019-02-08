@@ -10,13 +10,13 @@ TASKS = [
     task_base.Pause(),
 
     video.SingleVideo(
-        'data/videos/Oceans_fs_10m/Oceans_fs_10m_1.mp4',
+        'data/videos/Oceans_fs_10m_filt/Oceans_fs_10m_1_filt.mp4',
         name='Oceans_fs_10m_1'),
     video.SingleVideo(
-        'data/videos/Oceans_fs_10m/Oceans_fs_10m_2.mp4',
+        'data/videos/Oceans_fs_10m_filt/Oceans_fs_10m_2_filt.mp4',
         name='Oceans_fs_10m_2'),
     video.SingleVideo(
-        'data/videos/Oceans_fs_10m/Oceans_fs_10m_3.mp4',
+        'data/videos/Oceans_fs_10m_filt/Oceans_fs_10m_3_filt.mp4',
         name='Oceans_fs_10m_3'),
 
 

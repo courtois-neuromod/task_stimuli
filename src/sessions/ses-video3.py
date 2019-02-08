@@ -10,16 +10,16 @@ TASKS = [
     task_base.Pause(),
 
     video.SingleVideo(
-        'data/videos/Oceans_fs_10m/Oceans_fs_10m_8.mp4',
+        'data/videos/Oceans_fs_10m_filt/Oceans_fs_10m_8_filt.mp4',
         name='Oceans_fs_10m_8'),
     video.SingleVideo(
-        'data/videos/Oceans_fs_10m/Oceans_fs_10m_9.mp4',
+        'data/videos/Oceans_fs_10m_filt/Oceans_fs_10m_9_filt.mp4',
         name='Oceans_fs_10m_9'),
     video.SingleVideo(
-        'data/videos/Oceans_fs_10m/Oceans_fs_10m_10.mp4',
+        'data/videos/Oceans_fs_10m_filt/Oceans_fs_10m_10_filt.mp4',
         name='Oceans_fs_10m_10'),
     video.SingleVideo(
-        'data/videos/Oceans_fs_10m/Oceans_fs_10m_11.mp4',
+        'data/videos/Oceans_fs_10m_filt/Oceans_fs_10m_11_filt.mp4',
         name='Oceans_fs_10m_11'),
 
 ]
