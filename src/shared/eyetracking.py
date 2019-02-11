@@ -154,6 +154,10 @@ class EyeTrackerClient(threading.Thread):
         #restart with new params
         self.send_recv_notification({
             'subject':'start_plugin',
+            'name':'Fixed_Screen_Marker_Calibration',
+            'args':{'fullscreen':True, 'marker_scale':.8, 'sample_duration':120, 'monitor_idx':1}})
+        self.send_recv_notification({
+            'subject':'start_plugin',
             'name':'Recorder','args':{'rec_path':self.record_dir,'rec_root_dir':self.record_dir,'raw_jpeg':False}})
         self.send_recv_notification({
             'subject':'start_plugin',
