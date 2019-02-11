@@ -68,7 +68,7 @@ Relax, we are coming to get you out of the scanner in a short time."""))
 
             while True:
 
-                for _ in task.run(exp_win, ctl_win):
+                for draw in task.run(exp_win, ctl_win):
 
                     if use_eyetracking:
                         gaze = eyetracker_client.get_gaze()
