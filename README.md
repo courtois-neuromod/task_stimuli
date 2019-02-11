@@ -23,9 +23,14 @@ If you run multiple time this command, there are no risks of overwriting, the da
 
 ### eyetracking
 
-There are "hotkeys in the pupil software to trigger actions".
+There are "hotkeys in the pupil software to trigger actions", use the buttons with these letters or type.
 C (<shift>-c): launch the calibration of the eyetracking, showing markers to the participant
 T (<shift>-t): a test of the calibration accuracy, also showing markers on the screen
+
+
+**Important: there are two softwares running, Psychopy and Pupil, when done with calibration, click on the Stimuli window to give the focus back to Psychopy, otherwise it will not get the TTL and the task will not start with the scanner.**
+
+This is a problem that has to be fixed in the future to avoid failed acquisition.
 
 # source code
 
