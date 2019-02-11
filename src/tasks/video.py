@@ -67,7 +67,7 @@ class VideoAudioCheckLoop(SingleVideo):
 
     DEFAULT_INSTRUCTION = """We are setting up for the MRI session.
 Make yourself comfortable.
-We will play you personalized video so that you can ensure that you can see the full screen and that the image is sharp."""
+We will play your personalized video so that you can ensure you can see the full screen and that the image is sharp."""
 
 
     def _setup(self, exp_win):
