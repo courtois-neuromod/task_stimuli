@@ -43,8 +43,7 @@ class Task(object):
         print('Next task: %s'%str(self))
         if hasattr(self, 'instructions'):
             for _ in self.instructions(exp_win, ctl_win):
-                exp_win.flip()
-                ctl_win.flip()
+                yield True
 
         if self.use_fmri:
             ttl_index = 0
@@ -54,7 +53,7 @@ class Task(object):
                     logging.exp(msg="fMRI TTL %d"%ttl_index)
                     ttl_index += 1
                     break
-                yield
+                yield False # no need to draw
         logging.info('GO')
         self.task_timer = core.Clock()
         for _ in self._run(exp_win, ctl_win):
@@ -62,7 +61,7 @@ class Task(object):
                 if fmri.get_ttl():
                     logging.exp(msg="fMRI TTL %d"%ttl_index)
                     ttl_index += 1
-            yield
+            yield True
 
     def stop(self):
         pass
