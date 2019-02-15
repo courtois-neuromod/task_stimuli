@@ -97,7 +97,7 @@ Relax, we are coming to get you out of the scanner in a short time."""))
                 if ctrl_pressed and ('s' in all_keys_only or 'q' in all_keys_only):
                     break
                 logging.exp(msg="task - %s: restart"%str(task))
-
+                task.restart()
             task.unload()
             if ctrl_pressed and ('q' in all_keys_only):
                 print('quit')
