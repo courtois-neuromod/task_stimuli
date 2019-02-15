@@ -58,9 +58,11 @@ Please keep your eyes open."""
         yield
 
     def stop(self):
-        self.movie_stim.pause()
-        self.movie_stim.seek(0)
+        self.movie_stim.stop()
         self.movie_stim.win.setColor([0,0,0])
+
+    def _restart(self):
+        self.movie_stim.setMovie(self.filepath)
 
 
 class VideoAudioCheckLoop(SingleVideo):

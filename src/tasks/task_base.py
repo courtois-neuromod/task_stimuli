@@ -66,6 +66,10 @@ class Task(object):
     def stop(self):
         pass
 
+    def restart(self):
+        if hasattr(self, '_restart'):
+            self._restart()
+    
     def save(self):
         pass
 
