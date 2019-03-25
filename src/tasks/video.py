@@ -26,7 +26,8 @@ Please keep your eyes open."""
 
         for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
             screen_text.draw(exp_win)
-            screen_text.draw(ctl_win)
+            if ctl_win:
+                screen_text.draw(ctl_win)
             yield
 
     def _setup(self, exp_win):
@@ -38,6 +39,7 @@ Please keep your eyes open."""
         self.movie_stim.size = (
             min_ratio*self.movie_stim.size[0],
             min_ratio*self.movie_stim.size[1])
+        self.movie_stim.size = (800, 338)
         print(self.movie_stim.size)
         print(self.movie_stim.duration)
 
@@ -51,7 +53,8 @@ Please keep your eyes open."""
         self.movie_stim.play()
         while self.movie_stim.status != visual.FINISHED:
             self.movie_stim.draw(exp_win)
-            self.movie_stim.draw(ctl_win)
+            if ctl_win:
+                self.movie_stim.draw(ctl_win)
 
             yield
         exp_win.setColor([0,0,0])

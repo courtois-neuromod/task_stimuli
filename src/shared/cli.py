@@ -9,6 +9,8 @@ logging.setDefaultClock(globalClock)
 from . import config, fmri, eyetracking
 from ..tasks import task_base, video
 
+show_ctl_win = False
+
 def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=False):
 
     log_path = os.path.abspath(os.path.join(config.OUTPUT_DIR,  'sub-%s'%subject,'ses-%s'%session))
@@ -20,8 +22,11 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
         logfile_path,
         level=logging.INFO, filemode='w')
 
-    ctl_win = visual.Window(**config.CTL_WINDOW)
-    ctl_win.winHandle.set_caption('Stimuli')
+    if show_ctl_win:
+        ctl_win = visual.Window(**config.CTL_WINDOW)
+        ctl_win.winHandle.set_caption('Stimuli')
+    else:
+        ctl_win = None
     exp_win = visual.Window(**config.EXP_WINDOW)
     exp_win.mouseVisible = False
 
@@ -53,7 +58,8 @@ Relax, we are coming to get you out of the scanner in a short time."""))
             event.clearEvents()
             # ensure to clear the screen if task aborted
             exp_win.flip()
-            ctl_win.flip()
+            if show_ctl_win:
+                ctl_win.flip()
 
             use_eyetracking = False
             if enable_eyetracker and task.use_eyetracking:
@@ -76,7 +82,8 @@ Relax, we are coming to get you out of the scanner in a short time."""))
                             gaze_drawer.draw_gazepoint(gaze)
                     # check for global event keys
                     exp_win.flip()
-                    ctl_win.flip()
+                    if show_ctl_win:
+                        ctl_win.flip()
                     allKeys = event.getKeys(['n','s','q'], modifiers=True)
                     ctrl_pressed = any([k[1]['ctrl'] for k in allKeys])
                     all_keys_only = [k[0] for k in allKeys]
@@ -92,7 +99,8 @@ Relax, we are coming to get you out of the scanner in a short time."""))
 
                 # ensure last frame or task clear is draw
                 exp_win.flip()
-                ctl_win.flip()
+                if show_ctl_win:
+                    ctl_win.flip()
 
                 if ctrl_pressed and ('s' in all_keys_only or 'q' in all_keys_only):
                     break
