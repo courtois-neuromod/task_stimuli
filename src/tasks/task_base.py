@@ -88,5 +88,6 @@ class Pause(Task):
 
         while True:
             screen_text.draw(exp_win)
-            screen_text.draw(ctl_win)
+            if ctl_win:
+                screen_text.draw(ctl_win)
             yield

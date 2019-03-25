@@ -61,7 +61,8 @@ class VideoGameBase(Task):
     def _render_graphics_sound(self, obs, sound_block, exp_win, ctl_win):
         self.game_vis_stim.image = np.flip(obs,0)/255.
         self.game_vis_stim.draw(exp_win)
-        self.game_vis_stim.draw(ctl_win)
+        if ctl_win:
+            self.game_vis_stim.draw(ctl_win)
         self.game_sound.add_block(sound_block[:735]/float(2**15))
         if not self.game_sound.status == constants.PLAYING:
             self.game_sound.play()
@@ -94,7 +95,8 @@ class VideoGame(VideoGameBase):
 
         for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
             screen_text.draw(exp_win)
-            screen_text.draw(ctl_win)
+            if ctl_win:
+                screen_text.draw(ctl_win)
             yield
 
     def _setup(self, exp_win):
@@ -112,8 +114,9 @@ class VideoGame(VideoGameBase):
         # activate repeat keys
         exp_win.winHandle.on_key_press = _onPygletKeyPress
         exp_win.winHandle.on_key_release = _onPygletKeyRelease
-        ctl_win.winHandle.on_key_press = _onPygletKeyPress
-        ctl_win.winHandle.on_key_release = _onPygletKeyRelease
+        if ctl_win:
+            ctl_win.winHandle.on_key_press = _onPygletKeyPress
+            ctl_win.winHandle.on_key_release = _onPygletKeyRelease
         self.emulator.reset()
         keys = [False]*12
         nnn = 0
@@ -158,8 +161,9 @@ class VideoGame(VideoGameBase):
         # deactivate custom keys handling
         exp_win.winHandle.on_key_down = event._onPygletKey
         exp_win.winHandle.on_key_release = None
-        ctl_win.winHandle.on_key_press = event._onPygletKey
-        ctl_win.winHandle.on_key_release = None
+        if ctl_win:
+            ctl_win.winHandle.on_key_press = event._onPygletKey
+            ctl_win.winHandle.on_key_release = None
 
 class VideoGameReplay(VideoGameBase):
 
@@ -178,7 +182,8 @@ class VideoGameReplay(VideoGameBase):
 
         for frameN in range(config.FRAME_RATE * INSTRUCTION_DURATION):
             screen_text.draw(exp_win)
-            screen_text.draw(ctl_win)
+            if ctl_win:
+                screen_text.draw(ctl_win)
             yield
 
     def setup(self, exp_win, output_path, output_fname_base):
@@ -215,5 +220,5 @@ class VideoGameReplay(VideoGameBase):
             if _rew > 0 :
                 exp_win.logOnFlip(level=logging.EXP, msg='Reward %f'%(total_reward))
 
-            self._render_graphics_sound(_obs,self.emulator.em.get_audio(),exp_win, ctl_win)
+            self._render_graphics_sound(_obs,self.emulator.em.get_audio(), exp_win, ctl_win)
             yield

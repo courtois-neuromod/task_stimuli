@@ -28,7 +28,8 @@ class Speech(Task):
 
         for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
             screen_text.draw(exp_win)
-            screen_text.draw(ctl_win)
+            if ctl_win:
+                screen_text.draw(ctl_win)
             yield()
 
     def _run(self, exp_win, ctl_win):
@@ -49,7 +50,8 @@ class Speech(Task):
             trial['onset'] = self.task_timer.getTime()
             for frameN in range(config.FRAME_RATE * STIMULI_DURATION):
                 text.draw(exp_win)
-                text.draw(ctl_win)
+                if ctl_win:
+                    text.draw(ctl_win)
                 yield()
             trial['offset'] = self.task_timer.getTime()
             trial['duration'] = trial['offset']-trial['onset']
