@@ -13,8 +13,8 @@ class SingleVideo(Task):
 Please keep your eyes open."""
 
     def __init__(self, filepath, *args,**kwargs):
+        self._aspect_ratio = kwargs.pop('aspect_ratio', None)
         super().__init__(**kwargs)
-        #TODO: image lists as params, subjects ....
         self.filepath = filepath
         if not os.path.exists(self.filepath):
             raise ValueError('File %s does not exists'%self.filepath)
@@ -33,13 +33,13 @@ Please keep your eyes open."""
     def _setup(self, exp_win):
 
         self.movie_stim = visual.MovieStim3(exp_win, self.filepath, units='pixels')
-        min_ratio = min(
+        aspect_ratio = self._aspect_ratio or self.movie_stim.size[0]/self.movie_stim.size[1]
+        min_ratio =  min(
             exp_win.size[0]/ self.movie_stim.size[0],
-            exp_win.size[1]/ self.movie_stim.size[1])
+            exp_win.size[1]/ self.movie_stim.size[0]*aspect_ratio)
         self.movie_stim.size = (
             min_ratio*self.movie_stim.size[0],
-            min_ratio*self.movie_stim.size[1])
-        self.movie_stim.size = (800, 338)
+            min_ratio*self.movie_stim.size[0]/aspect_ratio)
         print(self.movie_stim.size)
         print(self.movie_stim.duration)
 
