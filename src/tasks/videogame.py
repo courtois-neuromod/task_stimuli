@@ -12,8 +12,11 @@ import retro
 DEFAULT_GAME_NAME = 'ShinobiIIIReturnOfTheNinjaMaster-Genesis'
 
 #KEY_SET = 'zx__abudlr_y'
-KEY_SET = 'zx__udlry___'
-KEY_SET = ['a','b','c','d','up','down','left','right','x','y','z','k']
+#KEY_SET = 'zx__udlry___'
+#KEY_SET = ['a','b','c','d','up','down','left','right','x','y','z','k']
+#KEY_SET = ['x','z','_','_','up','down','left','right','c','_','_','_']
+KEY_SET = ['y','a','_','_','u','d','l','r','b','_','_','_']
+
 #KEY_SET = '0123456789'
 
 _keyPressBuffer = []
