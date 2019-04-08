@@ -4,18 +4,20 @@ from .task_base import Task
 
 from ..shared import config
 
-STIMULI_DURATION=3
+STIMULI_DURATION=8
 BASELINE_BEGIN=5
 BASELINE_END=5
 TRIPLET_RIGHT_KEY='l'
 TRIPLET_LEFT_KEY='d'
-ISI=4
+ISI=2
 
 class Triplet(Task):
 
     DEFAULT_INSTRUCTION = """You will be presented three words.
+
 The one on top is the target.
 The two below are possible responses.
+
 You have to select the response (left or right) that is closest to the target."""
 
     def __init__(self, words_file,*args,**kwargs):
