@@ -67,6 +67,8 @@ You have to select the response (left or right) that is closest to the target.""
 
             exp_win.logOnFlip(level=logging.EXP,msg='triplet: %d'%trial_idx)
             onset = self.task_timer.getTime()
+            # flush keys pressed before
+            event.getKeys([TRIPLET_LEFT_KEY,TRIPLET_RIGHT_KEY])
             for frameN in range(config.FRAME_RATE * STIMULI_DURATION):
                 triplet_answer_keys = event.getKeys([TRIPLET_LEFT_KEY,TRIPLET_RIGHT_KEY])
                 if(len(triplet_answer_keys)):
