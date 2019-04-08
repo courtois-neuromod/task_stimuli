@@ -9,13 +9,14 @@ OUTPUT_DIR = 'output'
 EYETRACKING_ROI = (60,30,660,450)
 
 EXP_WINDOW = dict(
-    size = (800,600),
+#    size = (800,600),
+    size = (1024,768),
     screen=1,
     fullscr=True,
 )
 
 CTL_WINDOW = dict(
-    size = (800,600),
+    size = (1024,768),
     pos = (100,0),
     screen=0
 )
