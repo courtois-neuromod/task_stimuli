@@ -9,9 +9,7 @@ logging.setDefaultClock(globalClock)
 from . import config, fmri, eyetracking
 from ..tasks import task_base, video
 
-show_ctl_win = False
-
-def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=False):
+def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=False, show_ctl_win = False):
 
     log_path = os.path.abspath(os.path.join(config.OUTPUT_DIR,  'sub-%s'%subject,'ses-%s'%session))
     if not os.path.exists(log_path):
@@ -47,8 +45,10 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
             setup_video_path = [os.path.join('data','videos','subject_setup_videos','sub-default_setup_video.mp4')]
         all_tasks.insert(0, video.VideoAudioCheckLoop(setup_video_path[0], name='setup_video'))
         all_tasks.append(task_base.Pause("""We are done for today.
-Relax, we are coming to get you out of the scanner in a short time."""))
-
+Relax, we are coming to get you out of the scanner shortly."""))
+    else:
+        all_tasks.append(task_base.Pause("""We are done for today.
+Thanks for your participation"""))
     # list of tasks to be ran in a session
 
     try:
@@ -73,6 +73,8 @@ Relax, we are coming to get you out of the scanner in a short time."""))
             ctrl_pressed = False
 
             while True:
+                #force focus on the task window to ensure getting keys, TTL, ...
+                exp_win.winHandle.activate()
 
                 for draw in task.run(exp_win, ctl_win):
 
