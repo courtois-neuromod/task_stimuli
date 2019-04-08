@@ -20,14 +20,7 @@ CTL_WINDOW = dict(
     screen=0
 )
 
-EYE_WINDOW = dict(
-    size = (640,480),
-    screen=0,
-    units='pix',
-    pos=(CTL_WINDOW['size'][0]+CTL_WINDOW['pos'][0],0)
-)
-
 FRAME_RATE=60
 
-INSTRUCTION_DURATION = 4
+INSTRUCTION_DURATION = 6
 WRAP_WIDTH = 1.6
