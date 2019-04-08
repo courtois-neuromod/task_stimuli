@@ -45,8 +45,10 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
             setup_video_path = [os.path.join('data','videos','subject_setup_videos','sub-default_setup_video.mp4')]
         all_tasks.insert(0, video.VideoAudioCheckLoop(setup_video_path[0], name='setup_video'))
         all_tasks.append(task_base.Pause("""We are done for today.
-Relax, we are coming to get you out of the scanner in a short time."""))
-
+Relax, we are coming to get you out of the scanner shortly."""))
+    else:
+        all_tasks.append(task_base.Pause("""We are done for today.
+Thanks for your participation"""))
     # list of tasks to be ran in a session
 
     try:
