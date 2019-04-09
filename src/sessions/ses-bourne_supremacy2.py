@@ -7,7 +7,7 @@ TASKS = [
 
     task_base.Pause(),
 ]
-for seg_idx in range(1,6):
+for seg_idx in range(6,11):
     TASKS.append(
         video.SingleVideo(
             'data/videos/bourne_supremacy/bourne_supremacy_seg%02d.mkv'%seg_idx,
