@@ -67,6 +67,8 @@ Please keep your eyes open."""
     def _restart(self):
         self.movie_stim.setMovie(self.filepath)
 
+    def unload(self):
+        del self.movie_stim
 
 class VideoAudioCheckLoop(SingleVideo):
 

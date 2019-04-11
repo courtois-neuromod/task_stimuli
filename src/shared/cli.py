@@ -86,11 +86,13 @@ Thanks for your participation"""))
                     exp_win.flip()
                     if show_ctl_win:
                         ctl_win.flip()
-                    allKeys = event.getKeys(['n','s','q'], modifiers=True)
-                    ctrl_pressed = any([k[1]['ctrl'] for k in allKeys])
-                    all_keys_only = [k[0] for k in allKeys]
-                    if len(allKeys) and ctrl_pressed:
-                        break
+
+                    if any([k[1]&event.MOD_CTRL for k in event._keyBuffer]):
+                        allKeys = event.getKeys(['n','c','q'], modifiers=True)
+                        ctrl_pressed = any([k[1]['ctrl'] for k in allKeys])
+                        all_keys_only = [k[0] for k in allKeys]
+                        if len(allKeys) and ctrl_pressed:
+                            break
                 else: # task completed
                     task.save()
                     break
@@ -104,7 +106,7 @@ Thanks for your participation"""))
                 if show_ctl_win:
                     ctl_win.flip()
 
-                if ctrl_pressed and ('s' in all_keys_only or 'q' in all_keys_only):
+                if ctrl_pressed and ('c' in all_keys_only or 'q' in all_keys_only):
                     break
                 logging.exp(msg="task - %s: restart"%str(task))
                 task.restart()
