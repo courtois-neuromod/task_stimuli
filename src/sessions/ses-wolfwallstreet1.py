@@ -12,4 +12,4 @@ for seg_idx in range(1,7):
         video.SingleVideo(
             'data/videos/the_wolf_of_wall_street/the_wolf_of_wall_street_seg%02d.mkv'%seg_idx,
             aspect_ratio = 12/5,
-            name='bourne_supremacy_seg-%d'%seg_idx))
+            name='the_wolf_of_wall_street_seg-%d'%seg_idx))
