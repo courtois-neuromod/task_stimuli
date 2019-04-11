@@ -1,8 +1,13 @@
 from ..tasks import images, video, memory, task_base
 
-TASKS = []
+TASKS = [
 
-for seg_idx in range(7,13):
+    video.SingleVideo(
+        'data/videos/subject_setup_videos/sub-default_setup_video.mp4', name='Inscapes'),
+
+    task_base.Pause(),
+]
+for seg_idx in range(13,18):
     TASKS.append(
         video.SingleVideo(
             'data/videos/the_wolf_of_wall_street/the_wolf_of_wall_street_seg%02d.mkv'%seg_idx,

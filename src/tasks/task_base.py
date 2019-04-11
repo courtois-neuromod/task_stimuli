@@ -45,6 +45,7 @@ class Task(object):
             for _ in self.instructions(exp_win, ctl_win):
                 yield True
 
+        fmri.get_ttl() # flush any remaining TTL keys
         if self.use_fmri:
             ttl_index = 0
             while True:
@@ -69,7 +70,7 @@ class Task(object):
     def restart(self):
         if hasattr(self, '_restart'):
             self._restart()
-    
+
     def save(self):
         pass
 
