@@ -31,6 +31,8 @@ mkdir output
 
 - --fmri: will wait for TTL (can be emulated with character `5` on the keyboard) to start the tasks that are labeled as fmri dependent. When not using that flag, tasks will run back to back. It will also append a video loop at the beginning of the session in order for the participant to have sound and visual stimuli to test the setup (then skip to start the session).
 
+- --meg: TODO!
+
 
 If you run multiple time this command, there are no risks of overwriting, the data will be suffixed by the date and time of start of the session.
 
