@@ -2,6 +2,7 @@ import os, datetime, traceback, glob
 from psychopy import core, visual, logging, event
 
 TIMEOUT = 5
+DELAY_BETWEEN_TASK = 5
 
 globalClock = core.MonotonicClock(0)
 logging.setDefaultClock(globalClock)
@@ -116,6 +117,10 @@ Thanks for your participation!"""))
                 logging.exp(msg="task - %s: restart"%str(task))
                 task.restart()
             task.unload()
+            # add a delay between tasks to avoid remaining TTL to start next task
+            for i in range(DELAY_BETWEEN_TASK*config.FRAMERATE):
+                exp_win.flip()
+
             if ctrl_pressed and ('q' in all_keys_only):
                 print('quit')
                 break
