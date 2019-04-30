@@ -48,6 +48,7 @@ class Task(object):
         fmri.get_ttl() # flush any remaining TTL keys
         if self.use_fmri:
             ttl_index = 0
+            logging.exp(msg="waiting for fMRI TTL")
             while True:
                 if fmri.get_ttl():
                     #TODO: log real timing of TTL?
