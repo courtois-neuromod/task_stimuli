@@ -41,7 +41,6 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
         #all_tasks.insert(0, eyetracking.EyetrackerCalibration(eyetracker_client,name='EyeTracker-Calibration'))
         gaze_drawer = eyetracking.GazeDrawer(ctl_win)
     if use_fmri:
-        print('here')
         setup_video_path = glob.glob(os.path.join('data','videos','subject_setup_videos','sub-%s_*'%subject))
         if not len(setup_video_path):
             setup_video_path = [os.path.join('data','videos','subject_setup_videos','sub-default_setup_video.mp4')]

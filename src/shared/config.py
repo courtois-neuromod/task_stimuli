@@ -23,7 +23,9 @@ CTL_WINDOW = dict(
 
 FRAME_RATE=60
 
+# task parameters
 INSTRUCTION_DURATION = 6
+
 WRAP_WIDTH = 1.6
 
 # port for meg setup

@@ -5,7 +5,7 @@ from .task_base import Task
 
 from ..shared import config
 
-
+FADE_TO_GREY_DURATION = 2
 
 class SingleVideo(Task):
 
@@ -25,6 +25,7 @@ Please keep your eyes open."""
             alignHoriz="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
 
         for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
+            exp_win.setColor([-float(frameN)/config.FRAME_RATE/config.INSTRUCTION_DURATION]*3)
             screen_text.draw(exp_win)
             if ctl_win:
                 screen_text.draw(ctl_win)
@@ -49,7 +50,6 @@ Please keep your eyes open."""
         exp_win.logOnFlip(
             level=logging.EXP,
             msg='video: task starting at %f'%time.time())
-        exp_win.setColor([-1,-1,-1])
         self.movie_stim.play()
         while self.movie_stim.status != visual.FINISHED:
             self.movie_stim.draw(exp_win)
@@ -57,8 +57,9 @@ Please keep your eyes open."""
                 self.movie_stim.draw(ctl_win)
 
             yield
-        exp_win.setColor([0,0,0])
-        yield
+        for frameN in range(config.FRAME_RATE * FADE_TO_GREY_DURATION):
+            exp_win.setColor([float(frameN)/config.FRAME_RATE/FADE_TO_GREY_DURATION-1]*3)
+            yield
 
     def stop(self):
         self.movie_stim.stop()

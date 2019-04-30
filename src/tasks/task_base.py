@@ -44,7 +44,6 @@ class Task(object):
         if hasattr(self, 'instructions'):
             for _ in self.instructions(exp_win, ctl_win):
                 yield True
-
         fmri.get_ttl() # flush any remaining TTL keys
         if self.use_fmri:
             ttl_index = 0
