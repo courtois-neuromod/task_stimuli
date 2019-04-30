@@ -10,7 +10,7 @@ logging.setDefaultClock(globalClock)
 from . import config, fmri, eyetracking
 from ..tasks import task_base, video
 
-def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=False, show_ctl_win = False):
+def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=False, use_meg=False, show_ctl_win = False):
 
     log_path = os.path.abspath(os.path.join(config.OUTPUT_DIR,  'sub-%s'%subject,'ses-%s'%session))
     if not os.path.exists(log_path):
@@ -41,6 +41,7 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
         #all_tasks.insert(0, eyetracking.EyetrackerCalibration(eyetracker_client,name='EyeTracker-Calibration'))
         gaze_drawer = eyetracking.GazeDrawer(ctl_win)
     if use_fmri:
+        print('here')
         setup_video_path = glob.glob(os.path.join('data','videos','subject_setup_videos','sub-%s_*'%subject))
         if not len(setup_video_path):
             setup_video_path = [os.path.join('data','videos','subject_setup_videos','sub-default_setup_video.mp4')]
@@ -82,6 +83,10 @@ Thanks for your participation!"""))
                 #force focus on the task window to ensure getting keys, TTL, ...
                 exp_win.winHandle.activate()
 
+                if use_meg:
+                    #send trigger for MEG and Biopac before instruction
+                    from . import meg
+                    meg.send_signal(int("00000010", 2))
                 for draw in task.run(exp_win, ctl_win):
 
                     if use_eyetracking:
@@ -118,7 +123,7 @@ Thanks for your participation!"""))
                 task.restart()
             task.unload()
             # add a delay between tasks to avoid remaining TTL to start next task
-            for i in range(DELAY_BETWEEN_TASK*config.FRAMERATE):
+            for i in range(DELAY_BETWEEN_TASK*config.FRAME_RATE):
                 exp_win.flip()
 
             if ctrl_pressed and ('q' in all_keys_only):
@@ -146,6 +151,9 @@ def parse_args():
         help='Session ID')
     parser.add_argument('--fmri', '-f',
         help='Wait for fmri TTL to start each task',
+        action='store_true')
+    parser.add_argument('--meg', '-m',
+        help='Send signal to parallel port to start trigger to MEG and Biopac.',
         action='store_true')
     parser.add_argument('--eyetracking', '-e',
         help='Enable eyetracking',
