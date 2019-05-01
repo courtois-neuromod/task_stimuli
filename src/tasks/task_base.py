@@ -96,3 +96,40 @@ class Pause(Task):
             if ctl_win:
                 screen_text.draw(ctl_win)
             yield
+
+
+class Fixation(Task):
+
+    DEFAULT_INSTRUCTION = """We are going to acquired resting-state data.
+Please keep your eyes open and fixate the cross.
+Do not think about something in particular, let your mind wander..."""
+
+    def __init__(self, duration=7*60, symbol="+", **kwargs):
+        if not 'name' in kwargs:
+            kwargs['name'] = 'Pause'
+        super().__init__(**kwargs)
+        self.duration = duration
+        self.symbol = symbol
+
+    def instructions(self, exp_win, ctl_win):
+        screen_text = visual.TextStim(
+            exp_win, text=self.instruction,
+            alignHoriz="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
+
+        for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
+            screen_text.draw(exp_win)
+            if ctl_win:
+                screen_text.draw(ctl_win)
+            yield
+
+    def _run(self, exp_win, ctl_win):
+        screen_text = visual.TextStim(
+            exp_win, text=self.symbol,
+            alignHoriz="center", color = 'white')
+        screen_text.height = .2
+
+        for frameN in range(config.FRAME_RATE * self.duration):
+            screen_text.draw(exp_win)
+            if ctl_win:
+                screen_text.draw(ctl_win)
+            yield
