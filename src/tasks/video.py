@@ -14,6 +14,7 @@ Please keep your eyes open."""
 
     def __init__(self, filepath, *args,**kwargs):
         self._aspect_ratio = kwargs.pop('aspect_ratio', None)
+        self._scaling = kwargs.pop('scaling', None)
         super().__init__(**kwargs)
         self.filepath = filepath
         if not os.path.exists(self.filepath):
@@ -38,9 +39,16 @@ Please keep your eyes open."""
         min_ratio =  min(
             exp_win.size[0]/ self.movie_stim.size[0],
             exp_win.size[1]/ self.movie_stim.size[0]*aspect_ratio)
-        self.movie_stim.size = (
-            min_ratio*self.movie_stim.size[0],
-            min_ratio*self.movie_stim.size[0]/aspect_ratio)
+
+
+        width = min_ratio*self.movie_stim.size[0]
+        height = min_ratio*self.movie_stim.size[0]/aspect_ratio
+
+        if self._scaling is not None:
+            width *= self._scaling
+            height *= self._scaling
+
+        self.movie_stim.size = (width, height)
         print(self.movie_stim.size)
         print(self.movie_stim.duration)
 

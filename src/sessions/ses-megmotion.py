@@ -7,5 +7,13 @@ TASKS = [
         name='Inscapes'),
     video.SingleVideo(
         'data/videos/movies_for_montreal/Oceans_10m_fs.mp4',
-        name='Oceans_fs_10m_2')
+        name='Oceans'),
+    video.SingleVideo(
+        'data/videos/movies_for_montreal/03_Inscaped_NoScannerSound_h264.mov',
+        scaling=.5,
+        name='Inscapes_scaled'),
+    video.SingleVideo(
+        'data/videos/movies_for_montreal/Oceans_10m_fs.mp4',
+        scaling=.5,
+        name='Oceans_scaled')
 ]
