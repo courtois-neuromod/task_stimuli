@@ -122,14 +122,17 @@ Thanks for your participation!"""))
                 logging.exp(msg="task - %s: restart"%str(task))
                 task.restart()
             task.unload()
-            # add a delay between tasks to avoid remaining TTL to start next task
-            for i in range(DELAY_BETWEEN_TASK*config.FRAME_RATE):
-                exp_win.flip()
 
-            if ctrl_pressed and ('q' in all_keys_only):
-                print('quit')
-                break
-            print('skip')
+            if ctrl_pressed:
+                if 'q' in all_keys_only:
+                    print('quit')
+                    break
+                else:
+                    print('skip')
+            else:
+                # add a delay between tasks to avoid remaining TTL to start next task
+                for i in range(DELAY_BETWEEN_TASK*config.FRAME_RATE):
+                    exp_win.flip()
 
     except KeyboardInterrupt as ki:
         print(traceback.format_exc())
