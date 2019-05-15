@@ -4,7 +4,7 @@ from .task_base import Task
 
 from ..shared import config
 
-STIMULI_DURATION=8
+STIMULI_DURATION=4
 BASELINE_BEGIN=5
 BASELINE_END=5
 TRIPLET_RIGHT_KEY='l'
@@ -20,8 +20,13 @@ The two below are possible responses.
 
 You have to select the response (left or right) that is closest to the target."""
 
+    INSTRUCTION_WAIT_KEY = DEFAULT_INSTRUCTION + "\nWhen you're ready press <%s>" % TRIPLET_LEFT_KEY
+
     def __init__(self, words_file,*args,**kwargs):
+        self.wait_key = kwargs.pop('wait_key', False)
         super().__init__(**kwargs)
+        if self.wait_key:
+            self.instruction = Triplet.INSTRUCTION_WAIT_KEY
         if os.path.exists(words_file):
             self.words_file = words_file
             self.words_list = data.importConditions(self.words_file)
@@ -33,11 +38,21 @@ You have to select the response (left or right) that is closest to the target.""
             exp_win, text=self.instruction,
             alignHoriz="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
 
-        for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
+        def _draw_instr():
             screen_text.draw(exp_win)
             if ctl_win:
+
                 screen_text.draw(ctl_win)
-            yield()
+        if self.wait_key:
+            while True:
+                if len(event.getKeys([TRIPLET_LEFT_KEY])):
+                    break
+                _draw_instr()
+                yield
+        else:
+            for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
+                _draw_instr()
+                yield
 
     def _run(self, exp_win, ctl_win):
 
@@ -74,7 +89,9 @@ You have to select the response (left or right) that is closest to the target.""
             for frameN in range(config.FRAME_RATE * STIMULI_DURATION):
                 triplet_answer_keys = event.getKeys([TRIPLET_LEFT_KEY,TRIPLET_RIGHT_KEY])
                 if(len(triplet_answer_keys)):
-                    self.trials.addData('answer', triplet_answer_keys[0]) #
+                    self.trials.addData('answer', triplet_answer_keys[0])
+                    for frameNN in range(frameN, config.FRAME_RATE * STIMULI_DURATION):
+                        yield()
                     break
                 for stim in [target_stim, r1_stim, r2_stim]:
                     stim.draw(exp_win)
