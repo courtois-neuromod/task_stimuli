@@ -1,5 +1,5 @@
 import os
-from psychopy import logging, visual, core
+from psychopy import logging, visual, core, event
 
 from ..shared import fmri, config
 
@@ -77,6 +77,7 @@ class Task(object):
 class Pause(Task):
 
     def __init__(self, text="Taking a short break, relax...", **kwargs):
+        self.wait_key = kwargs.pop('wait_key', False)
         if not 'name' in kwargs:
             kwargs['name'] = 'Pause'
         super().__init__(**kwargs)
@@ -92,6 +93,9 @@ class Pause(Task):
             alignHoriz="center", color = 'white',wrapWidth=config.WRAP_WIDTH)
 
         while True:
+            if not self.wait_key is False:
+                if len(event.getKeys(self.wait_key)):
+                    break
             screen_text.draw(exp_win)
             if ctl_win:
                 screen_text.draw(ctl_win)
