@@ -83,11 +83,17 @@ class VideoGame(VideoGameBase):
     def __init__(self,
         game_name=DEFAULT_GAME_NAME,
         state_name=None,
+        scenario=None,
+        repeat_scenario=True,
+        max_duration=0,
         *args,**kwargs):
 
         super().__init__(**kwargs)
         self.game_name = game_name
         self.state_name = state_name
+        self.scenario = scenario
+        self.repeat_scenario = repeat_scenario
+        self.max_duration = max_duration
         self.instruction = self.instruction%(self.game_name, self.state_name)
 
     def instructions(self, exp_win, ctl_win):
@@ -107,6 +113,7 @@ class VideoGame(VideoGameBase):
         self.emulator = retro.make(
             self.game_name,
             state=self.state_name,
+            scenario=self.scenario,
             record=False)
 
         self.game_vis_stim = visual.ImageStim(exp_win,size=exp_win.size,units='pixels',autoLog=False)
@@ -120,46 +127,53 @@ class VideoGame(VideoGameBase):
         if ctl_win:
             ctl_win.winHandle.on_key_press = _onPygletKeyPress
             ctl_win.winHandle.on_key_release = _onPygletKeyRelease
-        self.emulator.reset()
         keys = [False]*12
-        nnn = 0
+
+
         while True:
-            movie_path = os.path.join(
-                self.output_path,
-                "%s_%s_%s_%03d.bk2"%(self.output_fname_base,self.game_name,self.state_name, nnn))
-            if not os.path.exists(movie_path):
-                break
-            nnn += 1
-        logging.exp('VideoGame: recording movie in %s'%movie_path)
-        self.emulator.record_movie(movie_path)
+            self.emulator.reset()
+            nnn = 0
+            while True:
+                movie_path = os.path.join(
+                    self.output_path,
+                    "%s_%s_%s_%03d.bk2"%(self.output_fname_base,self.game_name,self.state_name, nnn))
+                if not os.path.exists(movie_path):
+                    break
+                nnn += 1
+            logging.exp('VideoGame: recording movie in %s'%movie_path)
+            self.emulator.record_movie(movie_path)
 
-        total_reward = 0
-        exp_win.logOnFlip(
-            level=logging.EXP,
-            msg='VideoGame %s: %s starting at %f'%(self.game_name, self.state_name, time.time()))
-        while True:
-            # TODO: get real action from controller
-            #gamectrl_keys = event.getKeys(list(KEY_SET))
-            #keys = [k in gamectrl_keys for k in KEY_SET]
-            for k in _keyReleaseBuffer:
-                #print('release',k)
-                if k[0] in KEY_SET:
-                    keys[KEY_SET.index(k[0])] = False
-            _keyReleaseBuffer.clear()
-            for k in _keyPressBuffer:
-                #print('press',k)
-                if k[0] in KEY_SET:
-                    keys[KEY_SET.index(k[0])] = True
-            _keyPressBuffer.clear()
+            total_reward = 0
+            exp_win.logOnFlip(
+                level=logging.EXP,
+                msg='VideoGame %s: %s starting at %f'%(self.game_name, self.state_name, time.time()))
+            while True:
+                # TODO: get real action from controller
+                #gamectrl_keys = event.getKeys(list(KEY_SET))
+                #keys = [k in gamectrl_keys for k in KEY_SET]
+                for k in _keyReleaseBuffer:
+                    #print('release',k)
+                    if k[0] in KEY_SET:
+                        keys[KEY_SET.index(k[0])] = False
+                _keyReleaseBuffer.clear()
+                for k in _keyPressBuffer:
+                    #print('press',k)
+                    if k[0] in KEY_SET:
+                        keys[KEY_SET.index(k[0])] = True
+                _keyPressBuffer.clear()
 
+                _obs, _rew, _done, _info = self.emulator.step(keys)
+                total_reward += _rew
+                if _rew > 0 :
+                    exp_win.logOnFlip(level=logging.EXP, msg='Reward %f'%(total_reward))
+                self._render_graphics_sound(_obs,self.emulator.em.get_audio(),exp_win, ctl_win)
+                yield
+                if _done:
+                    break
 
-            _obs, _rew, _done, _info = self.emulator.step(keys)
-            total_reward += _rew
-            if _rew > 0 :
-                exp_win.logOnFlip(level=logging.EXP, msg='Reward %f'%(total_reward))
-            self._render_graphics_sound(_obs,self.emulator.em.get_audio(),exp_win, ctl_win)
-            yield
-            if _done:
+            if not self.repeat_scenario or \
+                (self.max_duration and
+                self.task_timer.getTime() > self.max_duration): # stop if we are above the planned duration
                 break
         # deactivate custom keys handling
         exp_win.winHandle.on_key_down = event._onPygletKey
@@ -170,9 +184,10 @@ class VideoGame(VideoGameBase):
 
 class VideoGameReplay(VideoGameBase):
 
-    def __init__(self, movie_filename, game_name=DEFAULT_GAME_NAME, *args,**kwargs):
+    def __init__(self, movie_filename, game_name=DEFAULT_GAME_NAME, scenario=None, *args, **kwargs):
         super().__init__(**kwargs)
         self.game_name = game_name
+        self.scenario = scenario
         self.movie_filename = movie_filename
         if not os.path.exists(self.movie_filename):
             raise ValueError('file %s does not exists'%self.movie_filename)
@@ -196,6 +211,7 @@ class VideoGameReplay(VideoGameBase):
             self.game_name,
             record=False,
             state=retro.State.NONE,
+            scenario=self.scenario,
             #use_restricted_actions=retro.Actions.ALL,
             players=self.movie.players)
         self.emulator.initial_state = self.movie.get_state()
