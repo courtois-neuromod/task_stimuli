@@ -10,7 +10,8 @@ EYETRACKING_ROI = (60,30,660,450)
 
 EXP_WINDOW = dict(
 #    size = (800,600),
-    size = (1024,768),
+    #size = (1024,768),
+    size = (1280,1024),
     screen=1,
     fullscr=True,
 )
@@ -29,4 +30,4 @@ INSTRUCTION_DURATION = 6
 WRAP_WIDTH = 1.6
 
 # port for meg setup
-PARALLEL_PORT_ADDRESS = 0x0378
+PARALLEL_PORT_ADDRESS = 0x000
