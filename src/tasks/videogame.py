@@ -177,10 +177,10 @@ class VideoGame(VideoGameBase):
                 break
         # deactivate custom keys handling
         exp_win.winHandle.on_key_press = event._onPygletKey
-        exp_win.winHandle.on_key_release = None
+        del exp_win.winHandle.on_key_release
         if ctl_win:
             ctl_win.winHandle.on_key_press = event._onPygletKey
-            ctl_win.winHandle.on_key_release = None
+            del ctl_win.winHandle.on_key_release
 
 class VideoGameReplay(VideoGameBase):
 
