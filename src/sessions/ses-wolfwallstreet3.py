@@ -1,8 +1,6 @@
 from ..tasks import images, video, memory, task_base
 
-TASKS = [
-
-]
+TASKS = []
 for seg_idx in range(13,18):
     TASKS.append(
         video.SingleVideo(
