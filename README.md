@@ -23,7 +23,7 @@ mkdir output
 
 ## how to launch a session
 
-`python3 main.py --subject test --session videoshorttest --eyetracking --fmri`
+`python3 main.py --subject test --ses videoshorttest --eyetracking --fmri`
 
 - --subject: can be whatever, will be used to save data in a bids-like structure
 - --session: must match the name of a session script in `src/ses-<session_name>.py`, which contains the tasks to be ran on that session
