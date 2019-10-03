@@ -17,7 +17,7 @@ TASKS = [
         name='ShinobiIIIReturnOfTheNinjaMaster-level4-1'),
 
     videogame.VideoGame(
-        state_name='Level4-1',
+        state_name='Level5-0',
         scenario='scenario_repeat1', # this scenario repeats the same level
         max_duration=10*60, # if when level completed or dead we exceed that time in secs, stop the task
         name='ShinobiIIIReturnOfTheNinjaMaster-level5-0'),
