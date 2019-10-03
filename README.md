@@ -1,5 +1,27 @@
 # task_stimuli
 
+This software is a set of cognitive tasks developed in psychopy and a system to schedule sets of tasks during a session.
+
+Tasks are classes defined in `src/tasks`, and are instantiated in `src/sessions` files that describe a set of tasks in the session.
+
+Material for the task (images/movies/lists...) is stored mainly in `data`
+
+Outputs (logs, responses) are stored in the `output` folder and try to mimic a BIDS structure.
+
+When used with option `--fmri` tasks waits for a new TTL character to start.
+
+When used with the option `--eyetracking` this software will start Pupil, and trigger the recording of the eye movie and detected pupil position, which outputs to the `output` folder in a BIDS-like way.
+Note that eyetracking data would require offline post/re-processing to be used and shared.
+
+`utils` contains scripts to prepare movies in a reproducible way using the melt command line video editor in singularity.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+
+## Attributions
+
+...
+
 ## INSTALL
 
 ```
