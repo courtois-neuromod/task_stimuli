@@ -73,7 +73,10 @@ Thanks for your participation!"""))
                 use_eyetracking = True
 
             #setup task files (eg. video)
-            task.setup(exp_win, log_path, log_name_prefix, use_fmri=use_fmri, use_eyetracking=use_eyetracking)
+            task.setup(exp_win, log_path, log_name_prefix,
+                use_fmri=use_fmri,
+                use_eyetracking=use_eyetracking,
+                use_meg=use_meg)
             print('READY')
 
             allKeys = []
@@ -83,10 +86,6 @@ Thanks for your participation!"""))
                 #force focus on the task window to ensure getting keys, TTL, ...
                 exp_win.winHandle.activate()
 
-                if use_meg:
-                    #send trigger for MEG and Biopac before instruction
-                    from . import meg
-                    meg.send_signal(int("00000010", 2))
                 for draw in task.run(exp_win, ctl_win):
 
                     if use_eyetracking:
