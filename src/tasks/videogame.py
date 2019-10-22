@@ -176,11 +176,11 @@ class VideoGame(VideoGameBase):
                 self.task_timer.getTime() > self.max_duration): # stop if we are above the planned duration
                 break
         # deactivate custom keys handling
-        exp_win.winHandle.on_key_down = event._onPygletKey
-        exp_win.winHandle.on_key_release = None
+        exp_win.winHandle.on_key_press = event._onPygletKey
+        del exp_win.winHandle.on_key_release
         if ctl_win:
             ctl_win.winHandle.on_key_press = event._onPygletKey
-            ctl_win.winHandle.on_key_release = None
+            del ctl_win.winHandle.on_key_release
 
 class VideoGameReplay(VideoGameBase):
 
