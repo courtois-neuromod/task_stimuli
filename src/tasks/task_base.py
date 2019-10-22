@@ -1,7 +1,7 @@
 import os
 from psychopy import logging, visual, core, event
 
-from ..shared import fmri, config
+from ..shared import fmri, meg, config
 
 class Task(object):
 
@@ -16,10 +16,11 @@ class Task(object):
             self.instruction = instruction
 
     # setup large files for accurate start with other recordings (scanner, biopac...)
-    def setup(self, exp_win, output_path, output_fname_base, use_fmri=False, use_eyetracking=False):
+    def setup(self, exp_win, output_path, output_fname_base, use_fmri=False, use_eyetracking=False, use_meg=False):
         self.output_path = output_path
         self.output_fname_base = output_fname_base
         self.use_fmri = use_fmri
+        self.use_meg = use_meg
         self.use_eyetracking = use_eyetracking
         self._setup(exp_win)
 
@@ -56,6 +57,8 @@ class Task(object):
                     break
                 yield False # no need to draw
         logging.info('GO')
+        if self.use_meg:
+            meg.send_signal(meg.MEG_settings['TASK_START_CODE'])
         self.task_timer = core.Clock()
         for _ in self._run(exp_win, ctl_win):
             if self.use_fmri:
@@ -63,6 +66,8 @@ class Task(object):
                     logging.exp(msg="fMRI TTL %d"%ttl_index)
                     ttl_index += 1
             yield True
+        if self.use_meg:
+            meg.send_signal(meg.MEG_settings['TASK_STOP_CODE'])
 
     def stop(self):
         pass
