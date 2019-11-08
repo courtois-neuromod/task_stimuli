@@ -1,4 +1,5 @@
 import os
+import tqdm
 from psychopy import logging, visual, core, event
 
 from ..shared import fmri, meg, config
@@ -42,9 +43,12 @@ class Task(object):
 
     def run(self, exp_win, ctl_win):
         print('Next task: %s'%str(self))
+        # show instruction
         if hasattr(self, 'instructions'):
             for _ in self.instructions(exp_win, ctl_win):
                 yield True
+
+        # wait for TTL
         fmri.get_ttl() # flush any remaining TTL keys
         if self.use_fmri:
             ttl_index = 0
@@ -57,17 +61,39 @@ class Task(object):
                     break
                 yield False # no need to draw
         logging.info('GO')
+
+        # send start trigger/marker to MEG + Biopac (or anything else on parallel port)
         if self.use_meg:
             meg.send_signal(meg.MEG_settings['TASK_START_CODE'])
         self.task_timer = core.Clock()
+
+        # initialize a progress bar if we know the duration of the task
+        progress_bar = False
+        if hasattr(self, 'duration'):
+            progress_bar = tqdm.tqdm(total=self.duration)
+            frame_idx = 0
+
         for _ in self._run(exp_win, ctl_win):
             if self.use_fmri:
                 if fmri.get_ttl():
                     logging.exp(msg="fMRI TTL %d"%ttl_index)
                     ttl_index += 1
+
+            # increment the progress bar every second
+            if progress_bar:
+                frame_idx += 1
+                if not frame_idx%config.FRAME_RATE:
+                    progress_bar.update(1)
+
             yield True
+
+        # send stop trigger/marker to MEG + Biopac (or anything else on parallel port)
         if self.use_meg:
             meg.send_signal(meg.MEG_settings['TASK_STOP_CODE'])
+
+        if progress_bar:
+            progress_bar.clear()
+            progress_bar.close()
 
     def stop(self):
         pass
