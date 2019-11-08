@@ -49,8 +49,9 @@ Please keep your eyes open."""
             height *= self._scaling
 
         self.movie_stim.size = (width, height)
-        print(self.movie_stim.size)
-        print(self.movie_stim.duration)
+        self.duration = self.movie_stim.duration
+#        print(self.movie_stim.size)
+#        print(self.movie_stim.duration)
 
     def _run(self, exp_win, ctl_win):
         # give the original size of the movie in pixels:

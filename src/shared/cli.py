@@ -1,3 +1,5 @@
+# CLI: command line interface options and main loop
+
 import os, datetime, traceback, glob
 from psychopy import core, visual, logging, event
 
@@ -45,7 +47,7 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
         if not len(setup_video_path):
             setup_video_path = [os.path.join('data','videos','subject_setup_videos','sub-default_setup_video.mp4')]
 
-        all_tasks.insert(0, video.VideoAudioCheckLoop(setup_video_path[0], name='setup_video'))
+        all_tasks.insert(0, video.VideoAudioCheckLoop(setup_video_path[0], name='setup_soundcheck_video'))
         all_tasks.insert(1, task_base.Pause("""We are completing the setup and initializing the scanner.
 We will start the tasks in a few minutes.
 Please remain still."""))
@@ -57,6 +59,11 @@ We are coming to get you out of the scanner shortly."""))
         all_tasks.append(task_base.Pause("""We are done with the tasks for today.
 Thanks for your participation!"""))
     # list of tasks to be ran in a session
+
+    print('Here are the stimuli planned for today\n' + '_'*50)
+    for task in all_tasks:
+        print('- ' + task.name)
+    print('_'*50)
 
     try:
         for task in all_tasks:
@@ -160,4 +167,8 @@ def parse_args():
     parser.add_argument('--eyetracking', '-e',
         help='Enable eyetracking',
         action='store_true')
+    parser.add_argument('--skip_n_tasks',
+        help='skip n of the tasks',
+        default=0,
+        type=int)
     return parser.parse_args()
