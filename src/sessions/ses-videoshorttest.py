@@ -3,5 +3,5 @@ from ..tasks import  video, task_base
 TASKS = [
 
     video.SingleVideo(
-        'data/videos/test2.mp4', name='testshort'),
+        'data/videos/bourne_test.mkv', name='testshort'),
 ]

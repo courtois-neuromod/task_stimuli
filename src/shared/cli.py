@@ -1,7 +1,10 @@
+# CLI: command line interface options and main loop
+
 import os, datetime, traceback, glob
 from psychopy import core, visual, logging, event
 
 TIMEOUT = 5
+DELAY_BETWEEN_TASK = 5
 
 globalClock = core.MonotonicClock(0)
 logging.setDefaultClock(globalClock)
@@ -9,7 +12,7 @@ logging.setDefaultClock(globalClock)
 from . import config, fmri, eyetracking
 from ..tasks import task_base, video
 
-def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=False):
+def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=False, use_meg=False, show_ctl_win = False):
 
     log_path = os.path.abspath(os.path.join(config.OUTPUT_DIR,  'sub-%s'%subject,'ses-%s'%session))
     if not os.path.exists(log_path):
@@ -20,8 +23,11 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
         logfile_path,
         level=logging.INFO, filemode='w')
 
-    ctl_win = visual.Window(**config.CTL_WINDOW)
-    ctl_win.winHandle.set_caption('Stimuli')
+    if show_ctl_win:
+        ctl_win = visual.Window(**config.CTL_WINDOW)
+        ctl_win.winHandle.set_caption('Stimuli')
+    else:
+        ctl_win = None
     exp_win = visual.Window(**config.EXP_WINDOW)
     exp_win.mouseVisible = False
 
@@ -40,11 +46,24 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
         setup_video_path = glob.glob(os.path.join('data','videos','subject_setup_videos','sub-%s_*'%subject))
         if not len(setup_video_path):
             setup_video_path = [os.path.join('data','videos','subject_setup_videos','sub-default_setup_video.mp4')]
-        all_tasks.insert(0, video.VideoAudioCheckLoop(setup_video_path[0], name='setup_video'))
-        all_tasks.append(task_base.Pause("""We are done for today.
-Relax, we are coming to get you out of the scanner in a short time."""))
 
+        all_tasks.insert(0, video.VideoAudioCheckLoop(setup_video_path[0], name='setup_soundcheck_video'))
+        all_tasks.insert(1, task_base.Pause("""We are completing the setup and initializing the scanner.
+We will start the tasks in a few minutes.
+Please remain still."""))
+        all_tasks.append(task_base.Pause("""We are done for today.
+The scanner might run for a few seconds to acquire reference images.
+Please remain still.
+We are coming to get you out of the scanner shortly."""))
+    else:
+        all_tasks.append(task_base.Pause("""We are done with the tasks for today.
+Thanks for your participation!"""))
     # list of tasks to be ran in a session
+
+    print('Here are the stimuli planned for today\n' + '_'*50)
+    for task in all_tasks:
+        print('- ' + task.name)
+    print('_'*50)
 
     try:
         for task in all_tasks:
@@ -53,20 +72,26 @@ Relax, we are coming to get you out of the scanner in a short time."""))
             event.clearEvents()
             # ensure to clear the screen if task aborted
             exp_win.flip()
-            ctl_win.flip()
+            if show_ctl_win:
+                ctl_win.flip()
 
             use_eyetracking = False
             if enable_eyetracker and task.use_eyetracking:
                 use_eyetracking = True
 
             #setup task files (eg. video)
-            task.setup(exp_win, log_path, log_name_prefix, use_fmri=use_fmri, use_eyetracking=use_eyetracking)
+            task.setup(exp_win, log_path, log_name_prefix,
+                use_fmri=use_fmri,
+                use_eyetracking=use_eyetracking,
+                use_meg=use_meg)
             print('READY')
 
             allKeys = []
             ctrl_pressed = False
 
             while True:
+                #force focus on the task window to ensure getting keys, TTL, ...
+                exp_win.winHandle.activate()
 
                 for draw in task.run(exp_win, ctl_win):
 
@@ -76,12 +101,15 @@ Relax, we are coming to get you out of the scanner in a short time."""))
                             gaze_drawer.draw_gazepoint(gaze)
                     # check for global event keys
                     exp_win.flip()
-                    ctl_win.flip()
-                    allKeys = event.getKeys(['n','s','q'], modifiers=True)
-                    ctrl_pressed = any([k[1]['ctrl'] for k in allKeys])
-                    all_keys_only = [k[0] for k in allKeys]
-                    if len(allKeys) and ctrl_pressed:
-                        break
+                    if show_ctl_win:
+                        ctl_win.flip()
+
+                    if any([k[1]&event.MOD_CTRL for k in event._keyBuffer]):
+                        allKeys = event.getKeys(['n','c','q'], modifiers=True)
+                        ctrl_pressed = any([k[1]['ctrl'] for k in allKeys])
+                        all_keys_only = [k[0] for k in allKeys]
+                        if len(allKeys) and ctrl_pressed:
+                            break
                 else: # task completed
                     task.save()
                     break
@@ -92,17 +120,25 @@ Relax, we are coming to get you out of the scanner in a short time."""))
 
                 # ensure last frame or task clear is draw
                 exp_win.flip()
-                ctl_win.flip()
+                if show_ctl_win:
+                    ctl_win.flip()
 
-                if ctrl_pressed and ('s' in all_keys_only or 'q' in all_keys_only):
+                if ctrl_pressed and ('c' in all_keys_only or 'q' in all_keys_only):
                     break
                 logging.exp(msg="task - %s: restart"%str(task))
-
+                task.restart()
             task.unload()
-            if ctrl_pressed and ('q' in all_keys_only):
-                print('quit')
-                break
-            print('skip')
+
+            if ctrl_pressed:
+                if 'q' in all_keys_only:
+                    print('quit')
+                    break
+                else:
+                    print('skip')
+            else:
+                # add a delay between tasks to avoid remaining TTL to start next task
+                for i in range(DELAY_BETWEEN_TASK*config.FRAME_RATE):
+                    exp_win.flip()
 
     except KeyboardInterrupt as ki:
         print(traceback.format_exc())
@@ -125,7 +161,14 @@ def parse_args():
     parser.add_argument('--fmri', '-f',
         help='Wait for fmri TTL to start each task',
         action='store_true')
+    parser.add_argument('--meg', '-m',
+        help='Send signal to parallel port to start trigger to MEG and Biopac.',
+        action='store_true')
     parser.add_argument('--eyetracking', '-e',
         help='Enable eyetracking',
         action='store_true')
+    parser.add_argument('--skip_n_tasks',
+        help='skip n of the tasks',
+        default=0,
+        type=int)
     return parser.parse_args()
