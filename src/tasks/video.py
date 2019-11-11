@@ -5,7 +5,7 @@ from .task_base import Task
 
 from ..shared import config
 
-
+FADE_TO_GREY_DURATION = 2
 
 class SingleVideo(Task):
 
@@ -13,8 +13,9 @@ class SingleVideo(Task):
 Please keep your eyes open."""
 
     def __init__(self, filepath, *args,**kwargs):
+        self._aspect_ratio = kwargs.pop('aspect_ratio', None)
+        self._scaling = kwargs.pop('scaling', None)
         super().__init__(**kwargs)
-        #TODO: image lists as params, subjects ....
         self.filepath = filepath
         if not os.path.exists(self.filepath):
             raise ValueError('File %s does not exists'%self.filepath)
@@ -25,21 +26,32 @@ Please keep your eyes open."""
             alignHoriz="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
 
         for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
+            exp_win.setColor([-float(frameN)/config.FRAME_RATE/config.INSTRUCTION_DURATION]*3)
             screen_text.draw(exp_win)
-            screen_text.draw(ctl_win)
+            if ctl_win:
+                screen_text.draw(ctl_win)
             yield
 
     def _setup(self, exp_win):
 
         self.movie_stim = visual.MovieStim3(exp_win, self.filepath, units='pixels')
-        min_ratio = min(
+        aspect_ratio = self._aspect_ratio or self.movie_stim.size[0]/self.movie_stim.size[1]
+        min_ratio =  min(
             exp_win.size[0]/ self.movie_stim.size[0],
-            exp_win.size[1]/ self.movie_stim.size[1])
-        self.movie_stim.size = (
-            min_ratio*self.movie_stim.size[0],
-            min_ratio*self.movie_stim.size[1])
-        print(self.movie_stim.size)
-        print(self.movie_stim.duration)
+            exp_win.size[1]/ self.movie_stim.size[0]*aspect_ratio)
+
+
+        width = min_ratio*self.movie_stim.size[0]
+        height = min_ratio*self.movie_stim.size[0]/aspect_ratio
+
+        if self._scaling is not None:
+            width *= self._scaling
+            height *= self._scaling
+
+        self.movie_stim.size = (width, height)
+        self.duration = self.movie_stim.duration
+#        print(self.movie_stim.size)
+#        print(self.movie_stim.duration)
 
     def _run(self, exp_win, ctl_win):
         # give the original size of the movie in pixels:
@@ -47,21 +59,26 @@ Please keep your eyes open."""
         exp_win.logOnFlip(
             level=logging.EXP,
             msg='video: task starting at %f'%time.time())
-        exp_win.setColor([-1,-1,-1])
         self.movie_stim.play()
         while self.movie_stim.status != visual.FINISHED:
             self.movie_stim.draw(exp_win)
-            self.movie_stim.draw(ctl_win)
+            if ctl_win:
+                self.movie_stim.draw(ctl_win)
 
             yield
-        exp_win.setColor([0,0,0])
-        yield
+        for frameN in range(config.FRAME_RATE * FADE_TO_GREY_DURATION):
+            exp_win.setColor([float(frameN)/config.FRAME_RATE/FADE_TO_GREY_DURATION-1]*3)
+            yield
 
     def stop(self):
-        self.movie_stim.pause()
-        self.movie_stim.seek(0)
+        self.movie_stim.stop()
         self.movie_stim.win.setColor([0,0,0])
 
+    def _restart(self):
+        self.movie_stim.setMovie(self.filepath)
+
+    def unload(self):
+        del self.movie_stim
 
 class VideoAudioCheckLoop(SingleVideo):
 
