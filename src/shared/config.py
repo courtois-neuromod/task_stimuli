@@ -14,12 +14,14 @@ EXP_WINDOW = dict(
     size = (1280,1024),
     screen=1,
     fullscr=True,
+    gammaErrorPolicy='warn',
 )
 
 CTL_WINDOW = dict(
     size = (1024,768),
     pos = (100,0),
-    screen=0
+    screen=0,
+    gammaErrorPolicy='warn',
 )
 
 FRAME_RATE=60
