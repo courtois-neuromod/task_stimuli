@@ -2,7 +2,7 @@ from ..tasks import video
 
 TASKS = []
 
-for episode in range(1,3):
+for episode in range(1,25):
     for segment in range(1,3):
         TASKS.append(
             video.SingleVideo(
