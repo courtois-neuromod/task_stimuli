@@ -8,4 +8,4 @@ for episode in range(1,25):
             video.SingleVideo(
                 'data/videos/friends/s1/friends_s1e%02d%s.mkv'%(episode, segment),
                 aspect_ratio = 4/3.,
-                name='task-friends-s1e%d-seg%d'%(episode, segment)))
+                name='task-friends-s1e%d%s'%(episode, segment)))
