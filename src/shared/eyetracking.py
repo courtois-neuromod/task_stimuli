@@ -112,6 +112,80 @@ Please look at the markers that appear on the screen."""
                 yield
         self.eyetracker.calibrate(all_pupils, all_refs_per_flip, exp_win.size)
 
+class EyetrackerTask(Task):
+
+    def __init__(self, order='random', marker_fill_color=MARKER_FILL_COLOR, **kwargs):
+        self.order = order
+        self.marker_fill_color = marker_fill_color
+        super().__init__(**kwargs)
+
+    def instructions(self, exp_win, ctl_win):
+        instruction_text = """We're going to calibrate the eyetracker.
+Please look at the markers that appear on the screen."""
+        screen_text = visual.TextStim(
+            exp_win, text=instruction_text,
+            alignHoriz="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
+
+        for frameN in range(config.FRAME_RATE * INSTRUCTION_DURATION):
+            screen_text.draw(exp_win)
+            screen_text.draw(ctl_win)
+            yield()
+
+    def _setup(self, exp_win):
+        self.use_fmri = False
+
+    def _run(self, exp_win, ctl_win):
+        while True:
+            allKeys = event.getKeys([CALIBRATE_HOTKEY])
+            start_calibration = False
+            for key in allKeys:
+                if key == CALIBRATE_HOTKEY:
+                    start_calibration = True
+            if start_calibration:
+                break
+            yield
+        print('calibration started')
+
+        window_size_frame = exp_win.size-MARKER_SIZE*2
+        print(window_size_frame)
+        circle_marker = visual.Circle(
+            exp_win, edges=64, units='pixels',
+            lineColor=None,fillColor=self.marker_fill_color,
+            autoLog=False)
+
+        random_order = np.random.permutation(np.arange(len(MARKER_POSITIONS)))
+
+        all_refs_per_flip = []
+        all_pupils = []
+
+        radius_anim = np.hstack([np.linspace(MARKER_SIZE,0,MARKER_DURATION_FRAMES/2),
+                                 np.linspace(0,MARKER_SIZE,MARKER_DURATION_FRAMES/2)])
+
+        exp_win.logOnFlip(level=logging.EXP,msg='eyetracker_calibration: starting at %f'%time.time())
+        for site_id in random_order:
+            marker_pos = MARKER_POSITIONS[site_id]
+            pos = (marker_pos-.5)*window_size_frame
+            circle_marker.pos = pos
+            exp_win.logOnFlip(level=logging.EXP,
+                msg="calibrate_position,%d,%d,%d,%d"%(marker_pos[0],marker_pos[1], pos[0],pos[1]))
+            for f,r in enumerate(radius_anim):
+                circle_marker.radius = r
+                circle_marker.draw(exp_win)
+                circle_marker.draw(ctl_win)
+
+                exp_win.logOnFlip(level=logging.EXP,
+                    msg="pupil: pos=(%f,%f), diameter=%d"%tuple(pupil['norm_pos']+[pupil['diameter']]))
+                if f > CALIBRATION_LEAD_IN and f < len(radius_anim)-CALIBRATION_LEAD_OUT:
+                    if pupil and pupil['confidence'] > PUPIL_CONFIDENCE_THRESHOLD:
+                        pos_decenter = (pos/exp_win.size*2).tolist()
+                        ref = {
+                            'norm_pos': pos_decenter,
+                            'screen_pos': pos_decenter,
+                            'timestamp': pupil['timestamp']}
+                        all_refs_per_flip.append(ref)
+                        all_pupils.append(pupil)
+                yield
+
 from subprocess import Popen
 
 class EyeTrackerClient(threading.Thread):
