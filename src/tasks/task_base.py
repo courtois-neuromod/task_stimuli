@@ -121,7 +121,7 @@ class Pause(Task):
     def _run(self, exp_win, ctl_win):
         screen_text = visual.TextStim(
             exp_win, text=self.text,
-            alignHoriz="center", color = 'white',wrapWidth=config.WRAP_WIDTH)
+            alignHoriz="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
 
         while True:
             if not self.wait_key is False:
