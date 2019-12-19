@@ -9,10 +9,15 @@ DELAY_BETWEEN_TASK = 5
 globalClock = core.MonotonicClock(0)
 logging.setDefaultClock(globalClock)
 
-from . import config, fmri, eyetracking
+from . import config, fmri, eyetracking, utils
 from ..tasks import task_base, video
 
-def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=False, use_meg=False, show_ctl_win = False):
+def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=False, use_meg=False, show_ctl_win = False, allow_run_on_battery=False):
+
+    if not utils.check_power_plugged():
+        print('*'*25+'WARNING: the power cord is not connected'+'*'*25)
+        if not allow_run_on_battery:
+            return
 
     log_path = os.path.abspath(os.path.join(config.OUTPUT_DIR,  'sub-%s'%subject,'ses-%s'%session))
     if not os.path.exists(log_path):
@@ -171,4 +176,10 @@ def parse_args():
         help='skip n of the tasks',
         default=0,
         type=int)
+    parser.add_argument('--ctl_win',
+        help='show control window',
+        action='store_true')
+    parser.add_argument('--run_on_battery',
+        help='allow the script to run on battery',
+        action='store_true')
     return parser.parse_args()
