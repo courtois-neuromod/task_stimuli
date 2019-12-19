@@ -29,7 +29,7 @@ FRAME_RATE=60
 # task parameters
 INSTRUCTION_DURATION = 6
 
-WRAP_WIDTH = 1.6
+WRAP_WIDTH = 1
 
 # port for meg setup
 PARALLEL_PORT_ADDRESS = '/dev/parport0'
