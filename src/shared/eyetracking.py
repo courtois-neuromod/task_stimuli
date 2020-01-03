@@ -17,7 +17,7 @@ CALIBRATE_HOTKEY = 'c'
 INSTRUCTION_DURATION = 5
 
 MARKER_SIZE = 50
-MARKER_FILL_COLOR = (.8,0,.5)
+MARKER_FILL_COLOR = (.0,1,.0)
 MARKER_DURATION_FRAMES = 240
 MARKER_POSITIONS = np.asarray([(.25, .5), (0, .5), (0., 1.), (.5, 1.), (1., 1.),
     (1., .5), (1., 0.), (.5, 0.), (0., 0.), (.75, .5)])
@@ -172,18 +172,6 @@ Please look at the markers that appear on the screen."""
                 circle_marker.radius = r
                 circle_marker.draw(exp_win)
                 circle_marker.draw(ctl_win)
-
-                exp_win.logOnFlip(level=logging.EXP,
-                    msg="pupil: pos=(%f,%f), diameter=%d"%tuple(pupil['norm_pos']+[pupil['diameter']]))
-                if f > CALIBRATION_LEAD_IN and f < len(radius_anim)-CALIBRATION_LEAD_OUT:
-                    if pupil and pupil['confidence'] > PUPIL_CONFIDENCE_THRESHOLD:
-                        pos_decenter = (pos/exp_win.size*2).tolist()
-                        ref = {
-                            'norm_pos': pos_decenter,
-                            'screen_pos': pos_decenter,
-                            'timestamp': pupil['timestamp']}
-                        all_refs_per_flip.append(ref)
-                        all_pupils.append(pupil)
                 yield
 
 from subprocess import Popen
