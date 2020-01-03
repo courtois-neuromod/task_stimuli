@@ -18,9 +18,8 @@ INSTRUCTION_DURATION = 5
 
 MARKER_SIZE = 50
 MARKER_FILL_COLOR = (.0,1,.0)
-MARKER_DURATION_FRAMES = 240
-MARKER_POSITIONS = np.asarray([(.25, .5), (0, .5), (0., 1.), (.5, 1.), (1., 1.),
-    (1., .5), (1., 0.), (.5, 0.), (0., 0.), (.75, .5)])
+MARKER_DURATION_FRAMES = 120 # at 60fps
+MARKER_POSITIONS = np.asarray([(0, .5), (1,0.5)]*10 + [(0.5, 0), (0.5,1)]*10)
 
 # number of frames to eliminate at start and end of marker
 CALIBRATION_LEAD_IN = 20
@@ -153,7 +152,7 @@ Please look at the markers that appear on the screen."""
             lineColor=None,fillColor=self.marker_fill_color,
             autoLog=False)
 
-        random_order = np.random.permutation(np.arange(len(MARKER_POSITIONS)))
+        random_order = np.random.permutation(np.arange(len(MARKER_POSITIONS))) # not needed I think
 
         all_refs_per_flip = []
         all_pupils = []
@@ -162,9 +161,23 @@ Please look at the markers that appear on the screen."""
                                  np.linspace(0,MARKER_SIZE,MARKER_DURATION_FRAMES/2)])
 
         exp_win.logOnFlip(level=logging.EXP,msg='eyetracker_calibration: starting at %f'%time.time())
-        for site_id in random_order:
+
+        for site_poursuit in range(len(MARKER_POSITIONS)-1):
+            marker_pos_start = (MARKER_POSITIONS[site_poursuit]-.5)*window_size_frame
+            marker_pos_stop = (MARKER_POSITIONS[site_poursuit+1]-.5)*window_size_frame
+            pos_anim = np.vstack([np.linspace(marker_pos_start[0], marker_pos_stop[0], MARKER_DURATION_FRAMES),
+                                  np.linspace(marker_pos_start[1], marker_pos_stop[1], MARKER_DURATION_FRAMES)])
+            for f, r in enumerate(radius_anim):
+                circle_marker.pos = tuple(pos_anim[:,f])
+                circle_marker.radius = r
+                circle_marker.draw(exp_win)
+                circle_marker.draw(ctl_win)
+                yield
+                
+        for site_id in range(len(MARKER_POSITIONS)):
             marker_pos = MARKER_POSITIONS[site_id]
             pos = (marker_pos-.5)*window_size_frame
+            print(pos)
             circle_marker.pos = pos
             exp_win.logOnFlip(level=logging.EXP,
                 msg="calibrate_position,%d,%d,%d,%d"%(marker_pos[0],marker_pos[1], pos[0],pos[1]))
