@@ -13,6 +13,8 @@ When used with option `--fmri` tasks waits for a new TTL character to start.
 When used with the option `--eyetracking` this software will start Pupil, and trigger the recording of the eye movie and detected pupil position, which outputs to the `output` folder in a BIDS-like way.
 Note that eyetracking data would require offline post/re-processing to be used and shared.
 
+When used with the option `--meg` this software will send triggers on the parallel port (lpt) to start/stop the MEG recording system.
+
 `utils` contains scripts to prepare movies in a reproducible way using the melt command line video editor in singularity.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -53,7 +55,7 @@ mkdir output
 
 - --fmri: will wait for TTL (can be emulated with character `5` on the keyboard) to start the tasks that are labeled as fmri dependent. When not using that flag, tasks will run back to back. It will also append a video loop at the beginning of the session in order for the participant to have sound and visual stimuli to test the setup (then skip to start the session).
 
-- --meg: TODO!
+- --meg: turn on parallel port communication, including start/stop codes at the beginning and end of each task and task-specific codes called in the tasks scripts.
 
 
 If you run multiple time this command, there are no risks of overwriting, the data will be suffixed by the date and time of start of the session.
@@ -65,6 +67,8 @@ Each file only create a `TASKS` list of task subclasses instances, that is loade
 Check the existing files for examples.
 
 ## How to interact with the software:
+
+![alt text](https://github.com/courtois-neuromod/task_stimuli/blob/master/codebase_diagram.tif "Neuromod experimental codebase diagram")
 
 ### stimuli
 
