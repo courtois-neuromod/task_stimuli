@@ -28,6 +28,14 @@ CALIBRATION_LEAD_OUT = 20
 # remove pupil samples with low confidence
 PUPIL_CONFIDENCE_THRESHOLD = .4
 
+CAPTURE_SETTINGS = {
+            "frame_size": [640, 480],
+            "frame_rate": 250,
+            "exposure_time": 4000,
+            "global_gain": 1,
+            "uid": "MRC Systems GmbH-GVRD-MRC HighSpeed-MR_CAM_HS_0014",
+        }
+
 class EyetrackerCalibration(Task):
 
     def __init__(self,eyetracker, order='random', marker_fill_color=MARKER_FILL_COLOR, **kwargs):
@@ -139,33 +147,70 @@ class EyeTrackerClient(threading.Thread):
         self._req_socket.connect('tcp://localhost:50020')
 
         # start eye0 if not started yet (from pupil saved config)
-        self.send_recv_notification({
+        notif = self.send_recv_notification({
             'subject':'eye_process.should_start.0',
             'eye_id':0, 'args':{}})
-        # setup recorder output path
+        time.sleep(1)
+        self.send_recv_notification(
+                {
+                    'subject': 'start_eye_plugin',
+                    'name': 'Aravis_Manager',
+                    'target': 'eye0'
+                }
+            )
+        self.send_recv_notification(
+                {
+                    'subject': 'start_eye_plugin',
+                    'name': 'Aravis_Source',
+                    'target': 'eye0',
+                    'args' : CAPTURE_SETTINGS
+                }
+            )
+
         # quit existing plugin
         self.send_recv_notification({
             'subject':'stop_plugin',
-            'name':'Recorder',})
+            'name':'Recorder'
+            })
         self.send_recv_notification({
             'subject':'stop_plugin',
-            'name':'Accuracy_Visualizer','args':{}})
+            'name':'Accuracy_Visualizer','args':{}
+            })
 
         #restart with new params
+#        self.send_recv_notification({
+#            'subject':'start_plugin',
+#            'name':'Fixed_Screen_Marker_Calibration',
+#            'args':{'fullscreen':True, 'marker_scale':.8, 'sample_duration':120, 'monitor_idx':1}})
+        # setup recorder output path
         self.send_recv_notification({
             'subject':'start_plugin',
-            'name':'Fixed_Screen_Marker_Calibration',
-            'args':{'fullscreen':True, 'marker_scale':.8, 'sample_duration':120, 'monitor_idx':1}})
-        self.send_recv_notification({
-            'subject':'start_plugin',
-            'name':'Recorder','args':{'rec_path':self.record_dir,'rec_root_dir':self.record_dir,'raw_jpeg':False}})
+            'name':'Recorder','args':{
+                'rec_root_dir':self.record_dir,
+                'session_name':self.output_fname_base + '.pupil',
+                'raw_jpeg':False,
+                'record_eye':False}
+            })
         self.send_recv_notification({
             'subject':'start_plugin',
             'name':'Pupil_Remote','args':{}})
 
-        self.send_recv_notification({'subject':'recording.should_start',})
+        self.send_recv_notification({
+            "subject": "set_detection_mapping_mode",
+            "mode": "2d"})
+
+        """
+        self.send_recv_notification({
+            'subject':'start_plugin',
+            'name':'Detector2DPlugin',
+            'target':'eye0',
+            'args':{}})
+        """
+        
+        #self.send_recv_notification({'subject':'recording.should_start',})
         # wait for the whole schmilblick to boot
         time.sleep(4)
+
 
     def send_recv_notification(self, n):
         # REQ REP requirese lock step communication with multipart msg (topic,msgpack_encoded dict)
