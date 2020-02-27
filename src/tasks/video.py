@@ -34,7 +34,8 @@ Please keep your eyes open."""
 
     def _setup(self, exp_win):
 
-        self.movie_stim = visual.MovieStim3(exp_win, self.filepath, units='pixels')
+        self.movie_stim = visual.MovieStim2(exp_win, self.filepath, units='pixels')
+        #print(self.movie_stim._audioStream.__class__)
         aspect_ratio = self._aspect_ratio or self.movie_stim.size[0]/self.movie_stim.size[1]
         min_ratio =  min(
             exp_win.size[0]/ self.movie_stim.size[0],
@@ -64,7 +65,6 @@ Please keep your eyes open."""
             self.movie_stim.draw(exp_win)
             if ctl_win:
                 self.movie_stim.draw(ctl_win)
-
             yield
         for frameN in range(config.FRAME_RATE * FADE_TO_GREY_DURATION):
             exp_win.setColor([float(frameN)/config.FRAME_RATE/FADE_TO_GREY_DURATION-1]*3)
