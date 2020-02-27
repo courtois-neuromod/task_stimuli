@@ -9,10 +9,19 @@ DELAY_BETWEEN_TASK = 5
 globalClock = core.MonotonicClock(0)
 logging.setDefaultClock(globalClock)
 
-from . import config, fmri, eyetracking, utils
+from . import config #import first separately
+from . import fmri, eyetracking, utils
 from ..tasks import task_base, video
 
-def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=False, use_meg=False, show_ctl_win = False, allow_run_on_battery=False):
+def main_loop(all_tasks,
+    subject,
+    session,
+    enable_eyetracker=False,
+    use_fmri=False,
+    use_meg=False,
+    show_ctl_win=False,
+    allow_run_on_battery=False,
+    enable_ptt=False):
 
     if not utils.check_power_plugged():
         print('*'*25+'WARNING: the power cord is not connected'+'*'*25)
@@ -36,6 +45,11 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
     exp_win = visual.Window(**config.EXP_WINDOW)
     exp_win.mouseVisible = False
 
+    ptt = None
+    if enable_ptt:
+        from .ptt import PushToTalk
+        ptt = PushToTalk()
+
     if enable_eyetracker:
         print('creating et client')
         eyetracker_client = eyetracking.EyeTrackerClient(
@@ -45,8 +59,9 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
         print('starting et client')
         eyetracker_client.start()
         print('done')
-        #all_tasks.insert(0, eyetracking.EyetrackerCalibration(eyetracker_client,name='EyeTracker-Calibration'))
-        gaze_drawer = eyetracking.GazeDrawer(ctl_win)
+        all_tasks.insert(0, eyetracking.EyetrackerCalibration(eyetracker_client, name='EyeTracker-Calibration'))
+        if show_ctl_win:
+            gaze_drawer = eyetracking.GazeDrawer(ctl_win)
     if use_fmri:
         setup_video_path = glob.glob(os.path.join('data','videos','subject_setup_videos','sub-%s_*'%subject))
         if not len(setup_video_path):
@@ -181,5 +196,8 @@ def parse_args():
         action='store_true')
     parser.add_argument('--run_on_battery',
         help='allow the script to run on battery',
+        action='store_true')
+    parser.add_argument('--ptt',
+        help='enable Push-To-Talk function',
         action='store_true')
     return parser.parse_args()
