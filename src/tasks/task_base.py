@@ -41,31 +41,23 @@ class Task(object):
     def __str__(self):
         return '%s : %s'%(self.__class__, self.name)
 
+    def _flip_all_windows(self, exp_win, ctl_win=None, clearBuffer=True):
+        exp_win.flip(clearBuffer=clearBuffer)
+        if ctl_win is None:
+            return
+        ctl_win.flip(clearBuffer=clearBuffer)
+
+    def instructions(self, exp_win, ctl_win):
+        if hasattr(self, '_instructions'):
+            for clearBuffer in self._instructions(exp_win, ctl_win):
+                self._flip_all_windows(exp_win, ctl_win, clearBuffer)
+                yield
+        # last/only flip to clear screen
+        self._flip_all_windows(exp_win, ctl_win)
+        yield
+
     def run(self, exp_win, ctl_win):
-        print('Next task: %s'%str(self))
-        # show instruction
-        if hasattr(self, 'instructions'):
-            for _ in self.instructions(exp_win, ctl_win):
-                yield _
-        yield True
 
-        # wait for TTL
-        fmri.get_ttl() # flush any remaining TTL keys
-        if self.use_fmri:
-            ttl_index = 0
-            logging.exp(msg="waiting for fMRI TTL")
-            while True:
-                if fmri.get_ttl():
-                    #TODO: log real timing of TTL?
-                    logging.exp(msg="fMRI TTL %d"%ttl_index)
-                    ttl_index += 1
-                    break
-                yield False # no need to draw
-        logging.info('GO')
-
-        # send start trigger/marker to MEG + Biopac (or anything else on parallel port)
-        if self.use_meg:
-            meg.send_signal(meg.MEG_settings['TASK_START_CODE'])
         self.task_timer = core.Clock()
 
         # initialize a progress bar if we know the duration of the task
@@ -74,11 +66,8 @@ class Task(object):
             progress_bar = tqdm.tqdm(total=self.duration)
             frame_idx = 0
 
-        for _ in self._run(exp_win, ctl_win):
-            if self.use_fmri:
-                if fmri.get_ttl():
-                    logging.exp(msg="fMRI TTL %d"%ttl_index)
-                    ttl_index += 1
+        for clearBuffer in self._run(exp_win, ctl_win):
+            self._flip_all_windows(exp_win, ctl_win, clearBuffer)
 
             # increment the progress bar every second
             if progress_bar:
@@ -86,11 +75,7 @@ class Task(object):
                 if not frame_idx%config.FRAME_RATE:
                     progress_bar.update(1)
 
-            yield _
-
-        # send stop trigger/marker to MEG + Biopac (or anything else on parallel port)
-        if self.use_meg:
-            meg.send_signal(meg.MEG_settings['TASK_STOP_CODE'])
+            yield
 
         if progress_bar:
             progress_bar.clear()
@@ -122,7 +107,7 @@ class Pause(Task):
     def _run(self, exp_win, ctl_win):
         screen_text = visual.TextStim(
             exp_win, text=self.text,
-            alignHoriz="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
+            alignText="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
 
         while True:
             if not self.wait_key is False:
@@ -147,10 +132,10 @@ Do not think about something in particular, let your mind wander..."""
         self.duration = duration
         self.symbol = symbol
 
-    def instructions(self, exp_win, ctl_win):
+    def _instructions(self, exp_win, ctl_win):
         screen_text = visual.TextStim(
             exp_win, text=self.instruction,
-            alignHoriz="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
+            alignText="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
 
         for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
             screen_text.draw(exp_win)
@@ -161,7 +146,7 @@ Do not think about something in particular, let your mind wander..."""
     def _run(self, exp_win, ctl_win):
         screen_text = visual.TextStim(
             exp_win, text=self.symbol,
-            alignHoriz="center", color = 'white')
+            alignText="center", color = 'white')
         screen_text.height = .2
 
         for frameN in range(config.FRAME_RATE * self.duration):

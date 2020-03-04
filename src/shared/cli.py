@@ -10,10 +10,57 @@ globalClock = core.MonotonicClock(0)
 logging.setDefaultClock(globalClock)
 
 from . import config #import first separately
-from . import fmri, eyetracking, utils
+from . import fmri, eyetracking, utils, meg
 from ..tasks import task_base, video
 
 
+def listen_shortcuts():
+    if any([k[1]&event.MOD_CTRL for k in event._keyBuffer]):
+        allKeys = event.getKeys(['n','c','q'], modifiers=True)
+        ctrl_pressed = any([k[1]['ctrl'] for k in allKeys])
+        all_keys_only = [k[0] for k in allKeys]
+        if len(allKeys) and ctrl_pressed:
+            return all_keys_only[0]
+    return False
+
+def run_task_loop(loop, gaze_drawer=None):
+    for _ in loop:
+        if gaze_drawer:
+            gaze = eyetracker_client.get_gaze()
+            if not gaze is None:
+                gaze_drawer.draw_gazepoint(gaze)
+        # check for global event keys
+        shortcut_evt = listen_shortcuts()
+        if shortcut_evt:
+            return shortcut_evt
+
+def run_task(task, exp_win, ctl_win=None, gaze_drawer=None):
+    print('Next task: %s'%str(task))
+
+    # show instruction
+    shortcut_evt = run_task_loop(task.instructions(exp_win, ctl_win), gaze_drawer)
+    if shortcut_evt: return shortcut_evt
+
+    if task.use_fmri:
+        shortcut_evt = run_task_loop(fmri.wait_for_ttl(), gaze_drawer)
+        if shortcut_evt: return shortcut_evt
+
+    logging.info('GO')
+
+    # send start trigger/marker to MEG + Biopac (or anything else on parallel port)
+    if task.use_meg:
+        meg.send_signal(meg.MEG_settings['TASK_START_CODE'])
+
+    shortcut_evt = run_task_loop(task.run(exp_win, ctl_win), gaze_drawer)
+
+    # send stop trigger/marker to MEG + Biopac (or anything else on parallel port)
+    if task.use_meg:
+        meg.send_signal(meg.MEG_settings['TASK_STOP_CODE'])
+
+    # now that time is less sensitive: save files
+    task.save()
+
+    return shortcut_evt
 
 def main_loop(all_tasks,
     subject,
@@ -53,6 +100,7 @@ def main_loop(all_tasks,
         from .ptt import PushToTalk
         ptt = PushToTalk()
 
+    gaze_drawer = None
     if enable_eyetracker:
         print('creating et client')
         eyetracker_client = eyetracking.EyeTrackerClient(
@@ -93,10 +141,6 @@ Thanks for your participation!"""))
 
             #clear events buffer in case the user pressed a lot of buttoons
             event.clearEvents()
-            # ensure to clear the screen if task aborted
-            exp_win.flip()
-            if show_ctl_win:
-                ctl_win.flip()
 
             use_eyetracking = False
             if enable_eyetracker and task.use_eyetracking:
@@ -109,62 +153,44 @@ Thanks for your participation!"""))
                 use_meg=use_meg)
             print('READY')
 
-            allKeys = []
-            ctrl_pressed = False
-
             while True:
                 #force focus on the task window to ensure getting keys, TTL, ...
                 exp_win.winHandle.activate()
-
+                # record frame intervals for debug
                 exp_win.recordFrameIntervals = True
-                for draw in task.run(exp_win, ctl_win):
 
-                    if use_eyetracking:
-                        gaze = eyetracker_client.get_gaze()
-                        if not gaze is None:
-                            gaze_drawer.draw_gazepoint(gaze)
-                    # check for global event keys
-                    exp_win.flip(clearBuffer=draw)
-                    if show_ctl_win:
-                        ctl_win.flip(clearBuffer=draw)
+                shortcut_evt = run_task(task, exp_win, ctl_win, gaze_drawer)
 
-                    if any([k[1]&event.MOD_CTRL for k in event._keyBuffer]):
-                        allKeys = event.getKeys(['n','c','q','t'], modifiers=True)
-                        ctrl_pressed = any([k[1]['ctrl'] for k in allKeys])
-                        all_keys_only = [k[0] for k in allKeys]
-                        if len(allKeys) and ctrl_pressed:
-                            break
-                else: # task completed
-                    task.save()
+                if shortcut_evt == 'n':
+                    # restart the task
+                    logging.exp(msg="task - %s: restart"%str(task))
+                    task.restart()
+                    continue
+                elif shortcut_evt:
+                    # abort/skip or quit
+                    logging.exp(msg="task - %s: abort"%str(task))
                     break
-                task.save()
+                else: # task completed
+                    logging.exp(msg="task - %s: complete"%str(task))
+                    # send stop trigger/marker to MEG + Biopac (or anything else on parallel port)
+                    break
 
                 logging.flush()
                 task.stop()
 
-                # ensure last frame or task clear is draw
-                exp_win.flip()
-                if show_ctl_win:
-                    ctl_win.flip()
-
-                if ctrl_pressed and ('c' in all_keys_only or 'q' in all_keys_only):
-                    break
-                logging.exp(msg="task - %s: restart"%str(task))
-                task.restart()
             task.unload()
             exp_win.recordFrameIntervals = True
             exp_win.saveFrameIntervals('frame_intervals.txt')
 
-            if ctrl_pressed:
-                if 'q' in all_keys_only:
-                    print('quit')
-                    break
-                else:
-                    print('skip')
-            else:
+            if shortcut_evt=='q':
+                print('quit')
+                break
+            elif shortcut_evt is None:
                 # add a delay between tasks to avoid remaining TTL to start next task
+                # do that only if the task was not aborted to save time
+                # there is anyway the duration of the instruction before listening to TTL
                 for i in range(DELAY_BETWEEN_TASK*config.FRAME_RATE):
-                    exp_win.flip()
+                    exp_win.flip(clearBuffer=False)
 
     except KeyboardInterrupt as ki:
         print(traceback.format_exc())
