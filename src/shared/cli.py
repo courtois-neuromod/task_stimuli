@@ -13,6 +13,8 @@ from . import config #import first separately
 from . import fmri, eyetracking, utils
 from ..tasks import task_base, video
 
+
+
 def main_loop(all_tasks,
     subject,
     session,
@@ -44,6 +46,7 @@ def main_loop(all_tasks,
         ctl_win = None
     exp_win = visual.Window(**config.EXP_WINDOW)
     exp_win.mouseVisible = False
+
 
     ptt = None
     if enable_ptt:
@@ -113,6 +116,7 @@ Thanks for your participation!"""))
                 #force focus on the task window to ensure getting keys, TTL, ...
                 exp_win.winHandle.activate()
 
+                exp_win.recordFrameIntervals = True
                 for draw in task.run(exp_win, ctl_win):
 
                     if use_eyetracking:
@@ -120,12 +124,12 @@ Thanks for your participation!"""))
                         if not gaze is None:
                             gaze_drawer.draw_gazepoint(gaze)
                     # check for global event keys
-                    exp_win.flip()
+                    exp_win.flip(clearBuffer=draw)
                     if show_ctl_win:
-                        ctl_win.flip()
+                        ctl_win.flip(clearBuffer=draw)
 
                     if any([k[1]&event.MOD_CTRL for k in event._keyBuffer]):
-                        allKeys = event.getKeys(['n','c','q'], modifiers=True)
+                        allKeys = event.getKeys(['n','c','q','t'], modifiers=True)
                         ctrl_pressed = any([k[1]['ctrl'] for k in allKeys])
                         all_keys_only = [k[0] for k in allKeys]
                         if len(allKeys) and ctrl_pressed:
@@ -148,6 +152,8 @@ Thanks for your participation!"""))
                 logging.exp(msg="task - %s: restart"%str(task))
                 task.restart()
             task.unload()
+            exp_win.recordFrameIntervals = True
+            exp_win.saveFrameIntervals('frame_intervals.txt')
 
             if ctrl_pressed:
                 if 'q' in all_keys_only:

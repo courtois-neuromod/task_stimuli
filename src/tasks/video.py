@@ -30,7 +30,7 @@ Please keep your eyes open."""
             screen_text.draw(exp_win)
             if ctl_win:
                 screen_text.draw(ctl_win)
-            yield
+            yield True
 
     def _setup(self, exp_win):
 
@@ -65,10 +65,10 @@ Please keep your eyes open."""
             self.movie_stim.draw(exp_win)
             if ctl_win:
                 self.movie_stim.draw(ctl_win)
-            yield
+            yield False
         for frameN in range(config.FRAME_RATE * FADE_TO_GREY_DURATION):
             exp_win.setColor([float(frameN)/config.FRAME_RATE/FADE_TO_GREY_DURATION-1]*3)
-            yield
+            yield True
 
     def stop(self):
         self.movie_stim.stop()
