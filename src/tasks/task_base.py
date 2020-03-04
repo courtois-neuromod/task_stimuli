@@ -46,7 +46,8 @@ class Task(object):
         # show instruction
         if hasattr(self, 'instructions'):
             for _ in self.instructions(exp_win, ctl_win):
-                yield True
+                yield _
+        yield True
 
         # wait for TTL
         fmri.get_ttl() # flush any remaining TTL keys
@@ -85,7 +86,7 @@ class Task(object):
                 if not frame_idx%config.FRAME_RATE:
                     progress_bar.update(1)
 
-            yield True
+            yield _
 
         # send stop trigger/marker to MEG + Biopac (or anything else on parallel port)
         if self.use_meg:
@@ -130,7 +131,7 @@ class Pause(Task):
             screen_text.draw(exp_win)
             if ctl_win:
                 screen_text.draw(ctl_win)
-            yield
+            yield True
 
 
 class Fixation(Task):
@@ -155,7 +156,7 @@ Do not think about something in particular, let your mind wander..."""
             screen_text.draw(exp_win)
             if ctl_win:
                 screen_text.draw(ctl_win)
-            yield
+            yield True
 
     def _run(self, exp_win, ctl_win):
         screen_text = visual.TextStim(
@@ -167,4 +168,4 @@ Do not think about something in particular, let your mind wander..."""
             screen_text.draw(exp_win)
             if ctl_win:
                 screen_text.draw(ctl_win)
-            yield
+            yield True
