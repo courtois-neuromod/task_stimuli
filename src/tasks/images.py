@@ -23,10 +23,10 @@ You will see pictures of scenes and objects."""
         else:
             raise ValueError('Cannot find the listed images in %s '%images_path)
 
-    def instructions(self, exp_win, ctl_win):
+    def _instructions(self, exp_win, ctl_win):
         screen_text = visual.TextStim(
             exp_win, text=self.instruction,
-            alignHoriz="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
+            alignText="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
 
         for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
             screen_text.draw(exp_win)

@@ -33,10 +33,10 @@ You have to select the response (left or right) that is closest to the target.""
         else:
             raise ValueError('File %s does not exists'%words_file)
 
-    def instructions(self, exp_win, ctl_win):
+    def _instructions(self, exp_win, ctl_win):
         screen_text = visual.TextStim(
             exp_win, text=self.instruction,
-            alignHoriz="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
+            alignText="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
 
         def _draw_instr():
             screen_text.draw(exp_win)
@@ -61,17 +61,17 @@ You have to select the response (left or right) that is closest to the target.""
         target_stim = visual.TextStim(
             exp_win, text='',
             pos = (0,.25),
-            alignHoriz="center", color = 'white')
+            alignText="center", color = 'white')
 
         r1_stim = visual.TextStim(
             exp_win, text='',
             pos = (-.5,-.25),
-            alignHoriz="center", color = 'white')
+            alignText="center", color = 'white')
 
         r2_stim = visual.TextStim(
             exp_win, text='',
             pos = (.5,-.25),
-            alignHoriz="center", color = 'white')
+            alignText="center", color = 'white')
 
         exp_win.logOnFlip(level=logging.EXP,msg='triplet: task starting at %f'%time.time())
 
