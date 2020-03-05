@@ -23,7 +23,7 @@ def listen_shortcuts():
             return all_keys_only[0]
     return False
 
-def run_task_loop(loop, gaze_drawer=None):
+def run_task_loop(loop, eyetracker=None, gaze_drawer=None):
     for _ in loop:
         if gaze_drawer:
             gaze = eyetracker_client.get_gaze()
@@ -34,15 +34,15 @@ def run_task_loop(loop, gaze_drawer=None):
         if shortcut_evt:
             return shortcut_evt
 
-def run_task(task, exp_win, ctl_win=None, gaze_drawer=None):
+def run_task(task, exp_win, ctl_win=None, eyetracker=None, gaze_drawer=None):
     print('Next task: %s'%str(task))
 
     # show instruction
-    shortcut_evt = run_task_loop(task.instructions(exp_win, ctl_win), gaze_drawer)
+    shortcut_evt = run_task_loop(task.instructions(exp_win, ctl_win), eyetracker, gaze_drawer)
     if shortcut_evt: return shortcut_evt
 
     if task.use_fmri:
-        shortcut_evt = run_task_loop(fmri.wait_for_ttl(), gaze_drawer)
+        shortcut_evt = run_task_loop(fmri.wait_for_ttl(), eyetracker, gaze_drawer)
         if shortcut_evt: return shortcut_evt
 
     logging.info('GO')
@@ -51,7 +51,7 @@ def run_task(task, exp_win, ctl_win=None, gaze_drawer=None):
     if task.use_meg:
         meg.send_signal(meg.MEG_settings['TASK_START_CODE'])
 
-    shortcut_evt = run_task_loop(task.run(exp_win, ctl_win), gaze_drawer)
+    shortcut_evt = run_task_loop(task.run(exp_win, ctl_win), eyetracker, gaze_drawer)
 
     # send stop trigger/marker to MEG + Biopac (or anything else on parallel port)
     if task.use_meg:
