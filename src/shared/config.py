@@ -10,7 +10,7 @@ EYETRACKING_ROI = (60,30,660,450)
 
 EXP_WINDOW = dict(
 #    size = (800,600),
-    #size = (1024,768),
+    #size = (1280,1024),
     size = (1920, 1080),
     screen=1,
     fullscr=True,

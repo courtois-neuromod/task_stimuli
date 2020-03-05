@@ -27,9 +27,11 @@ Please keep your eyes open."""
 
         print(screen_text.pos)
         for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
-            exp_win.setColor([-float(frameN)/config.FRAME_RATE/config.INSTRUCTION_DURATION]*3)
+            grey = [-float(frameN)/config.FRAME_RATE/config.INSTRUCTION_DURATION]*3
+            exp_win.setColor(grey)
             screen_text.draw(exp_win)
             if ctl_win:
+                ctl_win.setColor(grey)
                 screen_text.draw(ctl_win)
             yield True
 

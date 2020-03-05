@@ -55,7 +55,7 @@ Please look at the markers that appear on the screen."""
         for frameN in range(config.FRAME_RATE * INSTRUCTION_DURATION):
             screen_text.draw(exp_win)
             screen_text.draw(ctl_win)
-            yield()
+            yield True
 
     def _setup(self, exp_win):
         self.use_fmri = False
@@ -69,7 +69,7 @@ Please look at the markers that appear on the screen."""
                     start_calibration = True
             if start_calibration:
                 break
-            yield
+            yield False
         print('calibration started')
 
         window_size_frame = exp_win.size-MARKER_SIZE*2
@@ -90,7 +90,7 @@ Please look at the markers that appear on the screen."""
         pupil = None
         while pupil is None: # wait until we get at least a pupil
             pupil = self.eyetracker.get_pupil()
-            yield
+            yield False
 
         exp_win.logOnFlip(level=logging.EXP,msg='eyetracker_calibration: starting at %f'%time.time())
         for site_id in random_order:
@@ -117,7 +117,8 @@ Please look at the markers that appear on the screen."""
                             'timestamp': pupil['timestamp']}
                         all_refs_per_flip.append(ref)
                         all_pupils.append(pupil)
-                yield
+                yield True
+        yield True
         self.eyetracker.calibrate(all_pupils, all_refs_per_flip, exp_win.size)
 
 from subprocess import Popen
@@ -207,10 +208,10 @@ class EyeTrackerClient(threading.Thread):
             'args':{}})
         """
 
+
         #self.send_recv_notification({'subject':'recording.should_start',})
         # wait for the whole schmilblick to boot
         time.sleep(4)
-
 
     def send_recv_notification(self, n):
         # REQ REP requirese lock step communication with multipart msg (topic,msgpack_encoded dict)
@@ -259,12 +260,12 @@ class EyeTrackerClient(threading.Thread):
 
     def calibrate(self, pupil_list, ref_list, frame_size):
         if len(pupil_list) < 100:
-            # TODO: log
-            return
+            logging.error('Calibration: not enough pupil captured for calibration')
+            #return
 
         self.send_recv_notification({
             'subject':'start_plugin',
-            'name':'Mock_Calibration',
+            'name':'External_Calibration',
             'args':{'frame_size': frame_size.tolist()}})
 
         self.send_recv_notification({
