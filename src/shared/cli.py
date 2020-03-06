@@ -46,7 +46,8 @@ def run_task(task, exp_win, ctl_win=None, eyetracker=None, gaze_drawer=None):
         if shortcut_evt: return shortcut_evt
 
     logging.info('GO')
-
+    if eyetracker:
+        eyetracker.start_recording(task.name)
     # send start trigger/marker to MEG + Biopac (or anything else on parallel port)
     if task.use_meg:
         meg.send_signal(meg.MEG_settings['TASK_START_CODE'])
@@ -57,6 +58,8 @@ def run_task(task, exp_win, ctl_win=None, eyetracker=None, gaze_drawer=None):
     if task.use_meg:
         meg.send_signal(meg.MEG_settings['TASK_STOP_CODE'])
 
+    if eyetracker:
+        eyetracker.stop_recording()
     # now that time is less sensitive: save files
     task.save()
 
@@ -159,7 +162,7 @@ Thanks for your participation!"""))
                 # record frame intervals for debug
                 exp_win.recordFrameIntervals = True
 
-                shortcut_evt = run_task(task, exp_win, ctl_win, gaze_drawer)
+                shortcut_evt = run_task(task, exp_win, ctl_win, eyetracker_client, gaze_drawer)
 
                 if shortcut_evt == 'n':
                     # restart the task

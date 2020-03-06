@@ -222,14 +222,25 @@ class EyeTrackerClient(threading.Thread):
         self._req_socket.send('t') #see Pupil Remote Plugin for details
         return float(self._req_socket.recv())
 
+    def start_recording(self, recording_name):
+        logging.info('starting eyetracking recording')
+        return self.send_recv_notification({
+            'subject':'recording.should_start',
+            'session_name': recording_name})
+
+    def stop_recording(self):
+        logging.info('stopping eyetracking recording')
+        return self.send_recv_notification({
+            'subject':'recording.should_stop'})
+
     def join(self, timeout=None):
         self.stoprequest.set()
         # stop recording
         self.send_recv_notification({'subject':'recording.should_stop',})
         # stop world and children process
-        self.send_recv_notification({'subject':'world_process.should_stop'})
+        self.send_recv_notification({'subject':'launcher_process.should_stop'})
         self._pupil_process.wait(timeout)
-
+        self._pupil_process.terminate()
         super(EyeTrackerClient, self).join(timeout)
 
     def run(self):
