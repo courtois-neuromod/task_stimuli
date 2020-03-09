@@ -190,7 +190,7 @@ class EyeTrackerClient(threading.Thread):
                 'rec_root_dir':self.record_dir,
                 'session_name':self.output_fname_base + '.pupil',
                 'raw_jpeg':False,
-                'record_eye':False}
+                'record_eye':True}
             })
         self.send_recv_notification({
             'subject':'start_plugin',
