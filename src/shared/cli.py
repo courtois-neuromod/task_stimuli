@@ -235,4 +235,8 @@ def parse_args():
     parser.add_argument('--ptt',
         help='enable Push-To-Talk function',
         action='store_true')
+    parser.add_argument('--profile',
+        help='enable profiling',
+        action='store_true')
+
     return parser.parse_args()

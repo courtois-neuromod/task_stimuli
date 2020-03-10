@@ -15,7 +15,12 @@ from src.shared import cli
 
 if __name__ == "__main__":
     parsed = cli.parse_args()
-    print(parsed)
+    if parsed.profile:
+        run_profile(parsed)
+    else:
+        run(parsed)
+
+def run(parsed):
     try:
         ses_mod = importlib.import_module('src.sessions.ses-%s'%parsed.session)
         tasks = ses_mod.TASKS
@@ -31,3 +36,12 @@ if __name__ == "__main__":
         parsed.ctl_win,
         parsed.run_on_battery,
         parsed.ptt)
+
+def run_profile(parsed):
+    import cProfile
+    cProfile.runctx(
+        "run()",
+        {'parsed':parsed},
+        locals(),
+        "task_stimuli.pstats"
+    )
