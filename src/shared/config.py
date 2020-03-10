@@ -1,7 +1,7 @@
 from psychopy import prefs
 
 # avoids delay in movie3 audio seek
-prefs.general['audioLib'] = ['sounddevice']
+prefs.hardware['audioLib'] = ['sounddevice']
 
 
 OUTPUT_DIR = 'output'
