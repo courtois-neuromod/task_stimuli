@@ -103,6 +103,7 @@ def main_loop(all_tasks,
         from .ptt import PushToTalk
         ptt = PushToTalk()
 
+    eyetracker_client = None
     gaze_drawer = None
     if enable_eyetracker:
         print('creating et client')

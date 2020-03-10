@@ -13,13 +13,6 @@ from multiprocessing import (
 
 from src.shared import cli
 
-if __name__ == "__main__":
-    parsed = cli.parse_args()
-    if parsed.profile:
-        run_profile(parsed)
-    else:
-        run(parsed)
-
 def run(parsed):
     try:
         ses_mod = importlib.import_module('src.sessions.ses-%s'%parsed.session)
@@ -37,11 +30,19 @@ def run(parsed):
         parsed.run_on_battery,
         parsed.ptt)
 
-def run_profile(parsed):
+def run_profiled(parsed):
     import cProfile
+    from main import run
     cProfile.runctx(
-        "run()",
+        "run(parsed)",
         {'parsed':parsed},
         locals(),
         "task_stimuli.pstats"
     )
+
+if __name__ == "__main__":
+    parsed = cli.parse_args()
+    if parsed.profile:
+        run_profiled(parsed)
+    else:
+        run(parsed)
