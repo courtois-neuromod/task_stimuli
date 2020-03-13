@@ -123,6 +123,17 @@ Please look at the markers that appear on the screen."""
 
 from subprocess import Popen
 
+from contextlib import contextmanager
+
+@contextmanager
+def nonblocking(lock):
+    locked = lock.acquire(False)
+    try:
+        yield locked
+    finally:
+        if locked:
+            lock.release()
+
 class EyeTrackerClient(threading.Thread):
 
     def __init__(self, output_path, output_fname_base):
@@ -249,6 +260,7 @@ class EyeTrackerClient(threading.Thread):
         ipc_sub_port = int(self._req_socket.recv())
         self.pupil_monitor = Msg_Receiver(self._ctx,'tcp://localhost:%d'%ipc_sub_port,topics=('gaze','pupil'))
         while not self.stoprequest.isSet():
+            time.sleep(.001)
             msg = self.pupil_monitor.recv()
             if not msg is None:
                 topic, tmp = msg
@@ -260,14 +272,15 @@ class EyeTrackerClient(threading.Thread):
 
         print('eyetracker listener: stopping')
 
-
     def get_pupil(self):
-        with self.lock:
-            return self.pupil
+        with nonblocking(self.lock) as locked:
+            if locked:
+                return self.pupil
 
     def get_gaze(self):
-        with self.lock:
-            return self.gaze
+        with nonblocking(self.lock) as locked:
+            if locked:
+                return self.gaze
 
     def calibrate(self, pupil_list, ref_list, frame_size):
         if len(pupil_list) < 100:
