@@ -67,15 +67,15 @@ class Task(object):
             frame_idx = 0
 
         for clearBuffer in self._run(exp_win, ctl_win):
+            # yield first to allow external draw before flipping
+            yield
             self._flip_all_windows(exp_win, ctl_win, clearBuffer)
-
+            
             # increment the progress bar every second
             if progress_bar:
                 frame_idx += 1
                 if not frame_idx%config.FRAME_RATE:
                     progress_bar.update(1)
-
-            yield
 
         if progress_bar:
             progress_bar.clear()
