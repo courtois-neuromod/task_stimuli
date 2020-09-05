@@ -182,6 +182,34 @@ class VideoGame(VideoGameBase):
             ctl_win.winHandle.on_key_press = event._onPygletKey
             del ctl_win.winHandle.on_key_release
 
+class VideoGameMultiLevel(VideoGame):
+
+    def __init__(self, *args,**kwargs):
+
+        self._state_names = kwargs.pop('state_names')
+        self._scenarii = kwargs.pop('scenarii')
+        self._repeat_scenario_multilevel = kwargs.get('repeat_scenario', False)
+
+        kwargs['repeat_scenario'] = False
+        super().__init__(
+            state_name = self._state_names[0],
+            scenario=self._scenarii[0],
+            **kwargs)
+
+    def _run(self, exp_win, ctl_win):
+        while True:
+            for level, scenario in zip(self._state_names, self._scenarii):
+                self.emulator.load_state(level)
+                self.emulator.data.load(
+                    retro.data.get_file_path(self.game_name, 'data.json'),
+                    scenario)
+                yield from super()._run(exp_win, ctl_win)
+                time_exceeded = self.max_duration and self.task_timer.getTime() > self.max_duration
+                if time_exceeded: # stop if we are above the planned duration
+                    break
+            if time_exceeded or not self._repeat_scenario_multilevel:
+                break
+
 class VideoGameReplay(VideoGameBase):
 
     def __init__(self, movie_filename, game_name=DEFAULT_GAME_NAME, scenario=None, *args, **kwargs):
