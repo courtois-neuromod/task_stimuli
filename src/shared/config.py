@@ -23,6 +23,7 @@ CTL_WINDOW = dict(
     pos = (100,0),
     screen=0,
     gammaErrorPolicy='warn',
+    waitBlanking=False, # avoid ctrl window to block the script in case of differing refresh rate.
 )
 
 FRAME_RATE=60

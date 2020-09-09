@@ -15,7 +15,7 @@ from src.shared import cli
 
 def run(parsed):
     try:
-        ses_mod = importlib.import_module('src.sessions.ses-%s'%parsed.session)
+        ses_mod = importlib.import_module('src.sessions.ses-%s'%parsed.tasks)
         tasks = ses_mod.TASKS
     except ImportError:
         raise(ValueError('session tasks file cannot be found for %s'%parsed.session))
@@ -23,6 +23,7 @@ def run(parsed):
         tasks[parsed.skip_n_tasks:],
         parsed.subject,
         parsed.session,
+        parsed.output,
         parsed.eyetracking,
         parsed.fmri,
         parsed.meg,

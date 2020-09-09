@@ -8,5 +8,6 @@ TASKS = [
         scenarii=['data/videogames/%s.json'%sc for sc in  ['scenario_repeat1', 'scenario_Level4-1', 'scenario_Level5-1']], # this scenario repeats the same level
         repeat_scenario=True,
         max_duration=10*60, # if when level completed or dead we exceed that time in secs, stop the task
-        name='ShinobiIIIReturnOfTheNinjaMaster-multilevel-test')
-] * 5
+        name=f"shinobi-3levels-{run+1:02d}")
+    for run in range(5)
+]

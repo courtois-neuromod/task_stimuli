@@ -70,8 +70,9 @@ class VideoGameBase(Task):
         if not self.game_sound.status == constants.PLAYING:
             self.game_sound.play()
 
-    def stop(self):
+    def _stop(self, exp_win, ctl_win):
         self.game_sound.stop()
+        yield True
 
     def unload(self):
         self.emulator.close()
@@ -107,6 +108,7 @@ class VideoGame(VideoGameBase):
             if ctl_win:
                 screen_text.draw(ctl_win)
             yield
+        yield True
 
     def _setup(self, exp_win):
 
@@ -134,14 +136,14 @@ class VideoGame(VideoGameBase):
             self.emulator.reset()
             nnn = 0
             while True:
-                movie_path = os.path.join(
+                self.movie_path = os.path.join(
                     self.output_path,
-                    "%s_%s_%s_%03d.bk2"%(self.output_fname_base,self.game_name,self.state_name, nnn))
-                if not os.path.exists(movie_path):
+                    "%s_%s_%s_%03d.bk2"%(self.output_fname_base, self.game_name, self.state_name, nnn))
+                if not os.path.exists(self.movie_path):
                     break
                 nnn += 1
-            logging.exp('VideoGame: recording movie in %s'%movie_path)
-            self.emulator.record_movie(movie_path)
+            logging.exp('VideoGame: recording movie in %s'%self.movie_path)
+            self.emulator.record_movie(self.movie_path)
 
             total_reward = 0
             exp_win.logOnFlip(
@@ -169,6 +171,9 @@ class VideoGame(VideoGameBase):
                 self._render_graphics_sound(_obs,self.emulator.em.get_audio(),exp_win, ctl_win)
                 yield
                 if _done:
+                    exp_win.logOnFlip(
+                        level=logging.EXP,
+                        msg='VideoGame %s: %s stopped at %f'%(self.game_name, self.state_name, time.time()))
                     break
 
             if not self.repeat_scenario or \
@@ -199,10 +204,12 @@ class VideoGameMultiLevel(VideoGame):
     def _run(self, exp_win, ctl_win):
         while True:
             for level, scenario in zip(self._state_names, self._scenarii):
+                self.state_name = level
                 self.emulator.load_state(level)
                 self.emulator.data.load(
                     retro.data.get_file_path(self.game_name, 'data.json'),
                     scenario)
+
                 yield from super()._run(exp_win, ctl_win)
                 time_exceeded = self.max_duration and self.task_timer.getTime() > self.max_duration
                 if time_exceeded: # stop if we are above the planned duration
