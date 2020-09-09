@@ -69,13 +69,16 @@ Please keep your eyes open."""
             if ctl_win:
                 self.movie_stim.draw(ctl_win)
             yield False
-        for frameN in range(config.FRAME_RATE * FADE_TO_GREY_DURATION):
-            exp_win.setColor([float(frameN)/config.FRAME_RATE/FADE_TO_GREY_DURATION-1]*3)
-            yield True
 
-    def stop(self):
+
+    def _stop(self, exp_win, ctl_win):
         self.movie_stim.stop()
-        self.movie_stim.win.setColor([0,0,0])
+        for frameN in range(config.FRAME_RATE * FADE_TO_GREY_DURATION):
+            grey = [float(frameN)/config.FRAME_RATE/FADE_TO_GREY_DURATION-1]*3
+            exp_win.setColor(grey)
+            if ctl_win:
+                ctl_win.setColor(grey)
+            yield True
 
     def _restart(self):
         self.movie_stim.setMovie(self.filepath)

@@ -50,11 +50,11 @@ class Task(object):
     def instructions(self, exp_win, ctl_win):
         if hasattr(self, '_instructions'):
             for clearBuffer in self._instructions(exp_win, ctl_win):
-                self._flip_all_windows(exp_win, ctl_win, clearBuffer)
                 yield
+                self._flip_all_windows(exp_win, ctl_win, clearBuffer)
         # last/only flip to clear screen
-        self._flip_all_windows(exp_win, ctl_win)
         yield
+        self._flip_all_windows(exp_win, ctl_win, True)
 
     def run(self, exp_win, ctl_win):
 
@@ -70,7 +70,6 @@ class Task(object):
             # yield first to allow external draw before flipping
             yield
             self._flip_all_windows(exp_win, ctl_win, clearBuffer)
-            
             # increment the progress bar every second
             if progress_bar:
                 frame_idx += 1
@@ -81,8 +80,14 @@ class Task(object):
             progress_bar.clear()
             progress_bar.close()
 
-    def stop(self):
-        pass
+    def stop(self, exp_win, ctl_win):
+        if hasattr(self, '_stop'):
+            for clearBuffer in self._stop(exp_win, ctl_win):
+                yield
+                self._flip_all_windows(exp_win, ctl_win, clearBuffer)
+        # 2 flips to clear screen and backbuffer
+        for i in range(2):
+            self._flip_all_windows(exp_win, ctl_win, True)
 
     def restart(self):
         if hasattr(self, '_restart'):
@@ -118,6 +123,8 @@ class Pause(Task):
                 screen_text.draw(ctl_win)
             yield True
 
+    def _stop(self, exp_win, ctl_win):
+        yield True
 
 class Fixation(Task):
 
