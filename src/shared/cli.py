@@ -1,7 +1,9 @@
 # CLI: command line interface options and main loop
 
-import os, datetime, traceback, glob
+import os, datetime, traceback, glob, time
 from psychopy import core, visual, logging, event
+
+visual.window.reportNDroppedFrames = 10e10
 
 TIMEOUT = 5
 DELAY_BETWEEN_TASK = 5

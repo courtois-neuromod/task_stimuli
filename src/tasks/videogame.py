@@ -61,13 +61,31 @@ class SoundDeviceBlockStream(sound.backend_sounddevice.SoundDeviceSound):
 
 class VideoGameBase(Task):
 
+
+    def _setup(self, exp_win):
+        self.game_vis_stim = visual.ImageStim(
+            exp_win,
+            size=exp_win.size,
+            units='pixels',
+            interpolate=False,
+            flipVert=True,
+            autoLog=False)
+        self.game_sound = SoundDeviceBlockStream(stereo=True, blockSize=735)
+        first_frame = self.emulator.reset()
+        first_audio_block = self.emulator.em.get_audio()
+        self.game_sound.add_block(self._transform_soundblock(first_audio_block))
+
+    def _transform_soundblock(self, sound_block):
+        return sound_block[:735]/float(2**15)
+
     def _render_graphics_sound(self, obs, sound_block, exp_win, ctl_win):
-        self.game_vis_stim.image = np.flip(obs,0)/255.
+        self.game_vis_stim.image = obs/255. #np.flip(obs, 0)/255.
         self.game_vis_stim.draw(exp_win)
         if ctl_win:
             self.game_vis_stim.draw(ctl_win)
-        self.game_sound.add_block(sound_block[:735]/float(2**15))
+        self.game_sound.add_block(self._transform_soundblock(sound_block))
         if not self.game_sound.status == constants.PLAYING:
+            print("start sound")
             self.game_sound.play()
 
     def _stop(self, exp_win, ctl_win):
@@ -79,7 +97,7 @@ class VideoGameBase(Task):
 
 class VideoGame(VideoGameBase):
 
-    DEFAULT_INSTRUCTION = "Let's play a video game.\n%s : %s\nHave fun!"
+    DEFAULT_INSTRUCTION = "Let's play a video game.\n%s: %s\nHave fun!"
 
     def __init__(self,
         game_name=DEFAULT_GAME_NAME,
@@ -95,12 +113,13 @@ class VideoGame(VideoGameBase):
         self.scenario = scenario
         self.repeat_scenario = repeat_scenario
         self.max_duration = max_duration
-        self.instruction = self.instruction%(self.game_name, self.state_name)
 
     def _instructions(self, exp_win, ctl_win):
 
+        instruction = self.instruction%(self.game_name, self.state_name)
+
         screen_text = visual.TextStim(
-            exp_win, text=self.instruction,
+            exp_win, text=instruction,
             alignText="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
 
         for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
@@ -118,74 +137,87 @@ class VideoGame(VideoGameBase):
             scenario=self.scenario,
             record=False)
 
-        self.game_vis_stim = visual.ImageStim(exp_win,size=exp_win.size,units='pixels',autoLog=False)
-        self.game_sound = SoundDeviceBlockStream(stereo=True, blockSize=735)
+        super()._setup(exp_win)
 
-    def _run(self, exp_win, ctl_win):
+        self._set_recording_file()
+
+    def _set_recording_file(self):
+        nnn = 0
+        while True:
+            self.movie_path = os.path.join(
+                self.output_path,
+                "%s_%s_%s_%03d.bk2"%(self.output_fname_base, self.game_name, self.state_name, nnn))
+            if not os.path.exists(self.movie_path):
+                break
+            nnn += 1
+        logging.exp('VideoGame: recording movie in %s'%self.movie_path)
+        self.emulator.record_movie(self.movie_path)
+
+    def _run_emulator(self, exp_win, ctl_win):
+
         global _keyReleaseBuffer, _keyPressBuffer
+
+        total_reward = 0
+        _done = False
+        level_step = 0
+        keys = [False]*12
+
+        while not _done:
+            for k in _keyReleaseBuffer:
+                #print('release',k)
+                if k[0] in KEY_SET:
+                    keys[KEY_SET.index(k[0])] = False
+            _keyReleaseBuffer.clear()
+            for k in _keyPressBuffer:
+                #print('press',k)
+                if k[0] in KEY_SET:
+                    keys[KEY_SET.index(k[0])] = True
+            _keyPressBuffer.clear()
+
+            _obs, _rew, _done, _info = self.emulator.step(keys)
+            total_reward += _rew
+            if _rew > 0 :
+                exp_win.logOnFlip(level=logging.EXP, msg='Reward %f'%(total_reward))
+            self._render_graphics_sound(_obs, self.emulator.em.get_audio(), exp_win, ctl_win)
+            if _done:
+                exp_win.logOnFlip(
+                    level=logging.EXP,
+                    msg='VideoGame %s: %s stopped at %f'%(self.game_name, self.state_name, time.time()))
+            if not level_step%config.FRAME_RATE:
+                exp_win.logOnFlip(level=logging.EXP, msg="level step: %d"%level_step)
+            yield
+            level_step+=1
+
+    def _set_key_handler(self, exp_win):
         # activate repeat keys
         exp_win.winHandle.on_key_press = _onPygletKeyPress
         exp_win.winHandle.on_key_release = _onPygletKeyRelease
-        if ctl_win:
-            ctl_win.winHandle.on_key_press = _onPygletKeyPress
-            ctl_win.winHandle.on_key_release = _onPygletKeyRelease
-        keys = [False]*12
 
+    def _unset_key_handler(self, exp_win):
+        # deactivate custom keys handling
+        exp_win.winHandle.on_key_press = event._onPygletKey
+        del exp_win.winHandle.on_key_release
+
+    def _run(self, exp_win, ctl_win):
+
+        self._set_key_handler(exp_win)
+        exp_win.waitBlanking = False
 
         while True:
-            self.emulator.reset()
-            nnn = 0
-            while True:
-                self.movie_path = os.path.join(
-                    self.output_path,
-                    "%s_%s_%s_%03d.bk2"%(self.output_fname_base, self.game_name, self.state_name, nnn))
-                if not os.path.exists(self.movie_path):
-                    break
-                nnn += 1
-            logging.exp('VideoGame: recording movie in %s'%self.movie_path)
-            self.emulator.record_movie(self.movie_path)
-
-            total_reward = 0
             exp_win.logOnFlip(
                 level=logging.EXP,
                 msg='VideoGame %s: %s starting at %f'%(self.game_name, self.state_name, time.time()))
-            while True:
-                # TODO: get real action from controller
-                #gamectrl_keys = event.getKeys(list(KEY_SET))
-                #keys = [k in gamectrl_keys for k in KEY_SET]
-                for k in _keyReleaseBuffer:
-                    #print('release',k)
-                    if k[0] in KEY_SET:
-                        keys[KEY_SET.index(k[0])] = False
-                _keyReleaseBuffer.clear()
-                for k in _keyPressBuffer:
-                    #print('press',k)
-                    if k[0] in KEY_SET:
-                        keys[KEY_SET.index(k[0])] = True
-                _keyPressBuffer.clear()
 
-                _obs, _rew, _done, _info = self.emulator.step(keys)
-                total_reward += _rew
-                if _rew > 0 :
-                    exp_win.logOnFlip(level=logging.EXP, msg='Reward %f'%(total_reward))
-                self._render_graphics_sound(_obs,self.emulator.em.get_audio(),exp_win, ctl_win)
-                yield
-                if _done:
-                    exp_win.logOnFlip(
-                        level=logging.EXP,
-                        msg='VideoGame %s: %s stopped at %f'%(self.game_name, self.state_name, time.time()))
-                    break
+            yield from self._run_emulator(exp_win, ctl_win)
 
             if not self.repeat_scenario or \
                 (self.max_duration and
                 self.task_timer.getTime() > self.max_duration): # stop if we are above the planned duration
                 break
-        # deactivate custom keys handling
-        exp_win.winHandle.on_key_press = event._onPygletKey
-        del exp_win.winHandle.on_key_release
-        if ctl_win:
-            ctl_win.winHandle.on_key_press = event._onPygletKey
-            del ctl_win.winHandle.on_key_release
+            self.emulator.reset()
+
+        self._unset_key_handler(exp_win)
+        exp_win.waitBlanking = True
 
 class VideoGameMultiLevel(VideoGame):
 
@@ -202,20 +234,33 @@ class VideoGameMultiLevel(VideoGame):
             **kwargs)
 
     def _run(self, exp_win, ctl_win):
+
+        self._set_key_handler(exp_win)
+        exp_win.waitBlanking = False
+
+        nlevels = 0
         while True:
             for level, scenario in zip(self._state_names, self._scenarii):
+                nlevels += 1
                 self.state_name = level
                 self.emulator.load_state(level)
                 self.emulator.data.load(
                     retro.data.get_file_path(self.game_name, 'data.json'),
                     scenario)
+                self.emulator.reset()
+                if nlevels > 1:
+                    self._set_recording_file()
+                    yield from self._instructions(exp_win, ctl_win)
 
-                yield from super()._run(exp_win, ctl_win)
+                yield from super()._run_emulator(exp_win, ctl_win)
                 time_exceeded = self.max_duration and self.task_timer.getTime() > self.max_duration
                 if time_exceeded: # stop if we are above the planned duration
                     break
             if time_exceeded or not self._repeat_scenario_multilevel:
                 break
+
+        self._unset_key_handler(exp_win)
+        exp_win.waitBlanking = True
 
 class VideoGameReplay(VideoGameBase):
 
@@ -239,7 +284,7 @@ class VideoGameReplay(VideoGameBase):
                 screen_text.draw(ctl_win)
             yield
 
-    def setup(self, exp_win, output_path, output_fname_base):
+    def _setup(self, exp_win):
         super().setup(exp_win, output_path, output_fname_base)
         self.movie = retro.Movie(self.movie_filename)
         self.emulator = retro.make(
@@ -249,11 +294,10 @@ class VideoGameReplay(VideoGameBase):
             scenario=self.scenario,
             #use_restricted_actions=retro.Actions.ALL,
             players=self.movie.players)
-        self.emulator.initial_state = self.movie.get_state()
-        self.emulator.reset()
 
-        self.game_vis_stim = visual.ImageStim(exp_win,size=exp_win.size,units='pixels',autoLog=False)
-        self.game_sound = SoundDeviceBlockStream(stereo=True, blockSize=735)
+        self.emulator.initial_state = self.movie.get_state()
+        super()._setup(exp_win)
+
 
     def _run(self, exp_win, ctl_win):
         # give the original size of the movie in pixels:
