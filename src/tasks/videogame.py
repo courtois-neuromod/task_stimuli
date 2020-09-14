@@ -71,9 +71,7 @@ class VideoGameBase(Task):
             flipVert=True,
             autoLog=False)
         self.game_sound = SoundDeviceBlockStream(stereo=True, blockSize=735)
-        first_frame = self.emulator.reset()
-        first_audio_block = self.emulator.em.get_audio()
-        self.game_sound.add_block(self._transform_soundblock(first_audio_block))
+        self._first_frame = self.emulator.reset()
 
     def _transform_soundblock(self, sound_block):
         return sound_block[:735]/float(2**15)
@@ -162,7 +160,13 @@ class VideoGame(VideoGameBase):
         level_step = 0
         keys = [False]*12
 
+
+        # render the initial frame and audio
+        self._render_graphics_sound(self._first_frame, self.emulator.em.get_audio(), exp_win, ctl_win)
+        exp_win.logOnFlip(level=logging.EXP, msg="level step: %d"%level_step)
+        yield
         while not _done:
+            level_step += 1
             for k in _keyReleaseBuffer:
                 #print('release',k)
                 if k[0] in KEY_SET:
@@ -186,7 +190,6 @@ class VideoGame(VideoGameBase):
             if not level_step%config.FRAME_RATE:
                 exp_win.logOnFlip(level=logging.EXP, msg="level step: %d"%level_step)
             yield
-            level_step+=1
 
     def _set_key_handler(self, exp_win):
         # activate repeat keys
@@ -216,8 +219,10 @@ class VideoGame(VideoGameBase):
                 break
             self.emulator.reset()
 
+    def _stop(self, exp_win):
         self._unset_key_handler(exp_win)
         exp_win.waitBlanking = True
+        yield from super()._stop()
 
 class VideoGameMultiLevel(VideoGame):
 
@@ -247,12 +252,13 @@ class VideoGameMultiLevel(VideoGame):
                 self.emulator.data.load(
                     retro.data.get_file_path(self.game_name, 'data.json'),
                     scenario)
-                self.emulator.reset()
+                self._first_frame = self.emulator.reset()
                 if nlevels > 1:
                     self._set_recording_file()
                     yield from self._instructions(exp_win, ctl_win)
 
                 yield from super()._run_emulator(exp_win, ctl_win)
+                self.game_sound.stop()
                 time_exceeded = self.max_duration and self.task_timer.getTime() > self.max_duration
                 if time_exceeded: # stop if we are above the planned duration
                     break
