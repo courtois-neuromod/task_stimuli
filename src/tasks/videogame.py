@@ -103,6 +103,7 @@ class VideoGame(VideoGameBase):
         scenario=None,
         repeat_scenario=True,
         max_duration=0,
+        post_level_ratings=None,
         *args,**kwargs):
 
         super().__init__(**kwargs)
@@ -111,6 +112,7 @@ class VideoGame(VideoGameBase):
         self.scenario = scenario
         self.repeat_scenario = repeat_scenario
         self.max_duration = max_duration
+        self.post_level_ratings = post_level_ratings
 
     def _instructions(self, exp_win, ctl_win):
 
@@ -151,15 +153,25 @@ class VideoGame(VideoGameBase):
         logging.exp('VideoGame: recording movie in %s'%self.movie_path)
         self.emulator.record_movie(self.movie_path)
 
-    def _run_emulator(self, exp_win, ctl_win):
+    def _handle_controller_presses(self):
+        global _keyPressBuffer, _keyReleaseBuffer
 
-        global _keyReleaseBuffer, _keyPressBuffer
+        for k in _keyReleaseBuffer:
+            #print('release',k)
+            self.pressed_keys.discard(k[0])
+        _keyReleaseBuffer.clear()
+        for k in _keyPressBuffer:
+            #print('press',k)
+            self.pressed_keys.add(k[0])
+        _keyPressBuffer.clear()
+        return self.pressed_keys
+
+    def _run_emulator(self, exp_win, ctl_win):
 
         total_reward = 0
         _done = False
         level_step = 0
         keys = [False]*12
-
 
         # render the initial frame and audio
         self._render_graphics_sound(self._first_frame, self.emulator.em.get_audio(), exp_win, ctl_win)
@@ -167,16 +179,8 @@ class VideoGame(VideoGameBase):
         yield
         while not _done:
             level_step += 1
-            for k in _keyReleaseBuffer:
-                #print('release',k)
-                if k[0] in KEY_SET:
-                    keys[KEY_SET.index(k[0])] = False
-            _keyReleaseBuffer.clear()
-            for k in _keyPressBuffer:
-                #print('press',k)
-                if k[0] in KEY_SET:
-                    keys[KEY_SET.index(k[0])] = True
-            _keyPressBuffer.clear()
+            self._handle_controller_presses()
+            keys = [k in self.pressed_keys for k in KEY_SET]
 
             _obs, _rew, _done, _info = self.emulator.step(keys)
             total_reward += _rew
@@ -195,6 +199,7 @@ class VideoGame(VideoGameBase):
         # activate repeat keys
         exp_win.winHandle.on_key_press = _onPygletKeyPress
         exp_win.winHandle.on_key_release = _onPygletKeyRelease
+        self.pressed_keys = set()
 
     def _unset_key_handler(self, exp_win):
         # deactivate custom keys handling
@@ -212,17 +217,65 @@ class VideoGame(VideoGameBase):
                 msg='VideoGame %s: %s starting at %f'%(self.game_name, self.state_name, time.time()))
 
             yield from self._run_emulator(exp_win, ctl_win)
-
+            if self.post_level_ratings:
+                yield from self._run_ratings(exp_win, ctl_win)
             if not self.repeat_scenario or \
                 (self.max_duration and
                 self.task_timer.getTime() > self.max_duration): # stop if we are above the planned duration
                 break
             self.emulator.reset()
 
-    def _stop(self, exp_win):
+    def _run_ratings(self, exp_win, ctl_win):
+        for question, n_pts in self.post_level_ratings:
+            yield from self._likert_scale_answer(exp_win, ctl_win, question, n_pts)
+
+        text = visual.TextStim(exp_win, 'Thanks for you answers', pos=(0, .5))
+        for i in range(config.FRAME_RATE):
+            text.draw(exp_win)
+            yield i<2
+
+    def _likert_scale_answer(self, exp_win, ctl_win, question, n_pts=7, extent=.6):
+        extent *= config.EXP_WINDOW['size'][0]
+        value = n_pts//2
+        answered = False
+        text = visual.TextStim(exp_win, question, pos=(0, .5))
+        line = visual.Line(exp_win, (-extent, 0), (extent, 0), units='pixels', lineWidth=2)
+        x_spacing = extent*2/(n_pts-1)
+        circles = [
+            visual.Circle(
+                exp_win,
+                units='pixels',
+                radius=40, pos=(-extent+i*x_spacing, 0),
+                fillColor=(-1,-1,-1), lineColor=(-1,-1,-1), lineWidth=10)
+                for i in range(n_pts)
+            ]
+        circles[value].fillColor = (1,1,1)
+        while not answered:
+            self._handle_controller_presses()
+            if 'r' in self.pressed_keys and value < n_pts-1:
+                value+=1
+                self.pressed_keys.discard('r')
+            elif 'l' in self.pressed_keys and value > 0:
+                value-=1
+                self.pressed_keys.discard('l')
+            for c in circles:
+                c.fillColor = (-1,-1,-1)
+            circles[value].fillColor = (1,1,1)
+
+            if 'a' in self.pressed_keys:
+                for i in range(config.FRAME_RATE):
+                    yield i<2
+                break
+                self.pressed_keys.clear()
+
+            for stim in [text, line] + circles:
+                stim.draw(exp_win)
+            yield True
+
+    def _stop(self, exp_win, ctl_win):
         self._unset_key_handler(exp_win)
         exp_win.waitBlanking = True
-        yield from super()._stop()
+        yield from super()._stop(exp_win, ctl_win)
 
 class VideoGameMultiLevel(VideoGame):
 
@@ -259,6 +312,8 @@ class VideoGameMultiLevel(VideoGame):
 
                 yield from super()._run_emulator(exp_win, ctl_win)
                 self.game_sound.stop()
+                if self.post_level_ratings:
+                    yield from self._run_ratings(exp_win, ctl_win)
                 time_exceeded = self.max_duration and self.task_timer.getTime() > self.max_duration
                 if time_exceeded: # stop if we are above the planned duration
                     break
