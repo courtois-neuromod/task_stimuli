@@ -126,7 +126,7 @@ class VideoGame(VideoGameBase):
             screen_text.draw(exp_win)
             if ctl_win:
                 screen_text.draw(ctl_win)
-            yield
+            yield frameN < 2
         yield True
 
     def _setup(self, exp_win):
@@ -210,8 +210,10 @@ class VideoGame(VideoGameBase):
 
         self._set_key_handler(exp_win)
         exp_win.waitBlanking = False
+        self._nlevels = 0
 
         while True:
+            self._nlevels += 1
             exp_win.logOnFlip(
                 level=logging.EXP,
                 msg='VideoGame %s: %s starting at %f'%(self.game_name, self.state_name, time.time()))
@@ -239,14 +241,15 @@ class VideoGame(VideoGameBase):
         value = n_pts//2
         answered = False
         text = visual.TextStim(exp_win, question, pos=(0, .5))
-        line = visual.Line(exp_win, (-extent, 0), (extent, 0), units='pixels', lineWidth=2)
+        line = visual.Line(exp_win, (-extent, 0), (extent, 0), units='pixels', lineWidth=2, autoLog=False)
         x_spacing = extent*2/(n_pts-1)
         circles = [
             visual.Circle(
                 exp_win,
                 units='pixels',
                 radius=40, pos=(-extent+i*x_spacing, 0),
-                fillColor=(-1,-1,-1), lineColor=(-1,-1,-1), lineWidth=10)
+                fillColor=(-1,-1,-1), lineColor=(-1,-1,-1), lineWidth=10,
+                autoLog=False)
                 for i in range(n_pts)
             ]
         circles[value].fillColor = (1,1,1)
@@ -263,6 +266,9 @@ class VideoGame(VideoGameBase):
             circles[value].fillColor = (1,1,1)
 
             if 'a' in self.pressed_keys:
+                exp_win.logOnFlip(
+                    level=logging.EXP,
+                    msg='nlevel: %d, question: %s, answer: %d'%(self._nlevels, question, value))
                 for i in range(config.FRAME_RATE):
                     yield i<2
                 break
@@ -296,17 +302,17 @@ class VideoGameMultiLevel(VideoGame):
         self._set_key_handler(exp_win)
         exp_win.waitBlanking = False
 
-        nlevels = 0
+        self._nlevels = 0
         while True:
             for level, scenario in zip(self._state_names, self._scenarii):
-                nlevels += 1
+                self._nlevels += 1
                 self.state_name = level
                 self.emulator.load_state(level)
                 self.emulator.data.load(
                     retro.data.get_file_path(self.game_name, 'data.json'),
                     scenario)
                 self._first_frame = self.emulator.reset()
-                if nlevels > 1:
+                if self._nlevels > 1:
                     self._set_recording_file()
                     yield from self._instructions(exp_win, ctl_win)
 
@@ -314,6 +320,7 @@ class VideoGameMultiLevel(VideoGame):
                 self.game_sound.stop()
                 if self.post_level_ratings:
                     yield from self._run_ratings(exp_win, ctl_win)
+
                 time_exceeded = self.max_duration and self.task_timer.getTime() > self.max_duration
                 if time_exceeded: # stop if we are above the planned duration
                     break
