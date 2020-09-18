@@ -260,15 +260,16 @@ class EyeTrackerClient(threading.Thread):
         ipc_sub_port = int(self._req_socket.recv())
         self.pupil_monitor = Msg_Receiver(self._ctx,'tcp://localhost:%d'%ipc_sub_port,topics=('gaze','pupil'))
         while not self.stoprequest.isSet():
-            time.sleep(.001)
+            time.sleep(1/120.)
             msg = self.pupil_monitor.recv()
-            if not msg is None:
+            while not msg is None:
                 topic, tmp = msg
                 with self.lock:
                     if topic.startswith('pupil'):
                         self.pupil = tmp
                     if topic.startswith('gaze'):
                         self.gaze = tmp
+                msg = self.pupil_monitor.recv()
 
         print('eyetracker listener: stopping')
 
