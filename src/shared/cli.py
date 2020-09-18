@@ -89,14 +89,18 @@ def main_loop(all_tasks,
         logfile_path,
         level=logging.INFO, filemode='w')
 
-    if show_ctl_win:
-        ctl_win = visual.Window(**config.CTL_WINDOW)
-        ctl_win.winHandle.set_caption('Stimuli')
-    else:
-        ctl_win = None
     exp_win = visual.Window(**config.EXP_WINDOW)
     exp_win.mouseVisible = False
+    exp_win.recordFrameIntervals = True
+    exp_win.waitBlanking = False
 
+    if show_ctl_win:
+        ctl_win = visual.Window(**config.CTL_WINDOW)
+        ctl_win.name = 'Stimuli'
+        ctl_win.waitBlanking = False
+        ctl_win.recordFrameIntervals = True
+    else:
+        ctl_win = None
 
     ptt = None
     if enable_ptt:
@@ -161,7 +165,7 @@ Thanks for your participation!"""))
                 #force focus on the task window to ensure getting keys, TTL, ...
                 exp_win.winHandle.activate()
                 # record frame intervals for debug
-                exp_win.recordFrameIntervals = True
+
 
                 shortcut_evt = run_task(task, exp_win, ctl_win, eyetracker_client, gaze_drawer)
 
@@ -183,8 +187,6 @@ Thanks for your participation!"""))
                 task.stop()
 
             task.unload()
-            exp_win.recordFrameIntervals = True
-            exp_win.saveFrameIntervals('frame_intervals.txt')
 
             if shortcut_evt=='q':
                 print('quit')
@@ -195,6 +197,10 @@ Thanks for your participation!"""))
                 # there is anyway the duration of the instruction before listening to TTL
                 for i in range(DELAY_BETWEEN_TASK*config.FRAME_RATE):
                     exp_win.flip(clearBuffer=False)
+
+        exp_win.saveFrameIntervals('exp_win_frame_intervals.txt')
+        if ctl_win:
+            ctl_win.saveFrameIntervals('ctl_win_frame_intervals.txt')
 
     except KeyboardInterrupt as ki:
         print(traceback.format_exc())

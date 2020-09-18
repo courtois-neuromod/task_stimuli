@@ -42,10 +42,9 @@ class Task(object):
         return '%s : %s'%(self.__class__, self.name)
 
     def _flip_all_windows(self, exp_win, ctl_win=None, clearBuffer=True):
+        if not ctl_win is None:
+            ctl_win.flip(clearBuffer=clearBuffer)
         exp_win.flip(clearBuffer=clearBuffer)
-        if ctl_win is None:
-            return
-        ctl_win.flip(clearBuffer=clearBuffer)
 
     def instructions(self, exp_win, ctl_win):
         if hasattr(self, '_instructions'):
@@ -67,10 +66,10 @@ class Task(object):
             frame_idx = 0
 
         for clearBuffer in self._run(exp_win, ctl_win):
-            # yield first to allow external draw before flipping
+            # yield first to allow external draw before flip
             yield
             self._flip_all_windows(exp_win, ctl_win, clearBuffer)
-            
+
             # increment the progress bar every second
             if progress_bar:
                 frame_idx += 1
