@@ -45,11 +45,13 @@ mkdir output
 
 ## how to launch a session
 
-`python3 main.py --subject test --ses videoshorttest --eyetracking --fmri`
+`python3 main.py --subject test --session video003 --tasks videoshorttest --eyetracking --fmri -o /path/to/dataset/`
 
 - --subject: can be whatever, will be used to save data in a bids-like structure
-- --session: must match the name of a session script in `src/ses-<session_name>.py`, which contains the tasks to be ran on that session
+- --session: a session identifier that will be used to save the data in the BIDS
+- --tasks: must match the name of a session script in `src/ses-<session_name>.py`, which contains the tasks to be ran on that session
 - --eyetracking: turn on eyetracking, start pupil software and recording of eye
+- -o : specifies the path to the root of the dataset where to output the data (in sourcedata or BIDS )
 
 - --fmri: will wait for TTL (can be emulated with character `5` on the keyboard) to start the tasks that are labeled as fmri dependent. When not using that flag, tasks will run back to back. It will also append a video loop at the beginning of the session in order for the participant to have sound and visual stimuli to test the setup (then skip to start the session).
 

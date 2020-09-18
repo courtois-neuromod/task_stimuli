@@ -1,7 +1,9 @@
 # CLI: command line interface options and main loop
 
-import os, datetime, traceback, glob
+import os, datetime, traceback, glob, time
 from psychopy import core, visual, logging, event
+
+visual.window.reportNDroppedFrames = 10e10
 
 TIMEOUT = 5
 DELAY_BETWEEN_TASK = 5
@@ -39,23 +41,23 @@ def run_task(task, exp_win, ctl_win=None, eyetracker=None, gaze_drawer=None):
 
     # show instruction
     shortcut_evt = run_task_loop(task.instructions(exp_win, ctl_win), eyetracker, gaze_drawer)
-    if shortcut_evt: return shortcut_evt
 
-    if task.use_fmri:
+    if task.use_fmri and not shortcut_evt:
         shortcut_evt = run_task_loop(fmri.wait_for_ttl(), eyetracker, gaze_drawer)
         if shortcut_evt: return shortcut_evt
 
     logging.info('GO')
-    if eyetracker:
+    if eyetracker and not shortcut_evt:
         eyetracker.start_recording(task.name)
     # send start trigger/marker to MEG + Biopac (or anything else on parallel port)
-    if task.use_meg:
+    if task.use_meg and not shortcut_evt:
         meg.send_signal(meg.MEG_settings['TASK_START_CODE'])
 
-    shortcut_evt = run_task_loop(task.run(exp_win, ctl_win), eyetracker, gaze_drawer)
+    if not shortcut_evt:
+        shortcut_evt = run_task_loop(task.run(exp_win, ctl_win), eyetracker, gaze_drawer)
 
     # send stop trigger/marker to MEG + Biopac (or anything else on parallel port)
-    if task.use_meg:
+    if task.use_meg and not shortcut_evt:
         meg.send_signal(meg.MEG_settings['TASK_STOP_CODE'])
 
     if eyetracker:
@@ -63,11 +65,14 @@ def run_task(task, exp_win, ctl_win=None, eyetracker=None, gaze_drawer=None):
     # now that time is less sensitive: save files
     task.save()
 
+    run_task_loop(task.stop(exp_win, ctl_win), eyetracker, gaze_drawer)
+
     return shortcut_evt
 
 def main_loop(all_tasks,
     subject,
     session,
+    output_ds,
     enable_eyetracker=False,
     use_fmri=False,
     use_meg=False,
@@ -80,10 +85,11 @@ def main_loop(all_tasks,
         if not allow_run_on_battery:
             return
 
-    log_path = os.path.abspath(os.path.join(config.OUTPUT_DIR,  'sub-%s'%subject,'ses-%s'%session))
+    bids_sub_ses = ('sub-%s'%subject,'ses-%s'%session)
+    log_path = os.path.abspath(os.path.join(output_ds, 'sourcedata', *bids_sub_ses))
     if not os.path.exists(log_path):
         os.makedirs(log_path, exist_ok=True)
-    log_name_prefix = 'sub-%s_ses-%s_%s'%(subject,session, datetime.datetime.now().strftime('%Y%m%d_%H%M%S'))
+    log_name_prefix = 'sub-%s_ses-%s_%s'%(subject, session, datetime.datetime.now().strftime('%Y%m%d-%H%M%S'))
     logfile_path = os.path.join(log_path, log_name_prefix+'.log')
     log_file = logging.LogFile(
         logfile_path,
@@ -155,7 +161,8 @@ Thanks for your participation!"""))
                 use_eyetracking = True
 
             #setup task files (eg. video)
-            task.setup(exp_win, log_path, log_name_prefix,
+            task.setup(
+                exp_win, log_path, log_name_prefix,
                 use_fmri=use_fmri,
                 use_eyetracking=use_eyetracking,
                 use_meg=use_meg)
@@ -184,7 +191,6 @@ Thanks for your participation!"""))
                     break
 
                 logging.flush()
-                task.stop()
 
             task.unload()
 
@@ -217,9 +223,17 @@ def parse_args():
         description=('Run all tasks in a session'),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--subject', '-s',
+        required=True,
         help='Subject ID')
     parser.add_argument('--session', '-ss',
-        help='Session ID')
+        required=True,
+        help='Session')
+    parser.add_argument('--tasks', '-t',
+        required=True,
+        help='tasks set')
+    parser.add_argument('--output', '-o',
+        required=True,
+        help='output dataset')
     parser.add_argument('--fmri', '-f',
         help='Wait for fmri TTL to start each task',
         action='store_true')
