@@ -199,6 +199,8 @@ class VideoGame(VideoGameBase):
             if not level_step%config.FRAME_RATE:
                 exp_win.logOnFlip(level=logging.EXP, msg="level step: %d"%level_step)
             yield
+        self.game_sound.stop()
+        self.game_sound.flush()
 
     def _set_key_handler(self, exp_win):
         # activate repeat keys
