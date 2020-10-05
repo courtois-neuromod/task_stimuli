@@ -97,14 +97,10 @@ def main_loop(all_tasks,
 
     exp_win = visual.Window(**config.EXP_WINDOW)
     exp_win.mouseVisible = False
-    exp_win.recordFrameIntervals = True
-    exp_win.waitBlanking = False
 
     if show_ctl_win:
         ctl_win = visual.Window(**config.CTL_WINDOW)
         ctl_win.name = 'Stimuli'
-        ctl_win.waitBlanking = False
-        ctl_win.recordFrameIntervals = True
     else:
         ctl_win = None
 
