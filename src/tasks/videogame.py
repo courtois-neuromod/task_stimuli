@@ -67,15 +67,22 @@ class VideoGameBase(Task):
 
 
     def _setup(self, exp_win):
+        self.game_sound = SoundDeviceBlockStream(stereo=True, blockSize=735)
+        self._first_frame = self.emulator.reset()
+
+        min_ratio =  min(
+            exp_win.size[0]/ self._first_frame.shape[1],
+            exp_win.size[1]/ self._first_frame.shape[0])
+        width = int(min_ratio*self._first_frame.shape[1])
+        height = int(min_ratio*self._first_frame.shape[0])
+
         self.game_vis_stim = visual.ImageStim(
             exp_win,
-            size=exp_win.size,
+            size=(width, height),
             units='pixels',
             interpolate=False,
             flipVert=True,
             autoLog=False)
-        self.game_sound = SoundDeviceBlockStream(stereo=True, blockSize=735)
-        self._first_frame = self.emulator.reset()
 
     def _transform_soundblock(self, sound_block):
         return sound_block[:735]/float(2**15)
@@ -181,7 +188,7 @@ class VideoGame(VideoGameBase):
         # render the initial frame and audio
         self._render_graphics_sound(self._first_frame, self.emulator.em.get_audio(), exp_win, ctl_win)
         exp_win.logOnFlip(level=logging.EXP, msg="level step: %d"%level_step)
-        yield
+        yield True
         while not _done:
             level_step += 1
             self._handle_controller_presses()
@@ -198,7 +205,7 @@ class VideoGame(VideoGameBase):
                     msg='VideoGame %s: %s stopped at %f'%(self.game_name, self.state_name, time.time()))
             if not level_step%config.FRAME_RATE:
                 exp_win.logOnFlip(level=logging.EXP, msg="level step: %d"%level_step)
-            yield
+            yield True
         self.game_sound.stop()
         self.game_sound.flush()
 
@@ -216,8 +223,10 @@ class VideoGame(VideoGameBase):
     def _run(self, exp_win, ctl_win):
 
         self._set_key_handler(exp_win)
-        exp_win.waitBlanking = False
         self._nlevels = 0
+        exp_win.setColor([-1.0]*3)
+        if ctl_win:
+            ctl_win.setColor([-1.0]*3)
 
         while True:
             self._nlevels += 1
@@ -233,6 +242,10 @@ class VideoGame(VideoGameBase):
                 self.task_timer.getTime() > self.max_duration): # stop if we are above the planned duration
                 break
             self.emulator.reset()
+
+        exp_win.setColor([0]*3)
+        if ctl_win:
+            ctl_win.setColor([0]*3)
 
     def _run_ratings(self, exp_win, ctl_win):
         for question, n_pts in self.post_level_ratings:
@@ -370,6 +383,10 @@ class VideoGameMultiLevel(VideoGame):
         self._set_key_handler(exp_win)
         exp_win.waitBlanking = False
 
+        exp_win.setColor([-1.0]*3)
+        if ctl_win:
+            ctl_win.setColor([-1.0]*3)
+
         self._nlevels = 0
         while True:
             for level, scenario in zip(self._state_names, self._scenarii):
@@ -395,6 +412,10 @@ class VideoGameMultiLevel(VideoGame):
                     break
             if time_exceeded or not self._repeat_scenario_multilevel:
                 break
+
+        exp_win.setColor([0]*3)
+        if ctl_win:
+            ctl_win.setColor([0]*3)
 
         self._unset_key_handler(exp_win)
         exp_win.waitBlanking = True
