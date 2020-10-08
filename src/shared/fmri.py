@@ -15,3 +15,16 @@ def get_ttl():
         if key.lower() == MR_settings['sync']:
             return True
     return False
+
+# blocking function (iterator)
+def wait_for_ttl():
+    get_ttl() # flush any remaining TTL keys
+    ttl_index = 0
+    logging.exp(msg="waiting for fMRI TTL")
+    while True:
+        if get_ttl():
+            #TODO: log real timing of TTL?
+            logging.exp(msg="fMRI TTL %d"%ttl_index)
+            ttl_index += 1
+            return
+        yield

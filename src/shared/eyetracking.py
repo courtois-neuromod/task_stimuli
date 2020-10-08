@@ -28,6 +28,14 @@ CALIBRATION_LEAD_OUT = 20
 # remove pupil samples with low confidence
 PUPIL_CONFIDENCE_THRESHOLD = .4
 
+CAPTURE_SETTINGS = {
+            "frame_size": [640, 480],
+            "frame_rate": 250,
+            "exposure_time": 4000,
+            "global_gain": 1,
+            "uid": "MRC Systems GmbH-GVRD-MRC HighSpeed-MR_CAM_HS_0014",
+        }
+
 class EyetrackerCalibration(Task):
 
     def __init__(self,eyetracker, order='random', marker_fill_color=MARKER_FILL_COLOR, **kwargs):
@@ -37,17 +45,17 @@ class EyetrackerCalibration(Task):
         super().__init__(**kwargs)
         self.eyetracker = eyetracker
 
-    def instructions(self, exp_win, ctl_win):
+    def _instructions(self, exp_win, ctl_win):
         instruction_text = """We're going to calibrate the eyetracker.
 Please look at the markers that appear on the screen."""
         screen_text = visual.TextStim(
             exp_win, text=instruction_text,
-            alignHoriz="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
+            alignText="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
 
         for frameN in range(config.FRAME_RATE * INSTRUCTION_DURATION):
             screen_text.draw(exp_win)
             screen_text.draw(ctl_win)
-            yield()
+            yield True
 
     def _setup(self, exp_win):
         self.use_fmri = False
@@ -61,7 +69,7 @@ Please look at the markers that appear on the screen."""
                     start_calibration = True
             if start_calibration:
                 break
-            yield
+            yield False
         print('calibration started')
 
         window_size_frame = exp_win.size-MARKER_SIZE*2
@@ -82,7 +90,7 @@ Please look at the markers that appear on the screen."""
         pupil = None
         while pupil is None: # wait until we get at least a pupil
             pupil = self.eyetracker.get_pupil()
-            yield
+            yield False
 
         exp_win.logOnFlip(level=logging.EXP,msg='eyetracker_calibration: starting at %f'%time.time())
         for site_id in random_order:
@@ -109,10 +117,22 @@ Please look at the markers that appear on the screen."""
                             'timestamp': pupil['timestamp']}
                         all_refs_per_flip.append(ref)
                         all_pupils.append(pupil)
-                yield
+                yield True
+        yield True
         self.eyetracker.calibrate(all_pupils, all_refs_per_flip, exp_win.size)
 
 from subprocess import Popen
+
+from contextlib import contextmanager
+
+@contextmanager
+def nonblocking(lock):
+    locked = lock.acquire(False)
+    try:
+        yield locked
+    finally:
+        if locked:
+            lock.release()
 
 class EyeTrackerClient(threading.Thread):
 
@@ -139,31 +159,68 @@ class EyeTrackerClient(threading.Thread):
         self._req_socket.connect('tcp://localhost:50020')
 
         # start eye0 if not started yet (from pupil saved config)
-        self.send_recv_notification({
+        notif = self.send_recv_notification({
             'subject':'eye_process.should_start.0',
             'eye_id':0, 'args':{}})
-        # setup recorder output path
+        time.sleep(1)
+        self.send_recv_notification(
+                {
+                    'subject': 'start_eye_plugin',
+                    'name': 'Aravis_Manager',
+                    'target': 'eye0'
+                }
+            )
+        self.send_recv_notification(
+                {
+                    'subject': 'start_eye_plugin',
+                    'name': 'Aravis_Source',
+                    'target': 'eye0',
+                    'args' : CAPTURE_SETTINGS
+                }
+            )
+
         # quit existing plugin
         self.send_recv_notification({
             'subject':'stop_plugin',
-            'name':'Recorder',})
+            'name':'Recorder'
+            })
         self.send_recv_notification({
             'subject':'stop_plugin',
-            'name':'Accuracy_Visualizer','args':{}})
+            'name':'Accuracy_Visualizer','args':{}
+            })
 
         #restart with new params
+#        self.send_recv_notification({
+#            'subject':'start_plugin',
+#            'name':'Fixed_Screen_Marker_Calibration',
+#            'args':{'fullscreen':True, 'marker_scale':.8, 'sample_duration':120, 'monitor_idx':1}})
+        # setup recorder output path
         self.send_recv_notification({
             'subject':'start_plugin',
-            'name':'Fixed_Screen_Marker_Calibration',
-            'args':{'fullscreen':True, 'marker_scale':.8, 'sample_duration':120, 'monitor_idx':1}})
-        self.send_recv_notification({
-            'subject':'start_plugin',
-            'name':'Recorder','args':{'rec_path':self.record_dir,'rec_root_dir':self.record_dir,'raw_jpeg':False}})
+            'name':'Recorder','args':{
+                'rec_root_dir':self.record_dir,
+                'session_name':self.output_fname_base + '.pupil',
+                'raw_jpeg':False,
+                'record_eye':True}
+            })
         self.send_recv_notification({
             'subject':'start_plugin',
             'name':'Pupil_Remote','args':{}})
 
-        self.send_recv_notification({'subject':'recording.should_start',})
+        self.send_recv_notification({
+            "subject": "set_detection_mapping_mode",
+            "mode": "2d"})
+
+        """
+        self.send_recv_notification({
+            'subject':'start_plugin',
+            'name':'Detector2DPlugin',
+            'target':'eye0',
+            'args':{}})
+        """
+
+
+        #self.send_recv_notification({'subject':'recording.should_start',})
         # wait for the whole schmilblick to boot
         time.sleep(4)
 
@@ -176,14 +233,25 @@ class EyeTrackerClient(threading.Thread):
         self._req_socket.send('t') #see Pupil Remote Plugin for details
         return float(self._req_socket.recv())
 
+    def start_recording(self, recording_name):
+        logging.info('starting eyetracking recording')
+        return self.send_recv_notification({
+            'subject':'recording.should_start',
+            'session_name': recording_name})
+
+    def stop_recording(self):
+        logging.info('stopping eyetracking recording')
+        return self.send_recv_notification({
+            'subject':'recording.should_stop'})
+
     def join(self, timeout=None):
         self.stoprequest.set()
         # stop recording
         self.send_recv_notification({'subject':'recording.should_stop',})
         # stop world and children process
-        self.send_recv_notification({'subject':'world_process.should_stop'})
+        self.send_recv_notification({'subject':'launcher_process.should_stop'})
         self._pupil_process.wait(timeout)
-
+        self._pupil_process.terminate()
         super(EyeTrackerClient, self).join(timeout)
 
     def run(self):
@@ -192,34 +260,37 @@ class EyeTrackerClient(threading.Thread):
         ipc_sub_port = int(self._req_socket.recv())
         self.pupil_monitor = Msg_Receiver(self._ctx,'tcp://localhost:%d'%ipc_sub_port,topics=('gaze','pupil'))
         while not self.stoprequest.isSet():
+            time.sleep(1/120.)
             msg = self.pupil_monitor.recv()
-            if not msg is None:
+            while not msg is None:
                 topic, tmp = msg
                 with self.lock:
                     if topic.startswith('pupil'):
                         self.pupil = tmp
                     if topic.startswith('gaze'):
                         self.gaze = tmp
+                msg = self.pupil_monitor.recv()
 
         print('eyetracker listener: stopping')
 
-
     def get_pupil(self):
-        with self.lock:
-            return self.pupil
+        with nonblocking(self.lock) as locked:
+            if locked:
+                return self.pupil
 
     def get_gaze(self):
-        with self.lock:
-            return self.gaze
+        with nonblocking(self.lock) as locked:
+            if locked:
+                return self.gaze
 
     def calibrate(self, pupil_list, ref_list, frame_size):
         if len(pupil_list) < 100:
-            # TODO: log
-            return
+            logging.error('Calibration: not enough pupil captured for calibration')
+            #return
 
         self.send_recv_notification({
             'subject':'start_plugin',
-            'name':'Mock_Calibration',
+            'name':'External_Calibration',
             'args':{'frame_size': frame_size.tolist()}})
 
         self.send_recv_notification({

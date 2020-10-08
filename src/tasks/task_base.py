@@ -41,30 +41,22 @@ class Task(object):
     def __str__(self):
         return '%s : %s'%(self.__class__, self.name)
 
+    def _flip_all_windows(self, exp_win, ctl_win=None, clearBuffer=True):
+        if not ctl_win is None:
+            ctl_win.flip(clearBuffer=clearBuffer)
+        exp_win.flip(clearBuffer=clearBuffer)
+
+    def instructions(self, exp_win, ctl_win):
+        if hasattr(self, '_instructions'):
+            for clearBuffer in self._instructions(exp_win, ctl_win):
+                yield
+                self._flip_all_windows(exp_win, ctl_win, clearBuffer)
+        # last/only flip to clear screen
+        yield
+        self._flip_all_windows(exp_win, ctl_win, True)
+
     def run(self, exp_win, ctl_win):
-        print('Next task: %s'%str(self))
-        # show instruction
-        if hasattr(self, 'instructions'):
-            for _ in self.instructions(exp_win, ctl_win):
-                yield True
 
-        # wait for TTL
-        fmri.get_ttl() # flush any remaining TTL keys
-        if self.use_fmri:
-            ttl_index = 0
-            logging.exp(msg="waiting for fMRI TTL")
-            while True:
-                if fmri.get_ttl():
-                    #TODO: log real timing of TTL?
-                    logging.exp(msg="fMRI TTL %d"%ttl_index)
-                    ttl_index += 1
-                    break
-                yield False # no need to draw
-        logging.info('GO')
-
-        # send start trigger/marker to MEG + Biopac (or anything else on parallel port)
-        if self.use_meg:
-            meg.send_signal(meg.MEG_settings['TASK_START_CODE'])
         self.task_timer = core.Clock()
 
         # initialize a progress bar if we know the duration of the task
@@ -73,30 +65,28 @@ class Task(object):
             progress_bar = tqdm.tqdm(total=self.duration)
             frame_idx = 0
 
-        for _ in self._run(exp_win, ctl_win):
-            if self.use_fmri:
-                if fmri.get_ttl():
-                    logging.exp(msg="fMRI TTL %d"%ttl_index)
-                    ttl_index += 1
-
+        for clearBuffer in self._run(exp_win, ctl_win):
+            # yield first to allow external draw before flip
+            yield
+            self._flip_all_windows(exp_win, ctl_win, clearBuffer)
             # increment the progress bar every second
             if progress_bar:
                 frame_idx += 1
                 if not frame_idx%config.FRAME_RATE:
                     progress_bar.update(1)
 
-            yield True
-
-        # send stop trigger/marker to MEG + Biopac (or anything else on parallel port)
-        if self.use_meg:
-            meg.send_signal(meg.MEG_settings['TASK_STOP_CODE'])
-
         if progress_bar:
             progress_bar.clear()
             progress_bar.close()
 
-    def stop(self):
-        pass
+    def stop(self, exp_win, ctl_win):
+        if hasattr(self, '_stop'):
+            for clearBuffer in self._stop(exp_win, ctl_win):
+                yield
+                self._flip_all_windows(exp_win, ctl_win, clearBuffer)
+        # 2 flips to clear screen and backbuffer
+        for i in range(2):
+            self._flip_all_windows(exp_win, ctl_win, True)
 
     def restart(self):
         if hasattr(self, '_restart'):
@@ -121,7 +111,7 @@ class Pause(Task):
     def _run(self, exp_win, ctl_win):
         screen_text = visual.TextStim(
             exp_win, text=self.text,
-            alignHoriz="center", color = 'white',wrapWidth=config.WRAP_WIDTH)
+            alignText="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
 
         while True:
             if not self.wait_key is False:
@@ -130,8 +120,10 @@ class Pause(Task):
             screen_text.draw(exp_win)
             if ctl_win:
                 screen_text.draw(ctl_win)
-            yield
+            yield True
 
+    def _stop(self, exp_win, ctl_win):
+        yield True
 
 class Fixation(Task):
 
@@ -146,25 +138,25 @@ Do not think about something in particular, let your mind wander..."""
         self.duration = duration
         self.symbol = symbol
 
-    def instructions(self, exp_win, ctl_win):
+    def _instructions(self, exp_win, ctl_win):
         screen_text = visual.TextStim(
             exp_win, text=self.instruction,
-            alignHoriz="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
+            alignText="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
 
         for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
             screen_text.draw(exp_win)
             if ctl_win:
                 screen_text.draw(ctl_win)
-            yield
+            yield True
 
     def _run(self, exp_win, ctl_win):
         screen_text = visual.TextStim(
             exp_win, text=self.symbol,
-            alignHoriz="center", color = 'white')
+            alignText="center", color = 'white')
         screen_text.height = .2
 
         for frameN in range(config.FRAME_RATE * self.duration):
             screen_text.draw(exp_win)
             if ctl_win:
                 screen_text.draw(ctl_win)
-            yield
+            yield True
