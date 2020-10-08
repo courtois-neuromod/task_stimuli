@@ -1,7 +1,9 @@
 # CLI: command line interface options and main loop
 
-import os, datetime, traceback, glob
+import os, datetime, traceback, glob, time
 from psychopy import core, visual, logging, event
+
+visual.window.reportNDroppedFrames = 10e10
 
 TIMEOUT = 5
 DELAY_BETWEEN_TASK = 5
@@ -9,28 +11,106 @@ DELAY_BETWEEN_TASK = 5
 globalClock = core.MonotonicClock(0)
 logging.setDefaultClock(globalClock)
 
-from . import config, fmri, eyetracking
+from . import config #import first separately
+from . import fmri, eyetracking, utils, meg
 from ..tasks import task_base, video
 
-def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=False, use_meg=False, show_ctl_win = False):
 
-    log_path = os.path.abspath(os.path.join(config.OUTPUT_DIR,  'sub-%s'%subject,'ses-%s'%session))
+def listen_shortcuts():
+    if any([k[1]&event.MOD_CTRL for k in event._keyBuffer]):
+        allKeys = event.getKeys(['n','c','q'], modifiers=True)
+        ctrl_pressed = any([k[1]['ctrl'] for k in allKeys])
+        all_keys_only = [k[0] for k in allKeys]
+        if len(allKeys) and ctrl_pressed:
+            return all_keys_only[0]
+    return False
+
+def run_task_loop(loop, eyetracker=None, gaze_drawer=None):
+    for _ in loop:
+        if gaze_drawer:
+            gaze = eyetracker.get_gaze()
+            if not gaze is None:
+                gaze_drawer.draw_gazepoint(gaze)
+        # check for global event keys
+        shortcut_evt = listen_shortcuts()
+        if shortcut_evt:
+            return shortcut_evt
+
+def run_task(task, exp_win, ctl_win=None, eyetracker=None, gaze_drawer=None):
+    print('Next task: %s'%str(task))
+
+    # show instruction
+    shortcut_evt = run_task_loop(task.instructions(exp_win, ctl_win), eyetracker, gaze_drawer)
+
+    if task.use_fmri and not shortcut_evt:
+        shortcut_evt = run_task_loop(fmri.wait_for_ttl(), eyetracker, gaze_drawer)
+        if shortcut_evt: return shortcut_evt
+
+    logging.info('GO')
+    if eyetracker and not shortcut_evt:
+        eyetracker.start_recording(task.name)
+    # send start trigger/marker to MEG + Biopac (or anything else on parallel port)
+    if task.use_meg and not shortcut_evt:
+        meg.send_signal(meg.MEG_settings['TASK_START_CODE'])
+
+    if not shortcut_evt:
+        shortcut_evt = run_task_loop(task.run(exp_win, ctl_win), eyetracker, gaze_drawer)
+
+    # send stop trigger/marker to MEG + Biopac (or anything else on parallel port)
+    if task.use_meg and not shortcut_evt:
+        meg.send_signal(meg.MEG_settings['TASK_STOP_CODE'])
+
+    if eyetracker:
+        eyetracker.stop_recording()
+    # now that time is less sensitive: save files
+    task.save()
+
+    run_task_loop(task.stop(exp_win, ctl_win), eyetracker, gaze_drawer)
+
+    return shortcut_evt
+
+def main_loop(all_tasks,
+    subject,
+    session,
+    output_ds,
+    enable_eyetracker=False,
+    use_fmri=False,
+    use_meg=False,
+    show_ctl_win=False,
+    allow_run_on_battery=False,
+    enable_ptt=False):
+
+    if not utils.check_power_plugged():
+        print('*'*25+'WARNING: the power cord is not connected'+'*'*25)
+        if not allow_run_on_battery:
+            return
+
+    bids_sub_ses = ('sub-%s'%subject,'ses-%s'%session)
+    log_path = os.path.abspath(os.path.join(output_ds, 'sourcedata', *bids_sub_ses))
     if not os.path.exists(log_path):
         os.makedirs(log_path, exist_ok=True)
-    log_name_prefix = 'sub-%s_ses-%s_%s'%(subject,session, datetime.datetime.now().strftime('%Y%m%d_%H%M%S'))
+    log_name_prefix = 'sub-%s_ses-%s_%s'%(subject, session, datetime.datetime.now().strftime('%Y%m%d-%H%M%S'))
     logfile_path = os.path.join(log_path, log_name_prefix+'.log')
     log_file = logging.LogFile(
         logfile_path,
         level=logging.INFO, filemode='w')
 
-    if show_ctl_win:
-        ctl_win = visual.Window(**config.CTL_WINDOW)
-        ctl_win.winHandle.set_caption('Stimuli')
-    else:
-        ctl_win = None
     exp_win = visual.Window(**config.EXP_WINDOW)
     exp_win.mouseVisible = False
 
+    if show_ctl_win:
+        ctl_win = visual.Window(**config.CTL_WINDOW)
+        ctl_win.name = 'Stimuli'
+    else:
+        ctl_win = None
+
+    ptt = None
+    if enable_ptt:
+        from .ptt import PushToTalk
+        ptt = PushToTalk()
+
+    eyetracker_client = None
+    gaze_drawer = None
     if enable_eyetracker:
         print('creating et client')
         eyetracker_client = eyetracking.EyeTrackerClient(
@@ -40,8 +120,9 @@ def main_loop(all_tasks, subject, session, enable_eyetracker=False, use_fmri=Fal
         print('starting et client')
         eyetracker_client.start()
         print('done')
-        #all_tasks.insert(0, eyetracking.EyetrackerCalibration(eyetracker_client,name='EyeTracker-Calibration'))
-        gaze_drawer = eyetracking.GazeDrawer(ctl_win)
+        all_tasks.insert(0, eyetracking.EyetrackerCalibration(eyetracker_client, name='EyeTracker-Calibration'))
+        if show_ctl_win:
+            gaze_drawer = eyetracking.GazeDrawer(ctl_win)
     if use_fmri:
         setup_video_path = glob.glob(os.path.join('data','videos','subject_setup_videos','sub-%s_*'%subject))
         if not len(setup_video_path):
@@ -70,75 +151,58 @@ Thanks for your participation!"""))
 
             #clear events buffer in case the user pressed a lot of buttoons
             event.clearEvents()
-            # ensure to clear the screen if task aborted
-            exp_win.flip()
-            if show_ctl_win:
-                ctl_win.flip()
 
             use_eyetracking = False
             if enable_eyetracker and task.use_eyetracking:
                 use_eyetracking = True
 
             #setup task files (eg. video)
-            task.setup(exp_win, log_path, log_name_prefix,
+            task.setup(
+                exp_win, log_path, log_name_prefix,
                 use_fmri=use_fmri,
                 use_eyetracking=use_eyetracking,
                 use_meg=use_meg)
             print('READY')
 
-            allKeys = []
-            ctrl_pressed = False
-
             while True:
                 #force focus on the task window to ensure getting keys, TTL, ...
                 exp_win.winHandle.activate()
+                # record frame intervals for debug
 
-                for draw in task.run(exp_win, ctl_win):
 
-                    if use_eyetracking:
-                        gaze = eyetracker_client.get_gaze()
-                        if not gaze is None:
-                            gaze_drawer.draw_gazepoint(gaze)
-                    # check for global event keys
-                    exp_win.flip()
-                    if show_ctl_win:
-                        ctl_win.flip()
+                shortcut_evt = run_task(task, exp_win, ctl_win, eyetracker_client, gaze_drawer)
 
-                    if any([k[1]&event.MOD_CTRL for k in event._keyBuffer]):
-                        allKeys = event.getKeys(['n','c','q'], modifiers=True)
-                        ctrl_pressed = any([k[1]['ctrl'] for k in allKeys])
-                        all_keys_only = [k[0] for k in allKeys]
-                        if len(allKeys) and ctrl_pressed:
-                            break
-                else: # task completed
-                    task.save()
+                if shortcut_evt == 'n':
+                    # restart the task
+                    logging.exp(msg="task - %s: restart"%str(task))
+                    task.restart()
+                    continue
+                elif shortcut_evt:
+                    # abort/skip or quit
+                    logging.exp(msg="task - %s: abort"%str(task))
                     break
-                task.save()
+                else: # task completed
+                    logging.exp(msg="task - %s: complete"%str(task))
+                    # send stop trigger/marker to MEG + Biopac (or anything else on parallel port)
+                    break
 
                 logging.flush()
-                task.stop()
 
-                # ensure last frame or task clear is draw
-                exp_win.flip()
-                if show_ctl_win:
-                    ctl_win.flip()
-
-                if ctrl_pressed and ('c' in all_keys_only or 'q' in all_keys_only):
-                    break
-                logging.exp(msg="task - %s: restart"%str(task))
-                task.restart()
             task.unload()
 
-            if ctrl_pressed:
-                if 'q' in all_keys_only:
-                    print('quit')
-                    break
-                else:
-                    print('skip')
-            else:
+            if shortcut_evt=='q':
+                print('quit')
+                break
+            elif shortcut_evt is None:
                 # add a delay between tasks to avoid remaining TTL to start next task
+                # do that only if the task was not aborted to save time
+                # there is anyway the duration of the instruction before listening to TTL
                 for i in range(DELAY_BETWEEN_TASK*config.FRAME_RATE):
-                    exp_win.flip()
+                    exp_win.flip(clearBuffer=False)
+
+        exp_win.saveFrameIntervals('exp_win_frame_intervals.txt')
+        if ctl_win:
+            ctl_win.saveFrameIntervals('ctl_win_frame_intervals.txt')
 
     except KeyboardInterrupt as ki:
         print(traceback.format_exc())
@@ -155,9 +219,17 @@ def parse_args():
         description=('Run all tasks in a session'),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--subject', '-s',
+        required=True,
         help='Subject ID')
     parser.add_argument('--session', '-ss',
-        help='Session ID')
+        required=True,
+        help='Session')
+    parser.add_argument('--tasks', '-t',
+        required=True,
+        help='tasks set')
+    parser.add_argument('--output', '-o',
+        required=True,
+        help='output dataset')
     parser.add_argument('--fmri', '-f',
         help='Wait for fmri TTL to start each task',
         action='store_true')
@@ -171,4 +243,17 @@ def parse_args():
         help='skip n of the tasks',
         default=0,
         type=int)
+    parser.add_argument('--ctl_win',
+        help='show control window',
+        action='store_true')
+    parser.add_argument('--run_on_battery',
+        help='allow the script to run on battery',
+        action='store_true')
+    parser.add_argument('--ptt',
+        help='enable Push-To-Talk function',
+        action='store_true')
+    parser.add_argument('--profile',
+        help='enable profiling',
+        action='store_true')
+
     return parser.parse_args()

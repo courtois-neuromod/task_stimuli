@@ -1,0 +1,27 @@
+{
+  "crop": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "done": {
+    "variables": {
+      "lives": {
+        "measurement": "delta",
+        "op": "negative"
+      },
+      "section": {
+        "measurement": "delta",
+        "op": "greater-than"
+      }
+    }
+  },
+  "reward": {
+    "variables": {
+      "score": {
+        "reward": 1.0
+      }
+    }
+  }
+}
