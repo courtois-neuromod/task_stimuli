@@ -98,6 +98,9 @@ class VideoGameBase(Task):
 
     def _stop(self, exp_win, ctl_win):
         self.game_sound.stop()
+        exp_win.setColor([0]*3)
+        if ctl_win:
+            ctl_win.setColor([0]*3)
         yield True
 
     def unload(self):
@@ -122,6 +125,7 @@ class VideoGame(VideoGameBase):
         self.scenario = scenario
         self.repeat_scenario = repeat_scenario
         self.max_duration = max_duration
+        self.duration = max_duration
         self.post_level_ratings = post_level_ratings
 
     def _instructions(self, exp_win, ctl_win):
@@ -176,6 +180,12 @@ class VideoGame(VideoGameBase):
         _keyPressBuffer.clear()
         return self.pressed_keys
 
+    def clear_key_buffers(self):
+        global _keyPressBuffer, _keyReleaseBuffer
+        self.pressed_keys.clear()
+        _keyReleaseBuffer.clear()
+        _keyPressBuffer.clear()
+
     def _run_emulator(self, exp_win, ctl_win):
 
         total_reward = 0
@@ -184,7 +194,8 @@ class VideoGame(VideoGameBase):
         keys = [False]*12
 
         # flush all keys to avoid unwanted actions
-        self.pressed_keys.clear()
+        self.clear_key_buffers()
+
         # render the initial frame and audio
         self._render_graphics_sound(self._first_frame, self.emulator.em.get_audio(), exp_win, ctl_win)
         exp_win.logOnFlip(level=logging.EXP, msg="level step: %d"%level_step)
@@ -193,7 +204,6 @@ class VideoGame(VideoGameBase):
             level_step += 1
             self._handle_controller_presses()
             keys = [k in self.pressed_keys for k in KEY_SET]
-
             _obs, _rew, _done, _info = self.emulator.step(keys)
             total_reward += _rew
             if _rew > 0 :
@@ -400,7 +410,6 @@ class VideoGameMultiLevel(VideoGame):
                 if self._nlevels > 1:
                     self._set_recording_file()
                     yield from self._instructions(exp_win, ctl_win)
-
                 yield from self._questionnaire(exp_win, ctl_win)
                 yield from super()._run_emulator(exp_win, ctl_win)
                 self.game_sound.stop()
@@ -412,10 +421,6 @@ class VideoGameMultiLevel(VideoGame):
                     break
             if time_exceeded or not self._repeat_scenario_multilevel:
                 break
-
-        exp_win.setColor([0]*3)
-        if ctl_win:
-            ctl_win.setColor([0]*3)
 
         self._unset_key_handler(exp_win)
         exp_win.waitBlanking = True
