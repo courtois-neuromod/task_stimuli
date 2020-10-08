@@ -2,15 +2,13 @@ from psychopy import prefs
 
 # avoids delay in movie3 audio seek
 prefs.hardware['audioLib'] = ['sounddevice']
-
+#prefs.hardware['general'] = ['glfw']
 
 OUTPUT_DIR = 'output'
 
 EYETRACKING_ROI = (60,30,660,450)
 
 EXP_WINDOW = dict(
-    #size = (1280,1024),
-    #size = (1024, 768),
     size = (1920, 1080),
     screen=1,
     fullscr=True,
@@ -18,11 +16,13 @@ EXP_WINDOW = dict(
 )
 
 CTL_WINDOW = dict(
+
     size = (1920, 1080),
-    #size = (1280, 1024),
     pos = (100,0),
     screen=0,
     gammaErrorPolicy='warn',
+    swapInterval=0.,
+    waitBlanking=False, # avoid ctrl window to block the script in case of differing refresh rate.
 )
 
 FRAME_RATE=60
