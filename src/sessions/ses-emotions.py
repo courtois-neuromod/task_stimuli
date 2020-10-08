@@ -1,8 +1,6 @@
 from ..tasks import video, task_base
 import numpy as np
 
-NUM_VID_PRISME = 10
-
 def get_videos(subject, session):
     video_idx = np.loadtxt(
         'data/emotions/order_fmri_neuromod.csv',
