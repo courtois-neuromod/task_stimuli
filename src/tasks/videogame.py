@@ -41,12 +41,16 @@ class SoundDeviceBlockStream(sound.backend_sounddevice.SoundDeviceSound):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.blocks = queue.Queue()
+        self.blocks = queue.SimpleQueue()
         self.lock = threading.Lock()
 
     def add_block(self, block):
         with self.lock:
             self.blocks.put(block)
+
+    def flush(self):
+        with self.lock:
+            self.blocks = queue.SimpleQueue()
 
     def _nextBlock(self):
         if self.status == constants.STOPPED:
@@ -63,15 +67,22 @@ class VideoGameBase(Task):
 
 
     def _setup(self, exp_win):
+        self.game_sound = SoundDeviceBlockStream(stereo=True, blockSize=735)
+        self._first_frame = self.emulator.reset()
+
+        min_ratio =  min(
+            exp_win.size[0]/ self._first_frame.shape[1],
+            exp_win.size[1]/ self._first_frame.shape[0])
+        width = int(min_ratio*self._first_frame.shape[1])
+        height = int(min_ratio*self._first_frame.shape[0])
+
         self.game_vis_stim = visual.ImageStim(
             exp_win,
-            size=exp_win.size,
+            size=(width, height),
             units='pixels',
             interpolate=False,
             flipVert=True,
             autoLog=False)
-        self.game_sound = SoundDeviceBlockStream(stereo=True, blockSize=735)
-        self._first_frame = self.emulator.reset()
 
     def _transform_soundblock(self, sound_block):
         return sound_block[:735]/float(2**15)
@@ -83,11 +94,13 @@ class VideoGameBase(Task):
             self.game_vis_stim.draw(ctl_win)
         self.game_sound.add_block(self._transform_soundblock(sound_block))
         if not self.game_sound.status == constants.PLAYING:
-            print("start sound")
-            self.game_sound.play()
+            exp_win.callOnFlip(self.game_sound.play) # start sound only at flip
 
     def _stop(self, exp_win, ctl_win):
         self.game_sound.stop()
+        exp_win.setColor([0]*3)
+        if ctl_win:
+            ctl_win.setColor([0]*3)
         yield True
 
     def unload(self):
@@ -112,6 +125,7 @@ class VideoGame(VideoGameBase):
         self.scenario = scenario
         self.repeat_scenario = repeat_scenario
         self.max_duration = max_duration
+        self.duration = max_duration
         self.post_level_ratings = post_level_ratings
 
     def _instructions(self, exp_win, ctl_win):
@@ -126,7 +140,7 @@ class VideoGame(VideoGameBase):
             screen_text.draw(exp_win)
             if ctl_win:
                 screen_text.draw(ctl_win)
-            yield
+            yield frameN < 2
         yield True
 
     def _setup(self, exp_win):
@@ -138,7 +152,7 @@ class VideoGame(VideoGameBase):
             record=False)
 
         super()._setup(exp_win)
-
+        self._events = []
         self._set_recording_file()
 
     def _set_recording_file(self):
@@ -166,6 +180,12 @@ class VideoGame(VideoGameBase):
         _keyPressBuffer.clear()
         return self.pressed_keys
 
+    def clear_key_buffers(self):
+        global _keyPressBuffer, _keyReleaseBuffer
+        self.pressed_keys.clear()
+        _keyReleaseBuffer.clear()
+        _keyPressBuffer.clear()
+
     def _run_emulator(self, exp_win, ctl_win):
 
         total_reward = 0
@@ -173,15 +193,17 @@ class VideoGame(VideoGameBase):
         level_step = 0
         keys = [False]*12
 
+        # flush all keys to avoid unwanted actions
+        self.clear_key_buffers()
+
         # render the initial frame and audio
         self._render_graphics_sound(self._first_frame, self.emulator.em.get_audio(), exp_win, ctl_win)
         exp_win.logOnFlip(level=logging.EXP, msg="level step: %d"%level_step)
-        yield
+        yield True
         while not _done:
             level_step += 1
             self._handle_controller_presses()
             keys = [k in self.pressed_keys for k in KEY_SET]
-
             _obs, _rew, _done, _info = self.emulator.step(keys)
             total_reward += _rew
             if _rew > 0 :
@@ -193,7 +215,9 @@ class VideoGame(VideoGameBase):
                     msg='VideoGame %s: %s stopped at %f'%(self.game_name, self.state_name, time.time()))
             if not level_step%config.FRAME_RATE:
                 exp_win.logOnFlip(level=logging.EXP, msg="level step: %d"%level_step)
-            yield
+            yield True
+        self.game_sound.stop()
+        self.game_sound.flush()
 
     def _set_key_handler(self, exp_win):
         # activate repeat keys
@@ -209,9 +233,13 @@ class VideoGame(VideoGameBase):
     def _run(self, exp_win, ctl_win):
 
         self._set_key_handler(exp_win)
-        exp_win.waitBlanking = False
+        self._nlevels = 0
+        exp_win.setColor([-1.0]*3)
+        if ctl_win:
+            ctl_win.setColor([-1.0]*3)
 
         while True:
+            self._nlevels += 1
             exp_win.logOnFlip(
                 level=logging.EXP,
                 msg='VideoGame %s: %s starting at %f'%(self.game_name, self.state_name, time.time()))
@@ -225,52 +253,121 @@ class VideoGame(VideoGameBase):
                 break
             self.emulator.reset()
 
+        exp_win.setColor([0]*3)
+        if ctl_win:
+            ctl_win.setColor([0]*3)
+
     def _run_ratings(self, exp_win, ctl_win):
         for question, n_pts in self.post_level_ratings:
             yield from self._likert_scale_answer(exp_win, ctl_win, question, n_pts)
 
-        text = visual.TextStim(exp_win, 'Thanks for you answers', pos=(0, .5))
+        text = visual.TextStim(exp_win, 'Thanks for your answers', pos=(0, 0))
         for i in range(config.FRAME_RATE):
             text.draw(exp_win)
-            yield i<2
+            yield i<3
+        # clear screen
+        for i in range(2):
+            yield True
 
-    def _likert_scale_answer(self, exp_win, ctl_win, question, n_pts=7, extent=.6):
+    def _questionnaire(self, exp_win, ctl_win):
+        if self.post_level_ratings is None:
+            return
+        lines = []
+        bullets = []
+        responses = []
+        y_spacing = 40
+        win_width = exp_win.size[0]
+        scales_block_x = win_width*.25
+        scales_block_y = -len(self.post_level_ratings)/2 * y_spacing
+        extent = win_width * .2
+
+
+        # create all stimuli
+        all_questions_text = ""
+        for q_n, q_vals in enumerate(self.post_level_ratings):
+            question, n_pts = q_vals
+            print(question)
+            default_response = n_pts//2
+            responses.append(default_response)
+            x_spacing = extent*2/(n_pts-1)
+            all_questions_text += question + '\n\n'
+
+            lines.append(
+                visual.Line(
+                    exp_win,
+                    (scales_block_x-extent, scales_block_y+q_n*y_spacing), (scales_block_x+extent, scales_block_y+q_n*y_spacing),
+                    units='pixels', lineWidth=2, autoLog=False,
+                    lineColor=((0,-1,-1) if q_n==0 else(-1,-1,-1))
+                    )
+            )
+            bullets.append([
+                visual.Circle(
+                    exp_win,
+                    units='pixels',
+                    radius=10, pos=(scales_block_x-extent+i*x_spacing, scales_block_y+q_n*y_spacing),
+                    fillColor=((1,1,1) if default_response==i else (-1,-1,-1)),
+                    lineColor=(-1,-1,-1), lineWidth=10,
+                    autoLog=False)
+                    for i in range(n_pts)
+                ])
+
+        text = visual.TextStim(
+            exp_win, all_questions_text, units='pixels',
+            pos=(.1*win_width, 0), wrapWidth=win_width*.5,
+            height = y_spacing/2,
+            anchorHoriz='right')
+
+        # questionnaire interaction loop
+        while True:
+            for stim in lines + sum(bullets,[]) + [text]:
+                stim.draw(exp_win)
+            yield True
+
+    def _likert_scale_answer(self, exp_win, ctl_win, question, n_pts=7, extent=.6, autoLog=False):
         extent *= config.EXP_WINDOW['size'][0]
         value = n_pts//2
         answered = False
         text = visual.TextStim(exp_win, question, pos=(0, .5))
-        line = visual.Line(exp_win, (-extent, 0), (extent, 0), units='pixels', lineWidth=2)
+        line = visual.Line(exp_win, (-extent, 0), (extent, 0), units='pixels', lineWidth=2, autoLog=False)
         x_spacing = extent*2/(n_pts-1)
         circles = [
             visual.Circle(
                 exp_win,
                 units='pixels',
                 radius=40, pos=(-extent+i*x_spacing, 0),
-                fillColor=(-1,-1,-1), lineColor=(-1,-1,-1), lineWidth=10)
+                fillColor=(-1,-1,-1), lineColor=(-1,-1,-1), lineWidth=10,
+                autoLog=False)
                 for i in range(n_pts)
             ]
         circles[value].fillColor = (1,1,1)
+        frame = 0
         while not answered:
+            frame += 1
+            for stim in [text, line] + circles:
+                stim.draw(exp_win)
             self._handle_controller_presses()
+            if 'a' in self.pressed_keys:
+                exp_win.logOnFlip(
+                    level=logging.EXP,
+                    msg='nlevel: %d, question: %s, answer: %d'%(self._nlevels, question, value))
+                for i in range(config.FRAME_RATE):
+                    yield True
+                self.pressed_keys.clear()
+                break
             if 'r' in self.pressed_keys and value < n_pts-1:
-                value+=1
-                self.pressed_keys.discard('r')
+                value += 1
             elif 'l' in self.pressed_keys and value > 0:
-                value-=1
-                self.pressed_keys.discard('l')
+                value -= 1
+            else:
+                yield frame < 4
+                continue
+            self.pressed_keys.clear()
             for c in circles:
                 c.fillColor = (-1,-1,-1)
             circles[value].fillColor = (1,1,1)
 
-            if 'a' in self.pressed_keys:
-                for i in range(config.FRAME_RATE):
-                    yield i<2
-                break
-                self.pressed_keys.clear()
-
-            for stim in [text, line] + circles:
-                stim.draw(exp_win)
             yield True
+        yield True
 
     def _stop(self, exp_win, ctl_win):
         self._unset_key_handler(exp_win)
@@ -296,24 +393,29 @@ class VideoGameMultiLevel(VideoGame):
         self._set_key_handler(exp_win)
         exp_win.waitBlanking = False
 
-        nlevels = 0
+        exp_win.setColor([-1.0]*3)
+        if ctl_win:
+            ctl_win.setColor([-1.0]*3)
+
+        self._nlevels = 0
         while True:
             for level, scenario in zip(self._state_names, self._scenarii):
-                nlevels += 1
+                self._nlevels += 1
                 self.state_name = level
                 self.emulator.load_state(level)
                 self.emulator.data.load(
                     retro.data.get_file_path(self.game_name, 'data.json'),
                     scenario)
                 self._first_frame = self.emulator.reset()
-                if nlevels > 1:
+                if self._nlevels > 1:
                     self._set_recording_file()
                     yield from self._instructions(exp_win, ctl_win)
-
+                yield from self._questionnaire(exp_win, ctl_win)
                 yield from super()._run_emulator(exp_win, ctl_win)
                 self.game_sound.stop()
                 if self.post_level_ratings:
                     yield from self._run_ratings(exp_win, ctl_win)
+
                 time_exceeded = self.max_duration and self.task_timer.getTime() > self.max_duration
                 if time_exceeded: # stop if we are above the planned duration
                     break

@@ -20,8 +20,6 @@ EXP_WINDOW = dict(
 )
 
 CTL_WINDOW = dict(
-#    winType='glfw',
-#    size = (1920, 1080),
     size = (1280, 1024),
 #    size = (1024, 768),
     pos = (100,0),
