@@ -25,7 +25,6 @@ Please keep your eyes open."""
             exp_win, text=self.instruction,
             alignText="center", color = 'white', wrapWidth=config.WRAP_WIDTH)
 
-        print(screen_text.pos)
         for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
             grey = [-float(frameN)/config.FRAME_RATE/config.INSTRUCTION_DURATION]*3
             exp_win.setColor(grey)
