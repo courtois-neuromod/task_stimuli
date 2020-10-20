@@ -12,9 +12,10 @@ globalClock = core.MonotonicClock(0)
 logging.setDefaultClock(globalClock)
 
 from . import config #import first separately
-from . import fmri, eyetracking, utils, meg
+from . import fmri, eyetracking, utils, meg, config
 from ..tasks import task_base, video
 
+from subprocess import Popen
 
 def listen_shortcuts():
     if any([k[1]&event.MOD_CTRL for k in event._keyBuffer]):
@@ -79,6 +80,14 @@ def main_loop(all_tasks,
     show_ctl_win=False,
     allow_run_on_battery=False,
     enable_ptt=False):
+
+    # force screen resolution to solve issues with video splitter at scanner
+    xrandr = Popen([
+        'xrandr',
+        '--output', 'HDMI-2',
+        '--mode', '%dx%d'%config.EXP_WINDOW['size'],
+        '--rate', str(config.FRAME_RATE)])
+    time.sleep(5)
 
     if not utils.check_power_plugged():
         print('*'*25+'WARNING: the power cord is not connected'+'*'*25)
