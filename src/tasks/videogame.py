@@ -41,7 +41,7 @@ class SoundDeviceBlockStream(sound.backend_sounddevice.SoundDeviceSound):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.blocks = queue.SimpleQueue()
+        self.blocks = queue.Queue()
         self.lock = threading.Lock()
 
     def add_block(self, block):
@@ -50,7 +50,7 @@ class SoundDeviceBlockStream(sound.backend_sounddevice.SoundDeviceSound):
 
     def flush(self):
         with self.lock:
-            self.blocks = queue.SimpleQueue()
+            self.blocks = queue.Queue()
 
     def _nextBlock(self):
         if self.status == constants.STOPPED:
@@ -154,6 +154,8 @@ class VideoGame(VideoGameBase):
         super()._setup(exp_win)
         self._events = []
         self._set_recording_file()
+        self._set_key_handler(exp_win)
+
 
     def _set_recording_file(self):
         nnn = 0
@@ -392,7 +394,6 @@ class VideoGameMultiLevel(VideoGame):
 
     def _run(self, exp_win, ctl_win):
 
-        self._set_key_handler(exp_win)
         exp_win.waitBlanking = False
 
         exp_win.setColor([-1.0]*3)
@@ -424,7 +425,6 @@ class VideoGameMultiLevel(VideoGame):
             if time_exceeded or not self._repeat_scenario_multilevel:
                 break
 
-        self._unset_key_handler(exp_win)
         exp_win.waitBlanking = True
 
 class VideoGameReplay(VideoGameBase):

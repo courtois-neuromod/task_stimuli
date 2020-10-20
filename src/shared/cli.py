@@ -13,9 +13,8 @@ globalClock = core.MonotonicClock(0)
 logging.setDefaultClock(globalClock)
 
 from . import config #import first separately
-from . import fmri, eyetracking, utils, meg
+from . import fmri, eyetracking, utils, meg, config
 from ..tasks import task_base, video
-
 
 def listen_shortcuts():
     if any([k[1]&event.MOD_CTRL for k in event._keyBuffer]):
@@ -80,6 +79,14 @@ def main_loop(all_tasks,
     show_ctl_win=False,
     allow_run_on_battery=False,
     enable_ptt=False):
+
+    # force screen resolution to solve issues with video splitter at scanner
+    """    xrandr = Popen([
+        'xrandr',
+        '--output', 'eDP-1',
+        '--mode', '%dx%d'%config.EXP_WINDOW['size'],
+        '--rate', str(config.FRAME_RATE)])
+    time.sleep(5)"""
 
     if not utils.check_power_plugged():
         print('*'*25+'WARNING: the power cord is not connected'+'*'*25)
@@ -218,49 +225,3 @@ Thanks for your participation!"""))
     finally:
         if enable_eyetracker:
             eyetracker_client.join(TIMEOUT)
-
-def parse_args():
-    import argparse
-    parser = argparse.ArgumentParser(
-        prog='main.py',
-        description=('Run all tasks in a session'),
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--subject', '-s',
-        required=True,
-        help='Subject ID')
-    parser.add_argument('--session', '-ss',
-        required=True,
-        help='Session')
-    parser.add_argument('--tasks', '-t',
-        required=True,
-        help='tasks set')
-    parser.add_argument('--output', '-o',
-        required=True,
-        help='output dataset')
-    parser.add_argument('--fmri', '-f',
-        help='Wait for fmri TTL to start each task',
-        action='store_true')
-    parser.add_argument('--meg', '-m',
-        help='Send signal to parallel port to start trigger to MEG and Biopac.',
-        action='store_true')
-    parser.add_argument('--eyetracking', '-e',
-        help='Enable eyetracking',
-        action='store_true')
-    parser.add_argument('--skip_n_tasks',
-        help='skip n of the tasks',
-        default=0,
-        type=int)
-    parser.add_argument('--ctl_win',
-        help='show control window',
-        action='store_true')
-    parser.add_argument('--run_on_battery',
-        help='allow the script to run on battery',
-        action='store_true')
-    parser.add_argument('--ptt',
-        help='enable Push-To-Talk function',
-        action='store_true')
-    parser.add_argument('--profile',
-        help='enable profiling',
-        action='store_true')
-
-    return parser.parse_args()
