@@ -8,15 +8,18 @@ OUTPUT_DIR = 'output'
 
 EYETRACKING_ROI = (60,30,660,450)
 
+EXP_SCREEN_XRANDR_NAME='eDP-1'
+
 EXP_WINDOW = dict(
-    size = (1280,1024),
+    size = (1280, 1024),
     screen=1,
     fullscr=True,
     gammaErrorPolicy='warn',
 )
 
 CTL_WINDOW = dict(
-    size = (1280, 1024),
+
+    size = (1920, 1080),
     pos = (100,0),
     screen=0,
     gammaErrorPolicy='warn',

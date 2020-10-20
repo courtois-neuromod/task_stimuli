@@ -1,2 +1,2 @@
 
-export PUPIL_PATH=$HOME/data/src/pupil
+export PUPIL_PATH=$HOME/git/pupil
