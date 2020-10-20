@@ -41,7 +41,7 @@ class SoundDeviceBlockStream(sound.backend_sounddevice.SoundDeviceSound):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.blocks = queue.SimpleQueue()
+        self.blocks = queue.Queue()
         self.lock = threading.Lock()
 
     def add_block(self, block):
@@ -50,7 +50,7 @@ class SoundDeviceBlockStream(sound.backend_sounddevice.SoundDeviceSound):
 
     def flush(self):
         with self.lock:
-            self.blocks = queue.SimpleQueue()
+            self.blocks = queue.Queue()
 
     def _nextBlock(self):
         if self.status == constants.STOPPED:
@@ -228,7 +228,7 @@ class VideoGame(VideoGameBase):
     def _unset_key_handler(self, exp_win):
         # deactivate custom keys handling
         exp_win.winHandle.on_key_press = event._onPygletKey
-        del exp_win.winHandle.on_key_release
+        #del exp_win.winHandle.on_key_release
 
     def _run(self, exp_win, ctl_win):
 
