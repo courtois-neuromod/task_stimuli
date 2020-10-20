@@ -36,24 +36,26 @@ Please keep your eyes open."""
 
     def _setup(self, exp_win):
 
-        self.movie_stim = visual.MovieStim2(exp_win, self.filepath, units='pixels')
+        self.movie_stim = visual.VlcMovieStim(exp_win, self.filepath, units='pixels', name=self.filepath)
         #print(self.movie_stim._audioStream.__class__)
-        aspect_ratio = self._aspect_ratio or self.movie_stim.size[0]/self.movie_stim.size[1]
+        #movie_size = self.movie_stim.size
+        movie_size = (self.movie_stim.video_width, self.movie_stim.video_height)
+        aspect_ratio = self._aspect_ratio or movie_size[0]/movie_size[1]
         min_ratio =  min(
-            exp_win.size[0]/ self.movie_stim.size[0],
-            exp_win.size[1]/ self.movie_stim.size[0]*aspect_ratio)
+            exp_win.size[0]/ movie_size[0],
+            exp_win.size[1]/ movie_size[0]*aspect_ratio)
 
 
-        width = min_ratio*self.movie_stim.size[0]
-        height = min_ratio*self.movie_stim.size[0]/aspect_ratio
+        width = min_ratio*movie_size[0]
+        height = min_ratio*movie_size[0]/aspect_ratio
 
         if self._scaling is not None:
             width *= self._scaling
             height *= self._scaling
 
         self.movie_stim.size = (width, height)
-        self.duration = self.movie_stim.duration
-#        print(self.movie_stim.size)
+        #self.duration = self.movie_stim.duration
+        #print(self.movie_stim.size)
 #        print(self.movie_stim.duration)
 
     def _run(self, exp_win, ctl_win):

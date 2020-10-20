@@ -1,6 +1,7 @@
 # CLI: command line interface options and main loop
 
 import os, datetime, traceback, glob, time
+import glfw
 from psychopy import core, visual, logging, event
 
 visual.window.reportNDroppedFrames = 10e10
@@ -97,10 +98,13 @@ def main_loop(all_tasks,
 
     exp_win = visual.Window(**config.EXP_WINDOW)
     exp_win.mouseVisible = False
+    exp_win.recordFrameIntervals = True
+    exp_win.refreshThreshold = 1/60 + 0.004
 
     if show_ctl_win:
         ctl_win = visual.Window(**config.CTL_WINDOW)
         ctl_win.name = 'Stimuli'
+        #ctl_win.recordFrameIntervals = True
     else:
         ctl_win = None
 
@@ -166,7 +170,10 @@ Thanks for your participation!"""))
 
             while True:
                 #force focus on the task window to ensure getting keys, TTL, ...
-                exp_win.winHandle.activate()
+                if exp_win.winType == 'glfw':
+                    glfw.focus_window(exp_win.winHandle)
+                else:
+                    exp_win.winHandle.activate()
                 # record frame intervals for debug
 
 

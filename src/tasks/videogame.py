@@ -221,14 +221,16 @@ class VideoGame(VideoGameBase):
 
     def _set_key_handler(self, exp_win):
         # activate repeat keys
-        exp_win.winHandle.on_key_press = _onPygletKeyPress
-        exp_win.winHandle.on_key_release = _onPygletKeyRelease
+        if exp_win.winType == 'pyglet':
+            exp_win.winHandle.on_key_press = _onPygletKeyPress
+            exp_win.winHandle.on_key_release = _onPygletKeyRelease
         self.pressed_keys = set()
 
     def _unset_key_handler(self, exp_win):
         # deactivate custom keys handling
-        exp_win.winHandle.on_key_press = event._onPygletKey
-        del exp_win.winHandle.on_key_release
+        if exp_win.winType == 'pyglet':
+            exp_win.winHandle.on_key_press = event._onPygletKey
+            del exp_win.winHandle.on_key_release
 
     def _run(self, exp_win, ctl_win):
 
