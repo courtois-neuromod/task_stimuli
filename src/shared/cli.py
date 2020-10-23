@@ -109,7 +109,7 @@ def main_loop(all_tasks,
     exp_win.refreshThreshold = 1/60 + 0.004
 
     if show_ctl_win:
-        ctl_win = visual.Window(**config.CTL_WINDOW)
+        ctl_win = visual.Window(**config.CTL_WINDOW, share=exp_win)
         ctl_win.name = 'Stimuli'
         #ctl_win.recordFrameIntervals = True
     else:
