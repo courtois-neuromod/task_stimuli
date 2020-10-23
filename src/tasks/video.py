@@ -55,6 +55,7 @@ Please keep your eyes open."""
         self.duration = self.movie_stim.duration
 #        print(self.movie_stim.size)
 #        print(self.movie_stim.duration)
+        super()._setup(exp_win)
 
     def _run(self, exp_win, ctl_win):
         # give the original size of the movie in pixels:

@@ -26,7 +26,8 @@ class Task(object):
         self._setup(exp_win)
 
     def _setup(self, exp_win):
-        pass
+        # initialize a progress bar if we know the duration of the task
+        self.progress_bar = tqdm.tqdm(total=self.duration) if hasattr(self, 'duration') else False
 
     def _generate_tsv_filename(self):
         for fi in range(1000):
@@ -58,26 +59,21 @@ class Task(object):
     def run(self, exp_win, ctl_win):
 
         self.task_timer = core.Clock()
-
-        # initialize a progress bar if we know the duration of the task
-        progress_bar = False
-        if hasattr(self, 'duration'):
-            progress_bar = tqdm.tqdm(total=self.duration)
-            frame_idx = 0
+        frame_idx = 0
 
         for clearBuffer in self._run(exp_win, ctl_win):
             # yield first to allow external draw before flip
             yield
             self._flip_all_windows(exp_win, ctl_win, clearBuffer)
             # increment the progress bar every second
-            if progress_bar:
+            if self.progress_bar:
                 frame_idx += 1
                 if not frame_idx%config.FRAME_RATE:
-                    progress_bar.update(1)
+                    self.progress_bar.update(1)
 
-        if progress_bar:
-            progress_bar.clear()
-            progress_bar.close()
+        if self.progress_bar:
+            self.progress_bar.clear()
+            self.progress_bar.close()
 
     def stop(self, exp_win, ctl_win):
         if hasattr(self, '_stop'):
