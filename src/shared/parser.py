@@ -42,5 +42,7 @@ def parse_args():
     parser.add_argument('--profile',
         help='enable profiling',
         action='store_true')
-
+    parser.add_argument('--record-movie',
+        help='record a movie of each task',
+        action='store_true')
     return parser.parse_args()

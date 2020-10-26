@@ -24,25 +24,36 @@ def listen_shortcuts():
             return all_keys_only[0]
     return False
 
-def run_task_loop(loop, eyetracker=None, gaze_drawer=None):
+def run_task_loop(loop, eyetracker=None, gaze_drawer=None, record_movie=False):
     for _ in loop:
         if gaze_drawer:
             gaze = eyetracker.get_gaze()
             if not gaze is None:
                 gaze_drawer.draw_gazepoint(gaze)
+        if record_movie:
+            record_movie.getMovieFrame(buffer='back')
         # check for global event keys
         shortcut_evt = listen_shortcuts()
         if shortcut_evt:
             return shortcut_evt
 
-def run_task(task, exp_win, ctl_win=None, eyetracker=None, gaze_drawer=None):
+def run_task(task, exp_win, ctl_win=None, eyetracker=None, gaze_drawer=None, record_movie=False):
     print('Next task: %s'%str(task))
 
     # show instruction
-    shortcut_evt = run_task_loop(task.instructions(exp_win, ctl_win), eyetracker, gaze_drawer)
+    shortcut_evt = run_task_loop(
+        task.instructions(exp_win, ctl_win),
+        eyetracker,
+        gaze_drawer,
+        record_movie=exp_win if record_movie else False
+        )
 
     if task.use_fmri and not shortcut_evt:
-        shortcut_evt = run_task_loop(fmri.wait_for_ttl(), eyetracker, gaze_drawer)
+        shortcut_evt = run_task_loop(
+            fmri.wait_for_ttl(),
+            eyetracker,
+            gaze_drawer
+            )
         if shortcut_evt: return shortcut_evt
 
     logging.info('GO')
@@ -53,7 +64,12 @@ def run_task(task, exp_win, ctl_win=None, eyetracker=None, gaze_drawer=None):
         meg.send_signal(meg.MEG_settings['TASK_START_CODE'])
 
     if not shortcut_evt:
-        shortcut_evt = run_task_loop(task.run(exp_win, ctl_win), eyetracker, gaze_drawer)
+        shortcut_evt = run_task_loop(
+            task.run(exp_win, ctl_win),
+            eyetracker,
+            gaze_drawer,
+            record_movie=exp_win if record_movie else False
+            )
 
     # send stop trigger/marker to MEG + Biopac (or anything else on parallel port)
     if task.use_meg and not shortcut_evt:
@@ -64,7 +80,12 @@ def run_task(task, exp_win, ctl_win=None, eyetracker=None, gaze_drawer=None):
     # now that time is less sensitive: save files
     task.save()
 
-    run_task_loop(task.stop(exp_win, ctl_win), eyetracker, gaze_drawer)
+    run_task_loop(
+        task.stop(exp_win, ctl_win),
+        eyetracker,
+        gaze_drawer,
+        record_movie=exp_win if record_movie else False
+        )
 
     return shortcut_evt
 
@@ -77,7 +98,9 @@ def main_loop(all_tasks,
     use_meg=False,
     show_ctl_win=False,
     allow_run_on_battery=False,
-    enable_ptt=False):
+    enable_ptt=False,
+    record_movie=False,
+    ):
 
     # force screen resolution to solve issues with video splitter at scanner
     """    xrandr = Popen([
@@ -176,8 +199,13 @@ Thanks for your participation!"""))
                 exp_win.winHandle.activate()
                 # record frame intervals for debug
 
-
-                shortcut_evt = run_task(task, exp_win, ctl_win, eyetracker_client, gaze_drawer)
+                shortcut_evt = run_task(
+                    task,
+                    exp_win,
+                    ctl_win,
+                    eyetracker_client,
+                    gaze_drawer,
+                    record_movie=record_movie)
 
                 if shortcut_evt == 'n':
                     # restart the task
@@ -194,7 +222,12 @@ Thanks for your participation!"""))
                     break
 
                 logging.flush()
-
+            if record_movie:
+                out_fname = os.path.join(
+                    task.output_path,
+                    '%s_%s.mp4'%(task.output_fname_base, task.name))
+                print(f"saving movie as {out_fname}")
+                exp_win.saveMovieFrames(out_fname)
             task.unload()
 
             if shortcut_evt=='q':
@@ -206,6 +239,7 @@ Thanks for your participation!"""))
                 # there is anyway the duration of the instruction before listening to TTL
                 for i in range(DELAY_BETWEEN_TASK*config.FRAME_RATE):
                     exp_win.flip(clearBuffer=False)
+
 
         exp_win.saveFrameIntervals('exp_win_frame_intervals.txt')
         if ctl_win:
