@@ -1,14 +1,14 @@
 import os, sys, time
-from psychopy import visual, core, data, logging
+from psychopy import visual, core, data, logging, event
 from .task_base import Task
 
 from ..shared import config
 
-STIMULI_DURATION=3
+STIMULI_DURATION=.5
 BASELINE_BEGIN=5
 BASELINE_END=5
 ISI=4
-RESPONSE_KEY='1'
+RESPONSE_KEY='d'
 
 class Things(Task):
 
@@ -20,26 +20,26 @@ Press the button when you see an unrecognizable object that was generated."""
         super().__init__(**kwargs)
         #TODO: image lists as params, subjects ....
         design = data.importConditions(design)
-        self.design = [trial for trial in design if trial['run_nr'] == run]
+        self.design = [trial for trial in design if trial['run'] == run]
         if os.path.exists(images_path) and os.path.exists(os.path.join(images_path, self.design[0]['image_path'])):
             self.images_path = images_path
         else:
             raise ValueError('Cannot find the listed images in %s '%images_path)
 
     def _setup(self, exp_win):
-
         self.fixation_cross = visual.ImageStim(
             exp_win,
-            os.path.join('data','things','fixation_cross.png'),
-            size=(.1,.1), units='height')
+            os.path.join('data','things', 'images','fixation_cross.png'),
+            size=(.1,.1), units='height', opacity=.5)
 
-        self.trials = data.TrialHandler(self.design, 1, method='sequential')
         #preload all images
-        for trial in self.trials:
-            trial.stim = visual.ImageStim(
+        for trial in self.design:
+            trial['stim'] = visual.ImageStim(
                 exp_win,
-                os.path.join(self.images_path, trial['image_path'])
-                , size=(.1,.1), units='height')
+                os.path.join(self.images_path, trial['image_path']))
+        self.trials = data.TrialHandler(self.design, 1, method='sequential')
+        self.duration = len(self.design)*(STIMULI_DURATION+ISI) + BASELINE_BEGIN + BASELINE_END
+        super()._setup(exp_win)
 
     def _instructions(self, exp_win, ctl_win):
         screen_text = visual.TextStim(
@@ -54,7 +54,7 @@ Press the button when you see an unrecognizable object that was generated."""
 
     def _run(self, exp_win, ctl_win):
 
-        exp_win.logOnFlip(level=logging.EXP,msg='Things: task starting at %f'%time.time())
+        exp_win.logOnFlip(level=logging.EXP, msg='Things: task starting at %f'%time.time())
         for frameN in range(config.FRAME_RATE * BASELINE_BEGIN):
             self.fixation_cross.draw(exp_win)
             if ctl_win:
@@ -65,24 +65,28 @@ Press the button when you see an unrecognizable object that was generated."""
             trial[key] = self.task_timer.getTime()
 
         for trial in self.trials:
-
-            exp_win.logOnFlip(level=logging.EXP,msg='image: display %s'%trial['image_path'])
+            exp_win.logOnFlip(level=logging.EXP, msg=f"image: display {trial['image_path']}")
             exp_win.callOnFlip(set_trial_timing, trial, 'onset')
-            for frameN in range(config.FRAME_RATE * trial['duration']):
+            self.progress_bar.set_description(f"Trial:: {trial['condition']}:{trial['image_path']}" )
+            for frameN in range(int(config.FRAME_RATE * trial['duration'])):
                 trial['stim'].draw(exp_win)
                 self.fixation_cross.draw(exp_win)
                 if ctl_win:
                     trial['stim'].draw(ctl_win)
                     self.fixation_cross.draw(ctl_win)
-                yield()
+                yield frameN < 2
             exp_win.callOnFlip(set_trial_timing, trial, 'offset')
             exp_win.logOnFlip(level=logging.EXP, msg='image: rest')
             for frameN in range(config.FRAME_RATE * ISI):
-                yield()
-            keypress = event.getKeys([RESPONSE_KEY])
+                self.fixation_cross.draw(exp_win)
+                if ctl_win:
+                    self.fixation_cross.draw(ctl_win)
+                yield frameN < 2
+            keypress = event.getKeys([RESPONSE_KEY], timeStamped=True)
             trial['response'] = len(keypress) > 0
-            trial['response_time'] = trial['onset'] - keypress
+            trial['response_time'] = trial['onset'] - keypress[0][1] if len(keypress) else None
             trial['duration'] = trial['offset']-trial['onset']
+            del trial['stim']
 
         for frameN in range(config.FRAME_RATE * BASELINE_END):
             self.fixation_cross.draw(exp_win)
