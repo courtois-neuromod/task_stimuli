@@ -24,7 +24,8 @@ def run(parsed):
         parsed.meg,
         parsed.ctl_win,
         parsed.run_on_battery,
-        parsed.ptt)
+        parsed.ptt,
+        parsed.record_movie)
 
 def run_profiled(parsed):
     import cProfile
