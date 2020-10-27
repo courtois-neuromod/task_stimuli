@@ -14,7 +14,7 @@ def get_tasks(parsed):
             session_design_filename,
             IMAGE_PATH,
             run,
-            name=f"sub-{parsed.subject}_ses-{parsed.session}_run-{run}") \
+            name=f"task-things_run-{run}") \
         for run in range(1,n_runs+1)
     ]
     return tasks

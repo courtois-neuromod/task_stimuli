@@ -82,9 +82,9 @@ Press the button when you see an unrecognizable object that was generated."""
                 if ctl_win:
                     self.fixation_cross.draw(ctl_win)
                 yield frameN < 2
-            keypress = event.getKeys([RESPONSE_KEY], timeStamped=True)
+            keypress = event.getKeys([RESPONSE_KEY], timeStamped=self.task_timer)
             trial['response'] = len(keypress) > 0
-            trial['response_time'] = trial['onset'] - keypress[0][1] if len(keypress) else None
+            trial['response_time'] = (keypress[0][1] - trial['onset']) if len(keypress) else None
             trial['duration'] = trial['offset']-trial['onset']
             del trial['stim']
 
