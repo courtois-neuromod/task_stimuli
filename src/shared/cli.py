@@ -25,12 +25,12 @@ def listen_shortcuts():
     return False
 
 def run_task_loop(loop, eyetracker=None, gaze_drawer=None, record_movie=False):
-    for _ in loop:
+    for frameN, _ in enumerate(loop):
         if gaze_drawer:
             gaze = eyetracker.get_gaze()
             if not gaze is None:
                 gaze_drawer.draw_gazepoint(gaze)
-        if record_movie:
+        if record_movie and frameN%6==0:
             record_movie.getMovieFrame(buffer='back')
         # check for global event keys
         shortcut_evt = listen_shortcuts()
@@ -227,7 +227,7 @@ Thanks for your participation!"""))
                     task.output_path,
                     '%s_%s.mp4'%(task.output_fname_base, task.name))
                 print(f"saving movie as {out_fname}")
-                exp_win.saveMovieFrames(out_fname)
+                exp_win.saveMovieFrames(out_fname, fps=10)
             task.unload()
 
             if shortcut_evt=='q':
