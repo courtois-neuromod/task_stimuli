@@ -25,6 +25,7 @@ def run(parsed):
         parsed.ctl_win,
         parsed.run_on_battery,
         parsed.ptt)
+    screen.reset_exp_screen()
 
 def run_profiled(parsed):
     import cProfile
