@@ -4,11 +4,8 @@ from .task_base import Task
 
 from ..shared import config
 
-STIMULI_DURATION=.5
-BASELINE_BEGIN=5
-BASELINE_END=5
-ISI=4
 RESPONSE_KEY='d'
+RESPONSE_TIME=4
 
 class Things(Task):
 
@@ -38,7 +35,7 @@ Press the button when you see an unrecognizable object that was generated."""
                 exp_win,
                 os.path.join(self.images_path, trial['image_path']))
         self.trials = data.TrialHandler(self.design, 1, method='sequential')
-        self.duration = len(self.design)*(STIMULI_DURATION+ISI) + BASELINE_BEGIN + BASELINE_END
+        self.duration = len(self.design)
         super()._setup(exp_win)
 
     def _instructions(self, exp_win, ctl_win):
@@ -55,33 +52,42 @@ Press the button when you see an unrecognizable object that was generated."""
     def _run(self, exp_win, ctl_win):
 
         exp_win.logOnFlip(level=logging.EXP, msg='Things: task starting at %f'%time.time())
-        for frameN in range(config.FRAME_RATE * BASELINE_BEGIN):
-            self.fixation_cross.draw(exp_win)
-            if ctl_win:
-                self.fixation_cross.draw(ctl_win)
-            yield frameN<2
+        self.fixation_cross.draw(exp_win)
+        if ctl_win:
+            self.fixation_cross.draw(ctl_win)
+        yield True
 
         def set_trial_timing(trial, key):
             trial[key] = self.task_timer.getTime()
 
         for trial in self.trials:
-            exp_win.logOnFlip(level=logging.EXP, msg=f"image: display {trial['image_path']}")
+            exp_win.logOnFlip(level=logging.EXP, msg=f"image: {trial['condition']}:{trial['image_path']}")
             exp_win.callOnFlip(set_trial_timing, trial, 'onset')
             self.progress_bar.set_description(f"Trial:: {trial['condition']}:{trial['image_path']}" )
-            for frameN in range(int(config.FRAME_RATE * trial['duration'])):
-                trial['stim'].draw(exp_win)
-                self.fixation_cross.draw(exp_win)
-                if ctl_win:
-                    trial['stim'].draw(ctl_win)
-                    self.fixation_cross.draw(ctl_win)
-                yield frameN < 2
+
+            # draw to backbuffer
+            trial['stim'].draw(exp_win)
+            self.fixation_cross.draw(exp_win)
+            if ctl_win:
+                trial['stim'].draw(ctl_win)
+                self.fixation_cross.draw(ctl_win)
+            # wait onset
+            while self.task_timer.getTime() < trial['onset'] - 1/(config.FRAME_RATE*2):
+                pass
+            yield True #flip
+
+            # draw to backbuffer
             exp_win.callOnFlip(set_trial_timing, trial, 'offset')
-            exp_win.logOnFlip(level=logging.EXP, msg='image: rest')
-            for frameN in range(config.FRAME_RATE * ISI):
-                self.fixation_cross.draw(exp_win)
-                if ctl_win:
-                    self.fixation_cross.draw(ctl_win)
-                yield frameN < 2
+            exp_win.logOnFlip(level=logging.EXP, msg='fixation')
+            self.fixation_cross.draw(exp_win)
+            if ctl_win:
+                self.fixation_cross.draw(ctl_win)
+            while self.task_timer.getTime() < trial['onset'] + trial['duration']:
+                pass
+            yield True #flip
+
+            while self.task_timer.getTime() < trial['onset'] + RESPONSE_TIME:
+                pass
             keypress = event.getKeys([RESPONSE_KEY], timeStamped=self.task_timer)
             trial['response'] = len(keypress) > 0
             trial['response_time'] = (keypress[0][1] - trial['onset']) if len(keypress) else None

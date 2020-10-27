@@ -86,6 +86,7 @@ def generate_design_file(subject, session):
             ])
         run_trials = run_trials.iloc[randorder]
         run_trials['run'] = run + 1
+        run_trials['onset'] = initial_wait + np.arange(n_trials_total) * trial_duration
         run_trials['duration'] = image_duration
         all_run_trials = pandas.concat([all_run_trials, run_trials])
     out_fname = os.path.join(THINGS_DATA_PATH, 'designs', f"sub-{parsed.subject}_ses-{parsed.session}_design.tsv")
