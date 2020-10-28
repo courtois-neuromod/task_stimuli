@@ -24,10 +24,13 @@ class Task(object):
         self.use_meg = use_meg
         self.use_eyetracking = use_eyetracking
         self._setup(exp_win)
-
-    def _setup(self, exp_win):
         # initialize a progress bar if we know the duration of the task
         self.progress_bar = tqdm.tqdm(total=self.duration) if hasattr(self, 'duration') else False
+        if not hasattr(self,'_progress_bar_refresh_rate'):
+            self._progress_bar_refresh_rate = config.FRAME_RATE
+
+    def _setup(self, exp_win):
+        pass
 
     def _generate_tsv_filename(self):
         for fi in range(1000):
@@ -44,8 +47,8 @@ class Task(object):
 
     def _flip_all_windows(self, exp_win, ctl_win=None, clearBuffer=True):
         if not ctl_win is None:
-            ctl_win.flip(clearBuffer=clearBuffer)
-        exp_win.flip(clearBuffer=clearBuffer)
+            self._ctl_win_last_flip_time = ctl_win.flip(clearBuffer=clearBuffer)
+        self._exp_win_last_flip_time = exp_win.flip(clearBuffer=clearBuffer)
 
     def instructions(self, exp_win, ctl_win):
         if hasattr(self, '_instructions'):
@@ -65,10 +68,12 @@ class Task(object):
             # yield first to allow external draw before flip
             yield
             self._flip_all_windows(exp_win, ctl_win, clearBuffer)
+            if not hasattr(self, '_exp_win_first_flip_time'):
+                self._exp_win_first_flip_time = self._exp_win_last_flip_time
             # increment the progress bar every second
             if self.progress_bar:
                 frame_idx += 1
-                if not frame_idx%config.FRAME_RATE:
+                if not frame_idx % self._progress_bar_refresh_rate:
                     self.progress_bar.update(1)
 
         if self.progress_bar:
@@ -103,6 +108,7 @@ class Pause(Task):
     def _setup(self, exp_win):
         self.use_fmri = False
         self.use_eyetracking = False
+        super()._setup(exp_win)
 
     def _run(self, exp_win, ctl_win):
         screen_text = visual.TextStim(
