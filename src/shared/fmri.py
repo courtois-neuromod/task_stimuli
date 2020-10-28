@@ -1,5 +1,6 @@
 from psychopy import core, event, logging
 from psychopy.hardware.emulator import launchScan
+import time
 
 MR_settings = {
     'TR': 2.000,     # duration (sec) per whole-brain volume
@@ -27,4 +28,5 @@ def wait_for_ttl():
             logging.exp(msg="fMRI TTL %d"%ttl_index)
             ttl_index += 1
             return
+        time.sleep(.0005) #just to avoid looping to fast
         yield

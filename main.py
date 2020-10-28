@@ -14,18 +14,22 @@ def run(parsed):
     except ImportError:
         raise(ValueError('session tasks file cannot be found for %s'%parsed.session))
     from src.shared import cli
-    cli.main_loop(
-        tasks[parsed.skip_n_tasks:],
-        parsed.subject,
-        parsed.session,
-        parsed.output,
-        parsed.eyetracking,
-        parsed.fmri,
-        parsed.meg,
-        parsed.ctl_win,
-        parsed.run_on_battery,
-        parsed.ptt,
-        parsed.record_movie)
+    try:
+        cli.main_loop(
+            tasks[parsed.skip_n_tasks:],
+            parsed.subject,
+            parsed.session,
+            parsed.output,
+            parsed.eyetracking,
+            parsed.fmri,
+            parsed.meg,
+            parsed.ctl_win,
+            parsed.run_on_battery,
+            parsed.ptt,
+            parsed.record_movie,
+            )
+    finally:
+        screen.reset_exp_screen()
 
 def run_profiled(parsed):
     import cProfile

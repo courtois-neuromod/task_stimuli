@@ -49,7 +49,7 @@ def run_task(task, exp_win, ctl_win=None, eyetracker=None, gaze_drawer=None, rec
         )
 
     if task.use_fmri and not shortcut_evt:
-        while fmri.wait_for_ttl():
+        for _ in fmri.wait_for_ttl():
             shortcut_evt = listen_shortcuts()
             if shortcut_evt: return shortcut_evt
 
