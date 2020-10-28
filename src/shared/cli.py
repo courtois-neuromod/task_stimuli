@@ -25,11 +25,12 @@ def listen_shortcuts():
     return False
 
 def run_task_loop(loop, eyetracker=None, gaze_drawer=None):
+    gaze = None
     for _ in loop:
-        if gaze_drawer:
-            gaze = eyetracker.get_gaze()
+        if gaze_drawer and False:
             if not gaze is None:
                 gaze_drawer.draw_gazepoint(gaze)
+            gaze = eyetracker.get_gaze()
         # check for global event keys
         shortcut_evt = listen_shortcuts()
         if shortcut_evt:

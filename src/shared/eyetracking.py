@@ -189,11 +189,6 @@ class EyeTrackerClient(threading.Thread):
             'name':'Accuracy_Visualizer','args':{}
             })
 
-        #restart with new params
-#        self.send_recv_notification({
-#            'subject':'start_plugin',
-#            'name':'Fixed_Screen_Marker_Calibration',
-#            'args':{'fullscreen':True, 'marker_scale':.8, 'sample_duration':120, 'monitor_idx':1}})
         # setup recorder output path
         self.send_recv_notification({
             'subject':'start_plugin',
@@ -220,12 +215,11 @@ class EyeTrackerClient(threading.Thread):
         """
 
 
-        #self.send_recv_notification({'subject':'recording.should_start',})
         # wait for the whole schmilblick to boot
         time.sleep(4)
 
     def send_recv_notification(self, n):
-        # REQ REP requirese lock step communication with multipart msg (topic,msgpack_encoded dict)
+        # REQ REP requires lock step communication with multipart msg (topic,msgpack_encoded dict)
         self._req_socket.send_multipart((bytes('notify.%s'%n['subject'],'utf-8'), msgpack.dumps(n)))
         return self._req_socket.recv()
 
@@ -249,6 +243,7 @@ class EyeTrackerClient(threading.Thread):
         # stop recording
         self.send_recv_notification({'subject':'recording.should_stop',})
         # stop world and children process
+        self.send_recv_notification({'subject':'world_process.should_stop'})
         self.send_recv_notification({'subject':'launcher_process.should_stop'})
         self._pupil_process.wait(timeout)
         self._pupil_process.terminate()
@@ -288,11 +283,13 @@ class EyeTrackerClient(threading.Thread):
             logging.error('Calibration: not enough pupil captured for calibration')
             #return
 
+        logging.info('starting pupil calibration plugin')
         self.send_recv_notification({
             'subject':'start_plugin',
             'name':'External_Calibration',
             'args':{'frame_size': frame_size.tolist()}})
 
+        logging.info('calibrating, %s %s'%(str(pupil_list),str(ref_list)))
         self.send_recv_notification({
             'subject':'calibrate.from_external_data',
             'pupil_list':pupil_list,
