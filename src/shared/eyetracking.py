@@ -33,6 +33,7 @@ CAPTURE_SETTINGS = {
             "frame_rate": 250,
             "exposure_time": 4000,
             "global_gain": 1,
+#            "uid": "Aravis-Fake-GV01", # for test purposes
             "uid": "MRC Systems GmbH-GVRD-MRC HighSpeed-MR_CAM_HS_0014",
         }
 
@@ -73,7 +74,6 @@ Please look at the markers that appear on the screen."""
         print('calibration started')
 
         window_size_frame = exp_win.size-MARKER_SIZE*2
-        print(window_size_frame)
         circle_marker = visual.Circle(
             exp_win, edges=64, units='pixels',
             lineColor=None,fillColor=self.marker_fill_color,
@@ -152,7 +152,7 @@ class EyeTrackerClient(threading.Thread):
         self._pupil_process = Popen([
             'python3',
             os.path.join(os.environ['PUPIL_PATH'],'pupil_src','main.py'),
-            'capture'])
+            'capture', '--debug'])
 
         self._ctx = zmq.Context()
         self._req_socket = self._ctx.socket(zmq.REQ)
@@ -163,6 +163,7 @@ class EyeTrackerClient(threading.Thread):
             'subject':'eye_process.should_start.0',
             'eye_id':0, 'args':{}})
         time.sleep(1)
+        """
         self.send_recv_notification(
                 {
                     'subject': 'start_eye_plugin',
@@ -170,6 +171,7 @@ class EyeTrackerClient(threading.Thread):
                     'target': 'eye0'
                 }
             )
+        """
         self.send_recv_notification(
                 {
                     'subject': 'start_eye_plugin',
@@ -184,11 +186,19 @@ class EyeTrackerClient(threading.Thread):
             'subject':'stop_plugin',
             'name':'Recorder'
             })
+        """
+        # stop NDSI for performance, doesn't work
+        self.send_recv_notification({
+            'subject':'stop_eye_plugin',
+            'name':'NDSI_Manager'
+            })
+        """
+        """
         self.send_recv_notification({
             'subject':'stop_plugin',
             'name':'Accuracy_Visualizer','args':{}
             })
-
+        """
         #restart with new params
 #        self.send_recv_notification({
 #            'subject':'start_plugin',
@@ -203,6 +213,9 @@ class EyeTrackerClient(threading.Thread):
                 'raw_jpeg':False,
                 'record_eye':True}
             })
+
+
+        """
         self.send_recv_notification({
             'subject':'start_plugin',
             'name':'Pupil_Remote','args':{}})
@@ -211,7 +224,6 @@ class EyeTrackerClient(threading.Thread):
             "subject": "set_detection_mapping_mode",
             "mode": "2d"})
 
-        """
         self.send_recv_notification({
             'subject':'start_plugin',
             'name':'Detector2DPlugin',
@@ -283,22 +295,19 @@ class EyeTrackerClient(threading.Thread):
             if locked:
                 return self.gaze
 
-    def calibrate(self, pupil_list, ref_list, frame_size):
+    def calibrate(self, pupil_list, ref_list):
         if len(pupil_list) < 100:
             logging.error('Calibration: not enough pupil captured for calibration')
             #return
 
+        calib_data = {"ref_list": ref_list, "pupil_list": pupil_list}
+
         self.send_recv_notification({
             'subject':'start_plugin',
-            'name':'External_Calibration',
-            'args':{'frame_size': frame_size.tolist()}})
-
-        self.send_recv_notification({
-            'subject':'calibrate.from_external_data',
-            'pupil_list':pupil_list,
-            'ref_list':ref_list})
-
-
+            'name':'Gazer2D',
+            'args': {'calib_data':calib_data},
+            'raise_calibration_error':True,
+            })
 
 class GazeDrawer():
 
