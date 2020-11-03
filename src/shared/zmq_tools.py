@@ -1,7 +1,7 @@
 """
 (*)~---------------------------------------------------------------------------
 Pupil - eye tracking platform
-Copyright (C) 2012-2018 Pupil Labs
+Copyright (C) 2012-2020 Pupil Labs
 
 Distributed under the terms of the GNU
 Lesser General Public License (LGPL v3.0).
@@ -42,6 +42,8 @@ class ZMQ_handler(logging.Handler):
         try:
             self.socket.send(record_dict)
         except TypeError:
+            # stringify message in case it is not a string yet
+            record_dict["msg"] = str(record_dict["msg"])
             # stringify `exc_info` since it includes unserializable objects
             if record_dict["exc_info"]:  # do not convert if it is None
                 record_dict["exc_info"] = str(record_dict["exc_info"])
@@ -105,16 +107,13 @@ class Msg_Receiver(ZMQ_Socket):
         Any addional message frames will be added as a list
         in the payload dict with key: '__raw_data__' .
         """
-        try:
-            topic = self.recv_topic()
-            remaining_frames = self.recv_remaining_frames()
-            payload = self.deserialize_payload(*remaining_frames)
-            return topic, payload
-        except zmq.ZMQError:
-            return None
+        topic = self.recv_topic()
+        remaining_frames = self.recv_remaining_frames()
+        payload = self.deserialize_payload(*remaining_frames)
+        return topic, payload
 
     def recv_topic(self):
-        return self.socket.recv_string(zmq.NOBLOCK)
+        return self.socket.recv_string()
 
     def recv_remaining_frames(self):
         while self.socket.get(zmq.RCVMORE):
@@ -137,13 +136,16 @@ class Msg_Streamer(ZMQ_Socket):
     Not threadsave. Make a new one for each thread
     """
 
-    def __init__(self, ctx, url):
+    def __init__(self, ctx, url, hwm=None):
         self.socket = zmq.Socket(ctx, zmq.PUB)
+        if hwm is not None:
+            self.socket.set_hwm(hwm)
+
         self.socket.connect(url)
 
     def send(self, payload, deprecated=()):
         """Send a message with topic, payload
-`
+
         Topic is a unicode string. It will be sent as utf-8 encoded byte array.
         Payload is a python dict. It will be sent as a msgpack serialized dict.
 
@@ -153,7 +155,7 @@ class Msg_Streamer(ZMQ_Socket):
         the contents of the iterable in '__raw_data__'
         require exposing the pyhton memoryview interface.
         """
-        assert deprecated is (), "Depracted use of send()"
+        assert deprecated == (), "Depracted use of send()"
         assert "topic" in payload, "`topic` field required in {}".format(payload)
 
         if "__raw_data__" not in payload:
