@@ -209,11 +209,8 @@ class EyeTrackerClient(threading.Thread):
             'args' : CAPTURE_SETTINGS,
             })
 
-        # wait for the whole schmilblick to boot before running the thread
-        #time.sleep(4)
-
     def send_recv_notification(self, n):
-        # REQ REP requirese lock step communication with multipart msg (topic,msgpack_encoded dict)
+        # REQ REP requires lock step communication with multipart msg (topic,msgpack_encoded dict)
         self._req_socket.send_multipart((bytes('notify.%s'%n['subject'],'utf-8'), msgpack.dumps(n)))
         return self._req_socket.recv()
 
@@ -237,6 +234,7 @@ class EyeTrackerClient(threading.Thread):
         # stop recording
         self.send_recv_notification({'subject':'recording.should_stop',})
         # stop world and children process
+        self.send_recv_notification({'subject':'world_process.should_stop'})
         self.send_recv_notification({'subject':'launcher_process.should_stop'})
         self._pupil_process.wait(timeout)
         self._pupil_process.terminate()
@@ -278,6 +276,7 @@ class EyeTrackerClient(threading.Thread):
 
         calib_data = {"ref_list": ref_list, "pupil_list": pupil_list}
 
+        logging.info('calibrating, %s %s'%(str(pupil_list),str(ref_list)))
         self.send_recv_notification({
             'subject':'start_plugin',
             'name':'Gazer2D',
