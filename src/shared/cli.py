@@ -142,7 +142,9 @@ def main_loop(all_tasks,
         print('creating et client')
         eyetracker_client = eyetracking.EyeTrackerClient(
             output_path=log_path,
-            output_fname_base=log_name_prefix
+            output_fname_base=log_name_prefix,
+            profile=False,
+            debug=False,
             )
         print('starting et client')
         eyetracker_client.start()
