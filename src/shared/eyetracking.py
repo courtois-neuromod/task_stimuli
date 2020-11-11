@@ -119,7 +119,7 @@ Please look at the markers that appear on the screen."""
                         all_pupils.append(pupil)
                 yield True
         yield True
-        self.eyetracker.calibrate(all_pupils, all_refs_per_flip, exp_win.size)
+        self.eyetracker.calibrate(all_pupils, all_refs_per_flip)
 
 from subprocess import Popen
 
