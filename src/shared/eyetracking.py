@@ -136,7 +136,7 @@ def nonblocking(lock):
 
 class EyeTrackerClient(threading.Thread):
 
-    def __init__(self, output_path, output_fname_base):
+    def __init__(self, output_path, output_fname_base, profile=False, debug=False):
         super(EyeTrackerClient, self).__init__()
         self.stoprequest = threading.Event()
         self.lock = threading.Lock()
@@ -147,94 +147,70 @@ class EyeTrackerClient(threading.Thread):
         self.output_path = output_path
         self.output_fname_base = output_fname_base
         self.record_dir = os.path.join(self.output_path, self.output_fname_base + '.pupil')
-        os.makedirs(self.record_dir)
+        os.makedirs(self.record_dir, exist_ok=True)
+
+        dev_opts = []
+        if debug:
+            dev_opts.append('--debug')
+        if profile:
+            dev_opts.append('--profile')
 
         self._pupil_process = Popen([
             'python3',
             os.path.join(os.environ['PUPIL_PATH'],'pupil_src','main.py'),
-            'capture', '--debug'])
+            'capture'] + dev_opts
+            )
 
         self._ctx = zmq.Context()
         self._req_socket = self._ctx.socket(zmq.REQ)
         self._req_socket.connect('tcp://localhost:50020')
 
+        # stop eye1 if started: monocular eyetracking in the MRI
+        notif = self.send_recv_notification({
+            'subject':'eye_process.should_stop.1',
+            'eye_id':1, 'args':{}})
+
         # start eye0 if not started yet (from pupil saved config)
         notif = self.send_recv_notification({
             'subject':'eye_process.should_start.0',
             'eye_id':0, 'args':{}})
-        time.sleep(1)
-        """
-        self.send_recv_notification(
-                {
-                    'subject': 'start_eye_plugin',
-                    'name': 'Aravis_Manager',
-                    'target': 'eye0'
-                }
-            )
-        """
-        self.send_recv_notification(
-                {
-                    'subject': 'start_eye_plugin',
-                    'name': 'Aravis_Source',
-                    'target': 'eye0',
-                    'args' : CAPTURE_SETTINGS
-                }
-            )
 
-        # quit existing plugin
+        # wait for eye process to start before starting plugins
+        time.sleep(1)
+
+        # quit existing recorder plugin
         self.send_recv_notification({
             'subject':'stop_plugin',
-            'name':'Recorder'
+            'name':'Recorder',
             })
-        """
-        # stop NDSI for performance, doesn't work
-        self.send_recv_notification({
-            'subject':'stop_eye_plugin',
-            'name':'NDSI_Manager'
-            })
-        """
-        """
-        self.send_recv_notification({
-            'subject':'stop_plugin',
-            'name':'Accuracy_Visualizer','args':{}
-            })
-        """
-        #restart with new params
-#        self.send_recv_notification({
-#            'subject':'start_plugin',
-#            'name':'Fixed_Screen_Marker_Calibration',
-#            'args':{'fullscreen':True, 'marker_scale':.8, 'sample_duration':120, 'monitor_idx':1}})
-        # setup recorder output path
+        # restart recorder plugin with custom output settings
         self.send_recv_notification({
             'subject':'start_plugin',
             'name':'Recorder','args':{
                 'rec_root_dir':self.record_dir,
                 'session_name':self.output_fname_base + '.pupil',
                 'raw_jpeg':False,
-                'record_eye':True}
+                'record_eye':True,
+                }
             })
 
-
-        """
-        self.send_recv_notification({
-            'subject':'start_plugin',
-            'name':'Pupil_Remote','args':{}})
-
-        self.send_recv_notification({
-            "subject": "set_detection_mapping_mode",
-            "mode": "2d"})
+        # stop a bunch of eye plugins for performance
+        for plugin in ['NDSI_Manager', 'Detector3DPlugin']:
+            self.send_recv_notification({
+                'subject':'stop_eye_plugin',
+                'target':'eye0',
+                'name': plugin,
+                })
 
         self.send_recv_notification({
-            'subject':'start_plugin',
-            'name':'Detector2DPlugin',
-            'target':'eye0',
-            'args':{}})
-        """
+            'subject': 'start_eye_plugin',
+            'name': 'Aravis_Source',
+            'target': 'eye0',
+            'args' : CAPTURE_SETTINGS,
+            })
 
-
-        #self.send_recv_notification({'subject':'recording.should_start',})
-        # wait for the whole schmilblick to boot
-        time.sleep(4)
+        # wait for the whole schmilblick to boot before running the thread
+        #time.sleep(4)
 
     def send_recv_notification(self, n):
         # REQ REP requirese lock step communication with multipart msg (topic,msgpack_encoded dict)
