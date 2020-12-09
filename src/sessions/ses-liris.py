@@ -3,26 +3,25 @@ import numpy as np
 
 def get_videos(subject, session):
     video_idx = np.loadtxt(
-        'data/emotions/order_fmri_neuromod.csv',
+        'data/liris/order_fmri_neuromod.csv',
         delimiter=',',
         skiprows=1,
         dtype=np.int
     )
     selected_idx = video_idx[video_idx[:,0]==session, subject+1]
-    print(selected_idx)
-    return ["data/emotions/videos/%03d.mp4"%i for i in selected_idx]
+    return selected_idx
 
 def get_tasks(parsed):
 
     tasks = []
 
-    video_paths = get_videos(int(parsed.subject), int(parsed.session))
+    video_indices = get_videos(int(parsed.subject), int(parsed.session))
 
-    for p in video_paths:
+    for idx in video_indices:
         tasks.append(
             video.SingleVideo(
-                p,
-                name='emotion_%s'%video
+                f"data/liris/videos/{idx:03d}.mp4",
+                name=f"task-liris{idx:03d}"
             )
         )
         tasks.append(
