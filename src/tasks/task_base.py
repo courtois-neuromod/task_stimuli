@@ -32,11 +32,12 @@ class Task(object):
     def _setup(self, exp_win):
         pass
 
-    def _generate_tsv_filename(self):
-        for fi in range(1000):
-            fname = os.path.join(self.output_path, '%s_%s_%03d.tsv'%(self.output_fname_base, self.name,fi))
-            if not os.path.exists(fname):
-                break
+    def _generate_unique_filename(self, suffix, ext='tsv'):
+        fname = os.path.join(self.output_path, f"{self.output_fname_base}_{self.name}_{suffix}.{ext}")
+        fi = 1
+        while os.path.exists(fname):
+            fname = os.path.join(self.output_path, f"{self.output_fname_base}_{self.name}_{suffix}-{fi:03d}.{ext}")
+            fi += 1
         return fname
 
     def unload(self):

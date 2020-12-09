@@ -1,5 +1,6 @@
 import os, sys, time, queue
 import numpy as np
+import pandas
 import threading
 
 from psychopy import visual, core, data, logging, event, sound, constants
@@ -201,6 +202,13 @@ class VideoGame(VideoGameBase):
         # render the initial frame and audio
         self._render_graphics_sound(self._first_frame, self.emulator.em.get_audio(), exp_win, ctl_win)
         exp_win.logOnFlip(level=logging.EXP, msg="level step: %d"%level_step)
+        exp_win.callOnFlip(self._log_event,
+            {
+                'trial_type': 'gym-retro_game',
+                'game': self.game_name,
+                'level': self.state_name,
+                'stim_file': self.movie_path,
+            })
         yield True
         while not _done:
             level_step += 1
@@ -232,6 +240,10 @@ class VideoGame(VideoGameBase):
         exp_win.winHandle.on_key_press = event._onPygletKey
         #del exp_win.winHandle.on_key_release
 
+    def _log_event(self, event):
+        event.update({'onset':self.task_timer.getTime()})
+        self._events.append(event)
+
     def _run(self, exp_win, ctl_win):
 
         self._set_key_handler(exp_win)
@@ -245,7 +257,6 @@ class VideoGame(VideoGameBase):
             exp_win.logOnFlip(
                 level=logging.EXP,
                 msg='VideoGame %s: %s starting at %f'%(self.game_name, self.state_name, time.time()))
-
             yield from self._run_emulator(exp_win, ctl_win)
             if self.post_level_ratings:
                 yield from self._run_ratings(exp_win, ctl_win)
@@ -376,6 +387,11 @@ class VideoGame(VideoGameBase):
         exp_win.waitBlanking = True
         yield from super()._stop(exp_win, ctl_win)
 
+    def save(self):
+        fname = _generate_unique_filename("events", "tsv")
+        df = pandas.DataFrame(self._events)
+        df.to_csv(fname, sep='\t', index=False)
+
 class VideoGameMultiLevel(VideoGame):
 
     def __init__(self, *args,**kwargs):
@@ -411,7 +427,8 @@ class VideoGameMultiLevel(VideoGame):
                 if self._nlevels > 1:
                     self._set_recording_file()
                     yield from self._instructions(exp_win, ctl_win)
-                yield from self._questionnaire(exp_win, ctl_win)
+                yield from self._questionnaire(exp_win, ctl_win) # here for tests, to move after _run_emulator
+
                 yield from super()._run_emulator(exp_win, ctl_win)
                 self.game_sound.stop()
                 if self.post_level_ratings:
