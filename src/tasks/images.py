@@ -60,7 +60,7 @@ You will see pictures of scenes and objects."""
             yield()
 
     def save(self):
-        self.trials.saveAsWideText(self._generate_tsv_filename())
+        self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
 
 class BOLD5000Images(Images):
     pass

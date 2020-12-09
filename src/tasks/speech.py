@@ -62,4 +62,4 @@ class Speech(Task):
             yield()
 
     def save(self):
-        self.trials.saveAsWideText(self._generate_tsv_filename())
+        self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))

@@ -25,16 +25,16 @@ MARKER_POSITIONS = np.asarray([(.25, .5), (0, .5), (0., 1.), (.5, 1.), (1., 1.),
 # number of frames to eliminate at start and end of marker
 CALIBRATION_LEAD_IN = 20
 CALIBRATION_LEAD_OUT = 20
-# remove pupil samples with low confidence
-PUPIL_CONFIDENCE_THRESHOLD = .4
 
+# Pupil settings
+PUPIL_REMOTE_PORT = 50123
 CAPTURE_SETTINGS = {
             "frame_size": [640, 480],
             "frame_rate": 250,
             "exposure_time": 4000,
             "global_gain": 1,
-#            "uid": "Aravis-Fake-GV01", # for test purposes
-            "uid": "MRC Systems GmbH-GVRD-MRC HighSpeed-MR_CAM_HS_0014",
+            "uid": "Aravis-Fake-GV01", # for test purposes
+#            "uid": "MRC Systems GmbH-GVRD-MRC HighSpeed-MR_CAM_HS_0014",
         }
 
 class EyetrackerCalibration(Task):
@@ -81,8 +81,8 @@ Please look at the markers that appear on the screen."""
 
         random_order = np.random.permutation(np.arange(len(MARKER_POSITIONS)))
 
-        all_refs_per_flip = []
-        all_pupils = []
+        self.all_refs_per_flip = []
+        self.all_pupils = []
 
         radius_anim = np.hstack([np.linspace(MARKER_SIZE,0,MARKER_DURATION_FRAMES/2),
                                  np.linspace(0,MARKER_SIZE,MARKER_DURATION_FRAMES/2)])
@@ -106,20 +106,28 @@ Please look at the markers that appear on the screen."""
 
                 pupil = self.eyetracker.get_pupil()
 
-                exp_win.logOnFlip(level=logging.EXP,
-                    msg="pupil: pos=(%f,%f), diameter=%d"%tuple(pupil['norm_pos']+[pupil['diameter']]))
+                if pupil:
+                    print(pupil)
+                    exp_win.logOnFlip(level=logging.EXP,
+                        msg="pupil: pos=(%f,%f), diameter=%d"%tuple(pupil['norm_pos']+[pupil['diameter']]))
                 if f > CALIBRATION_LEAD_IN and f < len(radius_anim)-CALIBRATION_LEAD_OUT:
-                    if pupil and pupil['confidence'] > PUPIL_CONFIDENCE_THRESHOLD:
-                        pos_decenter = (pos/exp_win.size*2).tolist()
-                        ref = {
-                            'norm_pos': pos_decenter,
-                            'screen_pos': pos_decenter,
-                            'timestamp': pupil['timestamp']}
-                        all_refs_per_flip.append(ref)
-                        all_pupils.append(pupil)
+                    pos_decenter = (pos/exp_win.size*2).tolist()
+                    ref = {
+                        'norm_pos': pos_decenter,
+                        'screen_pos': pos_decenter,
+                        'timestamp': time.monotonic() # =pupil frame timestamp on same computer
+                        }
+                    self.all_refs_per_flip.append(ref) # accumulate all refs
+                    if pupil:
+                        self.all_pupils.append(pupil)
                 yield True
         yield True
-        self.eyetracker.calibrate(all_pupils, all_refs_per_flip)
+        self.eyetracker.calibrate(self.all_pupils, self.all_refs_per_flip)
+
+    def save(self):
+        if hasattr(self, 'all_pupils'):
+            fname = self._generate_unique_filename("calib-data", ".npz")
+            np.savez(fname, pupils=self.all_pupils, markers=self.all_refs_per_flip)
 
 from subprocess import Popen
 
@@ -158,12 +166,14 @@ class EyeTrackerClient(threading.Thread):
         self._pupil_process = Popen([
             'python3',
             os.path.join(os.environ['PUPIL_PATH'],'pupil_src','main.py'),
-            'capture'] + dev_opts
+            'capture',
+            '--port', str(PUPIL_REMOTE_PORT),
+            ] + dev_opts
             )
 
         self._ctx = zmq.Context()
         self._req_socket = self._ctx.socket(zmq.REQ)
-        self._req_socket.connect('tcp://localhost:50020')
+        self._req_socket.connect(f"tcp://localhost:{PUPIL_REMOTE_PORT}")
 
         # stop eye1 if started: monocular eyetracking in the MRI
         notif = self.send_recv_notification({
@@ -276,7 +286,7 @@ class EyeTrackerClient(threading.Thread):
 
         calib_data = {"ref_list": ref_list, "pupil_list": pupil_list}
 
-        logging.info('calibrating, %s %s'%(str(pupil_list),str(ref_list)))
+        logging.info('sending calibration data to pupil')
         self.send_recv_notification({
             'subject':'start_plugin',
             'name':'Gazer2D',
