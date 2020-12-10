@@ -33,15 +33,21 @@ CAPTURE_SETTINGS = {
             "frame_rate": 250,
             "exposure_time": 4000,
             "global_gain": 1,
-            "uid": "Aravis-Fake-GV01", # for test purposes
-#            "uid": "MRC Systems GmbH-GVRD-MRC HighSpeed-MR_CAM_HS_0014",
+            "gev_packet_size": 9136,
+#            "uid": "Aravis-Fake-GV01", # for test purposes
+            "uid": "MRC Systems GmbH-GVRD-MRC HighSpeed-MR_CAM_HS_0014",
         }
 
 class EyetrackerCalibration(Task):
 
-    def __init__(self,eyetracker, order='random', marker_fill_color=MARKER_FILL_COLOR, **kwargs):
+    def __init__(self,eyetracker,
+        markers_order='random',
+        marker_fill_color=MARKER_FILL_COLOR,
+        markers=MARKER_POSITIONS,
+        **kwargs):
         self.use_eyetracking = True
-        self.order = order
+        self.markers_order = markers_order
+        self.markers = markers
         self.marker_fill_color = marker_fill_color
         super().__init__(**kwargs)
         self.eyetracker = eyetracker
@@ -71,6 +77,7 @@ Please look at the markers that appear on the screen."""
             if start_calibration:
                 break
             yield False
+        logging.info('calibration started')
         print('calibration started')
 
         window_size_frame = exp_win.size-MARKER_SIZE*2
@@ -79,7 +86,9 @@ Please look at the markers that appear on the screen."""
             lineColor=None,fillColor=self.marker_fill_color,
             autoLog=False)
 
-        random_order = np.random.permutation(np.arange(len(MARKER_POSITIONS)))
+        markers_order = np.arange(len(self.markers))
+        if self.markers_order == 'random':
+            markers_order = np.random.permutation(markers_order)
 
         self.all_refs_per_flip = []
         self.all_pupils = []
@@ -93,8 +102,8 @@ Please look at the markers that appear on the screen."""
             yield False
 
         exp_win.logOnFlip(level=logging.EXP,msg='eyetracker_calibration: starting at %f'%time.time())
-        for site_id in random_order:
-            marker_pos = MARKER_POSITIONS[site_id]
+        for site_id in markers_order:
+            marker_pos = self.markers[site_id]
             pos = (marker_pos-.5)*window_size_frame
             circle_marker.pos = pos
             exp_win.logOnFlip(level=logging.EXP,
@@ -107,7 +116,6 @@ Please look at the markers that appear on the screen."""
                 pupil = self.eyetracker.get_pupil()
 
                 if pupil:
-                    print(pupil)
                     exp_win.logOnFlip(level=logging.EXP,
                         msg="pupil: pos=(%f,%f), diameter=%d"%tuple(pupil['norm_pos']+[pupil['diameter']]))
                 if f > CALIBRATION_LEAD_IN and f < len(radius_anim)-CALIBRATION_LEAD_OUT:
@@ -248,26 +256,29 @@ class EyeTrackerClient(threading.Thread):
         self.send_recv_notification({'subject':'launcher_process.should_stop'})
         self._pupil_process.wait(timeout)
         self._pupil_process.terminate()
+        time.sleep(1/60.)
         super(EyeTrackerClient, self).join(timeout)
 
     def run(self):
 
         self._req_socket.send_string('SUB_PORT')
         ipc_sub_port = int(self._req_socket.recv())
-        self.pupil_monitor = Msg_Receiver(self._ctx,'tcp://localhost:%d'%ipc_sub_port,topics=('gaze','pupil'))
+        logging.info(f"ipc_sub_port: {ipc_sub_port}")
+        self.pupil_monitor = Msg_Receiver(
+            self._ctx,
+            f"tcp://localhost:{ipc_sub_port}",
+            topics=('gaze','pupil'))
         while not self.stoprequest.isSet():
-            time.sleep(1/120.)
             msg = self.pupil_monitor.recv()
-            while not msg is None:
+            if not msg is None:
                 topic, tmp = msg
                 with self.lock:
                     if topic.startswith('pupil'):
                         self.pupil = tmp
-                    if topic.startswith('gaze'):
+                    elif topic.startswith('gaze'):
                         self.gaze = tmp
-                msg = self.pupil_monitor.recv()
-
-        print('eyetracker listener: stopping')
+            time.sleep(1/120.)
+        logging.info('eyetracker listener: stopping')
 
     def get_pupil(self):
         with nonblocking(self.lock) as locked:
