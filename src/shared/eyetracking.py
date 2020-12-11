@@ -33,9 +33,9 @@ CAPTURE_SETTINGS = {
             "frame_rate": 250,
             "exposure_time": 4000,
             "global_gain": 1,
-            "gev_packet_size": 9136,
-#            "uid": "Aravis-Fake-GV01", # for test purposes
-            "uid": "MRC Systems GmbH-GVRD-MRC HighSpeed-MR_CAM_HS_0014",
+            "gev_packet_size": 2000,
+            "uid": "Aravis-Fake-GV01", # for test purposes
+#            "uid": "MRC Systems GmbH-GVRD-MRC HighSpeed-MR_CAM_HS_0014",
         }
 
 class EyetrackerCalibration(Task):
@@ -66,6 +66,14 @@ Please look at the markers that appear on the screen."""
 
     def _setup(self, exp_win):
         self.use_fmri = False
+        self._pupils_list = []
+
+    def _pupil_cb(self, pupil):
+        if pupil['timestamp'] > self.task_stop:
+            self.eyetracker.unset_pupil_cb()
+            return
+        if pupil['timestamp'] > self.task_start:
+            self._pupils_list.append(pupil)
 
     def _run(self, exp_win, ctl_win):
         while True:
@@ -91,17 +99,18 @@ Please look at the markers that appear on the screen."""
             markers_order = np.random.permutation(markers_order)
 
         self.all_refs_per_flip = []
-        self.all_pupils = []
 
         radius_anim = np.hstack([np.linspace(MARKER_SIZE,0,MARKER_DURATION_FRAMES/2),
                                  np.linspace(0,MARKER_SIZE,MARKER_DURATION_FRAMES/2)])
 
-        pupil = None
-        while pupil is None: # wait until we get at least a pupil
-            pupil = self.eyetracker.get_pupil()
+        self.task_start = time.monotonic()
+        self.task_stop = np.inf
+        self.eyetracker.set_pupil_cb(self._pupil_cb)
+
+        while not len(self._pupils_list): # wait until we get at least a pupil
             yield False
 
-        exp_win.logOnFlip(level=logging.EXP,msg='eyetracker_calibration: starting at %f'%time.time())
+        exp_win.logOnFlip(level=logging.EXP, msg='eyetracker_calibration: starting at %f'%time.time())
         for site_id in markers_order:
             marker_pos = self.markers[site_id]
             pos = (marker_pos-.5)*window_size_frame
@@ -113,24 +122,24 @@ Please look at the markers that appear on the screen."""
                 circle_marker.draw(exp_win)
                 circle_marker.draw(ctl_win)
 
-                pupil = self.eyetracker.get_pupil()
-
-                if pupil:
-                    exp_win.logOnFlip(level=logging.EXP,
-                        msg="pupil: pos=(%f,%f), diameter=%d"%tuple(pupil['norm_pos']+[pupil['diameter']]))
                 if f > CALIBRATION_LEAD_IN and f < len(radius_anim)-CALIBRATION_LEAD_OUT:
-                    pos_decenter = (pos/exp_win.size*2).tolist()
+                    screen_pos = (pos + exp_win.size/2)
+                    norm_pos = screen_pos/exp_win.size
                     ref = {
-                        'norm_pos': pos_decenter,
-                        'screen_pos': pos_decenter,
+                        'norm_pos': norm_pos.tolist(),
+                        'screen_pos': screen_pos.tolist(),
                         'timestamp': time.monotonic() # =pupil frame timestamp on same computer
                         }
                     self.all_refs_per_flip.append(ref) # accumulate all refs
-                    if pupil:
-                        self.all_pupils.append(pupil)
                 yield True
         yield True
-        self.eyetracker.calibrate(self.all_pupils, self.all_refs_per_flip)
+        self.task_stop = time.monotonic()
+        logging.info(f"calibrating on {len(self._pupils_list)} pupils and {len(self.all_refs_per_flip)} markers")
+        self.eyetracker.calibrate(self._pupils_list, self.all_refs_per_flip)
+
+    def stop(self, exp_win, ctl_win):
+        self.eyetracker.unset_pupil_cb()
+        yield
 
     def save(self):
         if hasattr(self, 'all_pupils'):
@@ -157,8 +166,9 @@ class EyeTrackerClient(threading.Thread):
         self.stoprequest = threading.Event()
         self.lock = threading.Lock()
 
-        self.pupil = None
-        self.gaze = None
+        self.pupils = []
+        self.gazes = []
+        self.unset_pupil_cb()
 
         self.output_path = output_path
         self.output_fname_base = output_fname_base
@@ -274,11 +284,19 @@ class EyeTrackerClient(threading.Thread):
                 topic, tmp = msg
                 with self.lock:
                     if topic.startswith('pupil'):
-                        self.pupil = tmp
+                        self.pupils.append(tmp)
+                        if self._pupil_cb:
+                            self._pupil_cb(tmp)
                     elif topic.startswith('gaze'):
-                        self.gaze = tmp
+                        self.gazes.append(tmp)
             time.sleep(1/120.)
         logging.info('eyetracker listener: stopping')
+
+    def set_pupil_cb(self, pupil_cb):
+        self._pupil_cb = pupil_cb
+
+    def unset_pupil_cb(self):
+        self._pupil_cb = None
 
     def get_pupil(self):
         with nonblocking(self.lock) as locked:
