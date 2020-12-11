@@ -1,5 +1,6 @@
 import psutil
 
+
 def check_power_plugged():
     battery = psutil.sensors_battery()
     if battery:
