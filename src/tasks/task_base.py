@@ -23,6 +23,7 @@ class Task(object):
         self.use_fmri = use_fmri
         self.use_meg = use_meg
         self.use_eyetracking = use_eyetracking
+        self._events = []
         self._setup(exp_win)
         # initialize a progress bar if we know the duration of the task
         self.progress_bar = tqdm.tqdm(total=self.duration) if hasattr(self, 'duration') else False
@@ -94,8 +95,24 @@ class Task(object):
         if hasattr(self, '_restart'):
             self._restart()
 
-    def save(self):
+    def _log_event(self, event):
+        event.update({'onset': self.task_timer.getTime()})
+        self._events.append(event)
+
+    def _save(self):
+        # to be overriden
+        # return False if events need not be saved
+        # allow to override events saving if transformation are needed
         pass
+
+    def save(self):
+        # call custom task _save()
+        save_events = self._save()
+        if save_events is None and len(self._events):
+            fname = _generate_unique_filename("events", "tsv")
+            df = pandas.DataFrame(self._events)
+            df.to_csv(fname, sep='\t', index=False)
+
 
 class Pause(Task):
 

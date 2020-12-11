@@ -141,7 +141,7 @@ Please look at the markers that appear on the screen."""
         self.eyetracker.unset_pupil_cb()
         yield
 
-    def save(self):
+    def _save(self):
         if hasattr(self, 'all_pupils'):
             fname = self._generate_unique_filename("calib-data", ".npz")
             np.savez(fname, pupils=self.all_pupils, markers=self.all_refs_per_flip)

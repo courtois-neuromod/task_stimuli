@@ -153,7 +153,6 @@ class VideoGame(VideoGameBase):
             record=False)
 
         super()._setup(exp_win)
-        self._events = []
         self._set_recording_file()
         self._set_key_handler(exp_win)
 
@@ -239,10 +238,6 @@ class VideoGame(VideoGameBase):
         # deactivate custom keys handling
         exp_win.winHandle.on_key_press = event._onPygletKey
         #del exp_win.winHandle.on_key_release
-
-    def _log_event(self, event):
-        event.update({'onset':self.task_timer.getTime()})
-        self._events.append(event)
 
     def _run(self, exp_win, ctl_win):
 
@@ -386,11 +381,6 @@ class VideoGame(VideoGameBase):
         self._unset_key_handler(exp_win)
         exp_win.waitBlanking = True
         yield from super()._stop(exp_win, ctl_win)
-
-    def save(self):
-        fname = _generate_unique_filename("events", "tsv")
-        df = pandas.DataFrame(self._events)
-        df.to_csv(fname, sep='\t', index=False)
 
 class VideoGameMultiLevel(VideoGame):
 

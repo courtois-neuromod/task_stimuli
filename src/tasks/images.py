@@ -59,8 +59,9 @@ You will see pictures of scenes and objects."""
         for frameN in range(config.FRAME_RATE * BASELINE_END):
             yield()
 
-    def save(self):
+    def _save(self):
         self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
+        return False
 
 class BOLD5000Images(Images):
     pass
