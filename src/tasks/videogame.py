@@ -1,6 +1,5 @@
 import os, sys, time, queue
 import numpy as np
-import pandas
 import threading
 
 from psychopy import visual, core, data, logging, event, sound, constants
