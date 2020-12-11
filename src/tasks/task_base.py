@@ -1,5 +1,6 @@
 import os
 import tqdm
+import pandas
 from psychopy import logging, visual, core, event
 
 from ..shared import fmri, meg, config
@@ -109,7 +110,7 @@ class Task(object):
         # call custom task _save()
         save_events = self._save()
         if save_events is None and len(self._events):
-            fname = _generate_unique_filename("events", "tsv")
+            fname = self._generate_unique_filename("events", "tsv")
             df = pandas.DataFrame(self._events)
             df.to_csv(fname, sep='\t', index=False)
 
