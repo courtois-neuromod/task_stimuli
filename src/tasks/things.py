@@ -95,5 +95,6 @@ Press the button when you see an unrecognizable object that was generated."""
         while self.task_timer.getTime() < trial['onset'] + RESPONSE_TIME:
             time.sleep(.0005)
 
-    def save(self):
+    def _save(self):
         self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
+        return False
