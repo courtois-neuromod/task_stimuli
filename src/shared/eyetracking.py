@@ -209,8 +209,8 @@ class EyeTrackerClient(threading.Thread):
         self.stoprequest = threading.Event()
         self.lock = threading.Lock()
 
-        self.pupils = []
-        self.gazes = []
+        self.pupil = None
+        self.gaze = None
         self.unset_pupil_cb()
 
         self.output_path = output_path
@@ -345,11 +345,11 @@ class EyeTrackerClient(threading.Thread):
                 topic, tmp = msg
                 with self.lock:
                     if topic.startswith("pupil"):
-                        self.pupils.append(tmp)
+                        self.pupil = tmp
                         if self._pupil_cb:
                             self._pupil_cb(tmp)
                     elif topic.startswith("gaze"):
-                        self.gazes.append(tmp)
+                        self.gaze = tmp
             time.sleep(1 / 120.0)
         logging.info("eyetracker listener: stopping")
 
