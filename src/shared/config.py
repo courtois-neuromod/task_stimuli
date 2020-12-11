@@ -15,7 +15,7 @@ EXP_WINDOW = dict(
     screen=1,
     fullscr=True,
     gammaErrorPolicy="warn",
-    waitBlanking=False,
+    #waitBlanking=False,
 )
 
 CTL_WINDOW = dict(
