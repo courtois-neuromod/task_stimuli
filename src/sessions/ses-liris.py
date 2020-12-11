@@ -22,6 +22,7 @@ def get_tasks(parsed):
                 f"data/liris/videos/{idx:03d}.mp4", name=f"task-liris{idx:03d}"
             )
         )
+        continue
         tasks.append(
             task_base.Pause(
                 """The video is finished.
