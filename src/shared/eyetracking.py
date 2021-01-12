@@ -45,7 +45,7 @@ CAPTURE_SETTINGS = {
     "frame_rate": 250,
     "exposure_time": 4000,
     "global_gain": 1,
-    "gev_packet_size": 2000,
+    "gev_packet_size": 1400,
     "uid": "Aravis-Fake-GV01",  # for test purposes
     # "uid": "MRC Systems GmbH-GVRD-MRC HighSpeed-MR_CAM_HS_0014",
 }
@@ -276,7 +276,7 @@ class EyeTrackerClient(threading.Thread):
         )
 
         # stop a bunch of eye plugins for performance
-        for plugin in ["NDSI_Manager", "Detector3DPlugin"]:
+        for plugin in ["NDSI_Manager", "Pye3DPlugin"]:
             self.send_recv_notification(
                 {
                     "subject": "stop_eye_plugin",
@@ -350,7 +350,7 @@ class EyeTrackerClient(threading.Thread):
                             self._pupil_cb(tmp)
                     elif topic.startswith("gaze"):
                         self.gaze = tmp
-            time.sleep(1 / 120.0)
+            time.sleep(1e-3)
         logging.info("eyetracker listener: stopping")
 
     def set_pupil_cb(self, pupil_cb):
