@@ -460,7 +460,8 @@ class VideoGameMultiLevel(VideoGame):
                 self.state_name = level
                 self.emulator.load_state(level)
                 self.emulator.data.load(
-                    retro.data.get_file_path(self.game_name, "data.json"), scenario
+                    retro.data.get_file_path(self.game_name, "data.json"),
+                    retro.data.get_file_path(self.game_name, f"{scenario}.json")
                 )
                 self._first_frame = self.emulator.reset()
                 if self._nlevels > 1:
@@ -515,7 +516,6 @@ class VideoGameReplay(VideoGameBase):
             yield
 
     def _setup(self, exp_win):
-        super().setup(exp_win, output_path, output_fname_base)
         self.movie = retro.Movie(self.movie_filename)
         self.emulator = retro.make(
             self.game_name,
