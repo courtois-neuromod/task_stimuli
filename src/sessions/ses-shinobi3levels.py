@@ -15,17 +15,19 @@ flow_ratings = [
     "I am completely lost in thought.",
 ]
 
-levels = ["scenario_repeat1", "scenario_Level4-1", "scenario_Level5-0"]
-random.shuffle(levels)  # randomize order
+levels_scenario = [
+    ("Level1-0", "scenario_repeat1"),
+    ("Level4-1", "scenario_Level4-1"),
+    ("Level5-0", "scenario_Level5-0")]
+random.shuffle(levels_scenario)  # randomize order
 
 TASKS = sum(
     [
         [
             videogame.VideoGameMultiLevel(
-                state_names=["Level1-0", "Level4-1", "Level5-0"],
-                scenarii=[
-                    "data/videogames/%s.json" % sc for sc in levels
-                ],  # this scenario repeats the same level
+                state_names=[l for l,s in levels_scenario],
+                scenarii=[s for l,s in levels_scenario]
+                ,  # this scenario repeats the same level
                 repeat_scenario=True,
                 max_duration=10
                 * 60,  # if when level completed or dead we exceed that time in secs, stop the task
