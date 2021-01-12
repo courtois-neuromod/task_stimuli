@@ -1,5 +1,6 @@
 import os
 import tqdm
+import time
 import pandas
 from psychopy import logging, visual, core, event
 
@@ -113,7 +114,7 @@ class Task(object):
             self._restart()
 
     def _log_event(self, event):
-        event.update({"onset": self.task_timer.getTime()})
+        event.update({"onset": self.task_timer.getTime(),"sample":time.monotonic()})
         self._events.append(event)
 
     def _save(self):
