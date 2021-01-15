@@ -5,16 +5,17 @@ IMAGE_PATH = os.path.join(THINGS_DATA_PATH, "images")
 
 
 def get_tasks(parsed):
-    from ..tasks.things import Things
+    from ..tasks.things import ThingsMemory
 
     session_design_filename = os.path.join(
         THINGS_DATA_PATH,
-        "designs",
+        "memory_designs",
         f"sub-{parsed.subject}_ses-{parsed.session}_design.tsv",
     )
+    n_runs_session = n_runs if int(parsed.session) > 1 else 6
     tasks = [
-        Things(session_design_filename, IMAGE_PATH, run, name=f"task-things_run-{run}")
-        for run in range(1, n_runs + 1)
+        ThingsMemory(session_design_filename, IMAGE_PATH, run, name=f"task-thingsmemory_run-{run}")
+        for run in range(1, n_runs_session + 1)
     ]
     return tasks
 
@@ -38,8 +39,7 @@ rm_duration = 4.  # duration of response mapping screen
 max_rt = 4.0  # from stimulus onset
 
 # constraints
-min_catch_spacing = 3
-max_catch_spacing = 20
+max_seen_spacing = 8
 
 
 def generate_design_file(subject):
@@ -52,8 +52,9 @@ def generate_design_file(subject):
         os.path.join(THINGS_DATA_PATH, "image_paths_fmri.csv")
     )
 
-    images_exp = images_list[
-        images_list.condition.eq("exp") & images_list.exemplar_nr < 7
+    images_exp = images_list.loc[
+        images_list.condition.eq("exp") &
+        (images_list.exemplar_nr > 6 ) # > 6 for pilot < 7 for study
     ]
 
     design = pandas.DataFrame()
@@ -70,16 +71,26 @@ def generate_design_file(subject):
     categories = np.random.permutation(720)+1
 
     for session in range(n_sessions):
-        exemplar = session//3+1
-        cat_unseen_within = categories[splits*(session%6):splits*(session%6+1)]
-        cat_unseen_between = categories[splits*((session+1)%6):splits*((session+1)%6+1)]
+        exemplar = session//3+1 + 6 #  + 6 here for pilot, remove for study!!
+        new_stimuli_categories = categories[splits*2*(session%3):splits*2*(session%3+1)]
+        #randomize categories to be used within and between to avoid bias
+        new_stimuli_categories = np.random.permutation(new_stimuli_categories)
+        cat_unseen_within = new_stimuli_categories[:splits]
+        cat_unseen_between = new_stimuli_categories[splits:]
 
         img_unseen_within = images_exp[
             images_exp.category_nr.isin(cat_unseen_within) &
             images_exp.exemplar_nr.eq(exemplar)]
+        img_unseen_within.condition = "unseen"
+        img_unseen_within['subcondition'] = "unseen-within"
+        img_unseen_within['repetition'] = 1
+
         img_unseen_between = images_exp[
             images_exp.category_nr.isin(cat_unseen_between) &
             images_exp.exemplar_nr.eq(exemplar)]
+        img_unseen_between.condition = "unseen"
+        img_unseen_between['subcondition'] = "unseen-between"
+        img_unseen_between['repetition'] = 1
 
         n_runs_session = n_runs
         if session == 0:
@@ -95,19 +106,48 @@ def generate_design_file(subject):
                 [img_between_within]*2 +
                 [img_within_between]
                 )
+
         # pass to next session
         img_between_within = img_unseen_between
-        img_within_between = img_unseen_within
+        img_between_within.condition = 'seen'
+        img_between_within.subcondition = "seen-between-within"
+        img_between_within.repetition = 2
 
+        img_within_between = img_unseen_within
+        img_within_between.condition = 'seen'
+        img_within_between.subcondition = "seen-within-between"
+        img_within_between.repetition = 3
+
+        """
+        if session > 0:
+            while True:
+                all_run_trials = all_run_trials.sample(frac=1)
+                repeated_within = all_run_trials['image_nr'].duplicated()
+                unseen = ~ repeated_within & all_run_trials.condition.eq('unseen')
+                unseen_idx = np.hstack([[0], np.where(unseen)[0], [n_trials]])
+                if np.all(np.ediff1d(unseen_idx) < max_seen_spacing):
+                    break
+                print('no')
+        else:"""
+
+        # randomize order
         all_run_trials = all_run_trials.sample(frac=1)
+        repeated_within = all_run_trials['image_nr'].duplicated()
+
+        # set seen condition for second viewing of new set of images
+        all_run_trials.loc[repeated_within, 'condition'] = 'seen'
+        all_run_trials.loc[repeated_within & all_run_trials.subcondition.eq('unseen-within'), 'repetition'] = 2
+        all_run_trials.loc[repeated_within & all_run_trials.subcondition.eq('seen-between-within'), 'repetition'] = 3
+
         all_run_trials["run"] = np.arange(1, n_runs_session+1).repeat(n_trials)
         all_run_trials["onset"] = np.tile(initial_wait + np.arange(n_trials) * trial_duration, n_runs_session)
         all_run_trials["duration"] = image_duration
+        all_run_trials["response_mapping_flip"] = np.hstack([np.random.permutation(np.arange(2,dtype=np.bool).repeat(n_trials/2)) for i in range(n_runs_session)])
 
         out_fname = os.path.join(
             THINGS_DATA_PATH,
             "memory_designs",
-            f"sub-{parsed.subject}_ses-{session+1}_design.tsv",
+            f"sub-{parsed.subject}_ses-{session+1:03d}_design.tsv",
         )
         all_run_trials.to_csv(out_fname, sep="\t", index=False)
 
