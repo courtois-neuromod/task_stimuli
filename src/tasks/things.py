@@ -1,6 +1,7 @@
 import os, sys, time
 from psychopy import visual, core, data, logging, event
 from .task_base import Task
+import numpy as np
 
 from ..shared import config
 
@@ -31,9 +32,9 @@ Press the button when you see an unrecognizable object that was generated."""
         self.fixation_cross = visual.ImageStim(
             exp_win,
             os.path.join("data", "things", "images", "fixation_cross.png"),
-            size=(0.1, 0.1),
-            units="height",
-            opacity=0.5,
+            size=(128,128),
+            units="pixels",
+            #opacity=0.5,
         )
 
         # preload all images
@@ -134,20 +135,22 @@ class ThingsMemory(Things):
 
     DEFAULT_INSTRUCTION = """You will see images on the screen.
 
-Press the buttons to indicate your confidence in having seen or not that image previously.
+Press the buttons for each image to indicate your confidence in having seen or not that image previously.
 """
 
     EXTRA_INSTRUCTION = """ The response are:
-    surely not seen(bold red -),
-    not sure not seen (small red -),
-    not sure seen (small green +)
-    and surely seen (bold green +).
+-- surely not seen ,
+- not sure not seen,
++ not sure seen,
+++ and surely seen.
+
 
 
 The button mapping will change from trial to trial as indicated at the center of the screen with that image.
     """
-
-    RESPONSE_MAPPING = ['a','b','c','d']
+    RESPONSE_KEYS = ['up','right','left','down']
+    RESPONSE_MAPPING = np.asarray(RESPONSE_KEYS).reshape(2,2)
+    RESPONSE_VALUES = np.asarray([[2,1],[-2,-1]])
 
     def _instructions(self, exp_win, ctl_win):
         screen_text = visual.TextStim(
@@ -178,8 +181,8 @@ The button mapping will change from trial to trial as indicated at the center of
 
         self._response_mapping = visual.ImageStim(
             exp_win,
-            os.path.join("data", "things", "images", "response_mapping.png"),
-            size=(234, 50),
+            os.path.join("data", "things", "images", "response_mapping3.png"),
+            size=(128, 128),
             units="pixels",
         )
 
@@ -203,7 +206,8 @@ The button mapping will change from trial to trial as indicated at the center of
 
             # draw to backbuffer
             trial["stim"].draw(exp_win)
-            self._response_mapping.flipHoriz = trial["response_mapping_flip"]
+            self._response_mapping.flipHoriz = trial["response_mapping_flip_h"]
+            self._response_mapping.flipVert = trial["response_mapping_flip_v"]
             self._response_mapping.pos = (0,0) #force update to flip
             self._response_mapping.draw(exp_win)
             if ctl_win:
@@ -212,6 +216,7 @@ The button mapping will change from trial to trial as indicated at the center of
             # wait onset
             while self.task_timer.getTime() < trial["onset"] - 1 / config.FRAME_RATE:
                 time.sleep(0.0005)  # just to avoid looping to fast
+            keypresses = event.getKeys(self.RESPONSE_KEYS) # flush response keys
             yield True  # flip
             trial["onset_flip"] = (
                 self._exp_win_last_flip_time - self._exp_win_first_flip_time
@@ -237,20 +242,27 @@ The button mapping will change from trial to trial as indicated at the center of
                 < trial["onset"] + RESPONSE_TIME - 1 / config.FRAME_RATE
             ):
                 time.sleep(0.0005)  # just to avoid looping to fast
-            keypresses = event.getKeys(self.RESPONSE_MAPPING, timeStamped=self.task_timer)
+            keypresses = event.getKeys(self.RESPONSE_KEYS, timeStamped=self.task_timer)
             if len(keypresses):
-                keypress = keypresses[0] #only take the first keypress, TODO: log extra keypresses?
-                key = keypress[0]
-                idx = self.RESPONSE_MAPPING.index(key)
-                # map to -2 -1 1 2 for not-seen to seen
-                idx = idx - 2 + int(idx > 1)
-                if trial["response_mapping_flip"]:
-                    idx = - idx
-                trial["response"] = idx
-                trial["response_txt"] = "seen" if idx > 0 else "unseen"
-                trial["response_confidence"] = abs(idx) > 1
-                trial["response_time"] = (keypress[1] - trial["onset"])
+                trial['keypresses'] = keypresses # log all keypresses with timing
+                #keypress = keypresses[0] # only take the first keypress, TODO: log extra keypresses?
+                idxs = [np.where(self.RESPONSE_MAPPING == k[0]) for k in keypresses]
+                responses = [self.RESPONSE_VALUES[
+                    idx[0][0] * (1-2*trial['response_mapping_flip_v']),
+                    idx[1][0] * (1-2*trial['response_mapping_flip_h'])] for idx in idxs]
+
+                main_key = keypresses[0] # take the first response as main one, to be decided
+                main_response = responses[0]
+                trial["response"] = main_response
+                trial["response_txt"] = "seen" if main_response > 0 else "unseen"
+                trial["error"] = trial["response_txt"] != trial["condition"]
+                trial["response_confidence"] = abs(main_response) > 1
+                trial["response_time"] = (main_key[1] - trial["onset"])
             else:
+                # we need to force empty values for the first trials
+                # otherwise following values are not recorded!?
+                for k in ['keypresses', 'response', 'response_txt', 'error', 'response_confidence', 'response_time']:
+                    trial[k] = ''
                 print('Warning: no response')
             trial["duration_flip"] = trial["offset_flip"] - trial["onset_flip"]
             del trial["stim"]
