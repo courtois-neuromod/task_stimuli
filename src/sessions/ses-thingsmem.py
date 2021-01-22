@@ -1,7 +1,7 @@
 import os
 
 THINGS_DATA_PATH = os.path.join("data", "things")
-IMAGE_PATH = os.path.join(THINGS_DATA_PATH, "images")
+IMAGE_PATH = os.path.join(THINGS_DATA_PATH, "stimuli")
 
 
 def get_tasks(parsed):
@@ -49,7 +49,7 @@ def generate_design_file(subject):
     import hashlib
 
     images_list = pandas.read_csv(
-        os.path.join(THINGS_DATA_PATH, "image_paths_fmri.csv")
+        os.path.join(THINGS_DATA_PATH, "stimuli", "image_paths_fmri.csv")
     )
 
     # we select only the exp trial from Martin's BIG experiment

@@ -132,7 +132,7 @@ def main_loop(
     logfile_path = os.path.join(log_path, log_name_prefix + ".log")
     log_file = logging.LogFile(logfile_path, level=logging.INFO, filemode="w")
 
-    exp_win = visual.Window(**config.EXP_WINDOW)
+    exp_win = visual.Window(**config.EXP_WINDOW, monitor=config.EXP_MONITOR)
     exp_win.mouseVisible = False
 
     if show_ctl_win:
