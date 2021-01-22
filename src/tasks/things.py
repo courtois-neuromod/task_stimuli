@@ -31,16 +31,17 @@ Press the button when you see an unrecognizable object that was generated."""
     def _setup(self, exp_win):
         self.fixation_cross = visual.ImageStim(
             exp_win,
-            os.path.join("data", "things", "images", "fixation_cross.png"),
-            size=(128,128),
-            units="pixels",
-            #opacity=0.5,
+            os.path.join("data", "things", "pngs", "fixation_cross.png"),
+            size=2,
+            units='deg',
         )
 
         # preload all images
         for trial in self.design:
             trial["stim"] = visual.ImageStim(
-                exp_win, os.path.join(self.images_path, trial["image_path"])
+                exp_win, os.path.join(self.images_path, trial["image_path"]),
+                size=10,
+                units='deg',
             )
         self.trials = data.TrialHandler(self.design, 1, method="sequential")
         self.duration = len(self.design)
@@ -147,6 +148,8 @@ Press the buttons for each image to indicate your confidence in having seen or n
 
 
 The button mapping will change from trial to trial as indicated at the center of the screen with that image.
+
+
     """
     RESPONSE_KEYS = ['up','right','left','down']
     RESPONSE_MAPPING = np.asarray(RESPONSE_KEYS).reshape(2,2)
@@ -181,9 +184,9 @@ The button mapping will change from trial to trial as indicated at the center of
 
         self._response_mapping = visual.ImageStim(
             exp_win,
-            os.path.join("data", "things", "images", "response_mapping3.png"),
-            size=(128, 128),
-            units="pixels",
+            os.path.join("data", "things", "pngs", "response_mapping3.png"),
+            size=2,
+            units='deg',
         )
 
     def _run(self, exp_win, ctl_win):
