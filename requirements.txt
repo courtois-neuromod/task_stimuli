@@ -1,0 +1,2 @@
+PsychoPy>=2020.2.4.post1
+gym-retro>=0.8.0
