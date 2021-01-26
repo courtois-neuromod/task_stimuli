@@ -1,0 +1,4 @@
+[submodule "data/things/images"]
+	path = data/things/images
+	url = git@github.com:courtois-neuromod/things.stimuli.git
+	datalad-id = 5504289b-0ac5-4f7c-a6cd-86af1f5c2135
