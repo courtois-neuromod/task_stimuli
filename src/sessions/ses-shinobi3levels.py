@@ -1,4 +1,11 @@
+import os
 import random
+import retro
+
+# point to a copy of the whole gym-retro with custom states and scenarii
+retro.data.Integrations.add_custom_path(
+        os.path.join(os.getcwd(), "data", "videogames", "shinobi")
+)
 
 from ..tasks import images, videogame, memory, task_base
 
