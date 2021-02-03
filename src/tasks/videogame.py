@@ -157,7 +157,11 @@ class VideoGame(VideoGameBase):
     def _setup(self, exp_win):
 
         self.emulator = retro.make(
-            self.game_name, state=self.state_name, scenario=self.scenario, record=False
+            self.game_name,
+            state=self.state_name,
+            scenario=self.scenario,
+            record=False,
+            inttype=retro.data.Integrations.CUSTOM_ONLY
         )
 
         super()._setup(exp_win)
