@@ -135,7 +135,7 @@ Press the button when you see an unrecognizable object that was generated."""
 class ThingsMemory(Things):
 
     DEFAULT_INSTRUCTION = """You will see images on the screen.
-
+Try to fixate the central marker at all time.
 Press the buttons for each image to indicate your confidence in having seen or not that image previously.
 """
 
@@ -177,7 +177,7 @@ The button mapping will change from trial to trial as indicated at the center of
                 if ctl_win:
                     screen_text.draw(ctl_win)
                     self._response_mapping.draw(ctl_win)
-                yield frameN <2
+                yield frameN < 2
 
     def _setup(self, exp_win):
         super()._setup(exp_win)
