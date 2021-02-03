@@ -1,0 +1,9 @@
+* annex.backend=MD5E
+**/.git* annex.largefiles=nothing
+*.jpg annex.largefiles=anything
+*.png annex.largefiles=anything
+*.svg annex.largefiles=anything
+*.txt annex.largefiles=nothing
+*.tsv annex.largefiles=nothing
+*.csv annex.largefiles=nothing
+*.py annex.largefiles=nothing
