@@ -150,7 +150,9 @@ class VideoGame(VideoGameBase):
             self.game_name,
             state=self.state_name,
             scenario=self.scenario,
-            record=False)
+            record=False,
+            inttype=retro.data.Integrations.CUSTOM_ONLY
+        )
 
         super()._setup(exp_win)
         self._events = []
