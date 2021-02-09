@@ -7,7 +7,7 @@ from ..shared import config
 
 RESPONSE_KEY = "d"
 RESPONSE_TIME = 4
-
+FINAL_WAIT = 9
 
 class Things(Task):
 
@@ -124,8 +124,11 @@ Press the button when you see an unrecognizable object that was generated."""
             trial["duration_flip"] = trial["offset_flip"] - trial["onset_flip"]
             del trial["stim"]
 
-        while self.task_timer.getTime() < trial["onset"] + RESPONSE_TIME:
-            time.sleep(0.0005)
+#        while self.task_timer.getTime() < trial["onset"] + RESPONSE_TIME:
+#            time.sleep(0.0005)
+
+        for frameN in range(config.FRAME_RATE * FINAL_WAIT):
+            yield
 
     def _save(self):
         self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
@@ -270,5 +273,9 @@ The button mapping will change from trial to trial as indicated at the center of
             trial["duration_flip"] = trial["offset_flip"] - trial["onset_flip"]
             del trial["stim"]
 
-        while self.task_timer.getTime() < trial["onset"] + RESPONSE_TIME:
-            time.sleep(0.0005)
+
+#        while self.task_timer.getTime() < trial["onset"] + RESPONSE_TIME:
+#            time.sleep(0.0005)
+
+        for frameN in range(config.FRAME_RATE * FINAL_WAIT):
+            yield
