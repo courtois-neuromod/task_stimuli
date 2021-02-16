@@ -73,7 +73,7 @@ def generate_design_file(subject):
     # and only the first (or second for pilot) half of the 12 exemplar of each category
     images_exp = images_list.loc[
         images_list.condition.eq("exp") &
-        (images_list.exemplar_nr > 6 ) # > 6 for pilot < 7 for study
+        (images_list.exemplar_nr < 7 ) # > 6 for pilot < 7 for study
     ]
 
     # seed numpy with subject id to have reproducible design generation
@@ -94,7 +94,7 @@ def generate_design_file(subject):
 
     for session in range(n_sessions):
         # select the examplar
-        exemplar = session//3+1 + 6 #  + 6 here for pilot, remove for study!!
+        exemplar = session//3+1 #  + 6 here for pilot, remove for study!!
 
         # subselect 240 categories for new stimuli
         # loop through the 3 sets of 240 across sessions and thus avoid
