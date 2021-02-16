@@ -150,6 +150,7 @@ Press the buttons for each image to indicate your confidence in having seen or n
 
 
 
+
 The button mapping will change from trial to trial as indicated at the center of the screen with that image.
 
 
@@ -171,7 +172,7 @@ The button mapping will change from trial to trial as indicated at the center of
             screen_text.draw(exp_win)
             if ctl_win:
                 screen_text.draw(ctl_win)
-            yield
+            yield frameN < 3
         screen_text.text = self.EXTRA_INSTRUCTION
         if self.run_id == 1:
             for  frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION * 2):
@@ -180,7 +181,7 @@ The button mapping will change from trial to trial as indicated at the center of
                 if ctl_win:
                     screen_text.draw(ctl_win)
                     self._response_mapping.draw(ctl_win)
-                yield frameN < 2
+                yield frameN < 3
 
     def _setup(self, exp_win):
         super()._setup(exp_win)
