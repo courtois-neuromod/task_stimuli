@@ -9,7 +9,7 @@ OUTPUT_DIR = "output"
 
 EYETRACKING_ROI = (60, 30, 660, 450)
 
-EXP_SCREEN_XRANDR_NAME = "eDP-1"
+EXP_SCREEN_XRANDR_NAME = "DP-1"
 
 EXP_MONITOR = Monitor(
     name='__blank__',
