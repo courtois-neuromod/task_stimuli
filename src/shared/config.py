@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from psychopy import prefs
 from psychopy.monitors import Monitor
 
