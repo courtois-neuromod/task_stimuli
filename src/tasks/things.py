@@ -150,6 +150,7 @@ Press the buttons for each image to indicate your confidence in having seen or n
 
 
 
+
 The button mapping will change from trial to trial as indicated at the center of the screen with that image.
 
 
