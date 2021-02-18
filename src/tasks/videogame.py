@@ -246,6 +246,7 @@ class VideoGame(VideoGameBase):
             if not level_step % config.FRAME_RATE:
                 exp_win.logOnFlip(level=logging.EXP, msg="level step: %d" % level_step)
             yield True
+
         self.game_sound.stop()
         self.game_sound.flush()
 
