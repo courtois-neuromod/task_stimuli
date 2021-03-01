@@ -156,7 +156,7 @@ The button mapping will change from trial to trial as indicated at the center of
 
     """
     #RESPONSE_KEYS = ['up','right','left','down']
-    RESPONSE_KEYS = ['x','a','b','y']
+    RESPONSE_KEYS = ['x','a','y','b']
     RESPONSE_MAPPING = np.asarray(RESPONSE_KEYS).reshape(2,2)
     RESPONSE_VALUES = np.asarray([[2,1],[-2,-1]])
 
