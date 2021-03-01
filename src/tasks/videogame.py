@@ -91,7 +91,7 @@ class VideoGameBase(Task):
         return sound_block[:735] / float(2 ** 15)
 
     def _render_graphics_sound(self, obs, sound_block, exp_win, ctl_win):
-        self.game_vis_stim.image = obs / 255.0  # np.flip(obs, 0)/255.
+        self.game_vis_stim.image = obs / 255.0
         self.game_vis_stim.draw(exp_win)
         if ctl_win:
             self.game_vis_stim.draw(ctl_win)
@@ -156,6 +156,15 @@ class VideoGame(VideoGameBase):
 
     def _setup(self, exp_win):
 
+        retraceRate = exp_win._monitorFrameRate
+        if retraceRate is None:
+            retraceRate = exp_win.getActualFrameRate()
+        if retraceRate is None:
+            logging.warning("FrameRate could not be supplied by psychopy; "
+                            "defaulting to 60.0")
+            retraceRate = 60.0
+        self._retraceInterval = 1.0/retraceRate
+
         self.emulator = retro.make(
             self.game_name,
             state=self.state_name,
@@ -163,6 +172,9 @@ class VideoGame(VideoGameBase):
             record=False,
             inttype=retro.data.Integrations.CUSTOM_ONLY
         )
+
+        self.game_fps = self.emulator.em.get_screen_rate()
+        self._frameInterval = 1.0/self.game_fps
 
         super()._setup(exp_win)
         self._set_recording_file()
@@ -226,8 +238,12 @@ class VideoGame(VideoGameBase):
             },
         )
         yield True
+        _nextFrameT = self.task_timer.getTime()
         while not _done:
             level_step += 1
+            while _nextFrameT > (self.task_timer.getTime() -
+                       self._retraceInterval/2.0):
+                time.sleep(.0001)
             self._handle_controller_presses()
             keys = [k in self.pressed_keys for k in KEY_SET]
             _obs, _rew, _done, _info = self.emulator.step(keys)
@@ -246,8 +262,9 @@ class VideoGame(VideoGameBase):
             if not level_step % config.FRAME_RATE:
                 exp_win.logOnFlip(level=logging.EXP, msg="level step: %d" % level_step)
             yield True
-        self.game_sound.stop()
+            _nextFrameT += self._frameInterval
         self.game_sound.flush()
+        self.game_sound.stop()
 
     def _set_key_handler(self, exp_win):
         # activate repeat keys
