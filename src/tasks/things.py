@@ -37,12 +37,13 @@ Press the button when you see an unrecognizable object that was generated."""
         )
 
         # preload all images
+        self._stimuli = []
         for trial in self.design:
-            trial["stim"] = visual.ImageStim(
+            self._stimuli.append(visual.ImageStim(
                 exp_win, os.path.join(self.images_path, trial["image_path"]),
                 size=10,
                 units='deg',
-            )
+            ))
         self.trials = data.TrialHandler(self.design, 1, method="sequential")
         self.duration = len(self.design)
         self._progress_bar_refresh_rate = 2  # 2 flips per trial
@@ -73,7 +74,7 @@ Press the button when you see an unrecognizable object that was generated."""
             self.fixation_cross.draw(ctl_win)
         yield True
 
-        for trial_n, trial in enumerate(self.trials):
+        for trial_n, (trial, stimuli) in enumerate(zip(self.trials, self._stimuli)):
             exp_win.logOnFlip(
                 level=logging.EXP,
                 msg=f"image: {trial['condition']}:{trial['image_path']}",
@@ -83,10 +84,10 @@ Press the button when you see an unrecognizable object that was generated."""
             )
 
             # draw to backbuffer
-            trial["stim"].draw(exp_win)
+            stimuli.draw(exp_win)
             self.fixation_cross.draw(exp_win)
             if ctl_win:
-                trial["stim"].draw(ctl_win)
+                stimuli.draw(ctl_win)
                 self.fixation_cross.draw(ctl_win)
             # wait onset
             while self.task_timer.getTime() < trial["onset"] - 1 / config.FRAME_RATE:
@@ -122,7 +123,6 @@ Press the button when you see an unrecognizable object that was generated."""
                 (keypress[0][1] - trial["onset"]) if len(keypress) else None
             )
             trial["duration_flip"] = trial["offset_flip"] - trial["onset_flip"]
-            del trial["stim"]
 
 #        while self.task_timer.getTime() < trial["onset"] + RESPONSE_TIME:
 #            time.sleep(0.0005)
@@ -130,9 +130,15 @@ Press the button when you see an unrecognizable object that was generated."""
         for frameN in range(config.FRAME_RATE * FINAL_WAIT):
             yield
 
+    def _restart(self):
+        self.trials = data.TrialHandler(self.design, 1, method="sequential")
+
     def _save(self):
         self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
         return False
+
+    def unload(self):
+        del self._stimuli
 
 
 class ThingsMemory(Things):
@@ -147,6 +153,7 @@ Press the buttons for each image to indicate your confidence in having seen or n
 - not sure not seen,
 + not sure seen,
 ++ and surely seen.
+
 
 
 
@@ -180,7 +187,7 @@ The button mapping will change from trial to trial as indicated at the center of
                 if ctl_win:
                     screen_text.draw(ctl_win)
                     self._response_mapping.draw(ctl_win)
-                yield frameN < 2
+                yield frameN
 
     def _setup(self, exp_win):
         super()._setup(exp_win)
@@ -201,7 +208,7 @@ The button mapping will change from trial to trial as indicated at the center of
             self.fixation_cross.draw(ctl_win)
         yield True
 
-        for trial_n, trial in enumerate(self.trials):
+        for trial_n, (trial, stimuli) in enumerate(zip(self.trials, self._stimuli)):
             exp_win.logOnFlip(
                 level=logging.EXP,
                 msg=f"image: {trial['condition']}:{trial['image_path']}",
@@ -211,13 +218,13 @@ The button mapping will change from trial to trial as indicated at the center of
             )
 
             # draw to backbuffer
-            trial["stim"].draw(exp_win)
+            stimuli.draw(exp_win)
             self._response_mapping.flipHoriz = trial["response_mapping_flip_h"]
             self._response_mapping.flipVert = trial["response_mapping_flip_v"]
             self._response_mapping.pos = (0,0) #force update to flip
             self._response_mapping.draw(exp_win)
             if ctl_win:
-                trial["stim"].draw(ctl_win)
+                stimuli.draw(ctl_win)
                 self._response_mapping.draw(ctl_win)
             # wait onset
             while self.task_timer.getTime() < trial["onset"] - 1 / config.FRAME_RATE:
@@ -271,7 +278,6 @@ The button mapping will change from trial to trial as indicated at the center of
                     trial[k] = ''
                 print('Warning: no response')
             trial["duration_flip"] = trial["offset_flip"] - trial["onset_flip"]
-            del trial["stim"]
 
 
 #        while self.task_timer.getTime() < trial["onset"] + RESPONSE_TIME:
