@@ -122,3 +122,76 @@ You have to select the response (left or right) that is closest to the target.""
     def _save(self):
         self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
         return False
+
+
+class Reading(Task):
+
+    DEFAULT_INSTRUCTION = """You will be presented a text to read word by word."""
+
+    def __init__(self, words_file, word_duration=0.5, cross_duration=20,
+                 txt_color="black", txt_font="Palatino", txt_size=42,
+                 bg_color=(125,125,125), *args, **kwargs):
+        super().__init__(**kwargs)
+        if os.path.exists(words_file):
+            self.words_file = words_file
+            self.word_duration = word_duration
+            self.cross_duration = cross_duration
+            self.txt_color = txt_color
+            self.txt_font = txt_font
+            self.txt_size = txt_size
+            self.bg_color = bg_color
+            self.words_list = data.importConditions(self.words_file)
+        else:
+            raise ValueError("File %s does not exists" % words_file)
+
+    def _instructions(self, exp_win, ctl_win):
+        screen_text = visual.TextStim(
+            exp_win,
+            text=self.instruction,
+            alignText="center",
+            color="white",
+            wrapWidth=config.WRAP_WIDTH,
+        )
+
+        for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
+            screen_text.draw(exp_win)
+            if ctl_win:
+                screen_text.draw(ctl_win)
+            yield ()
+
+    def _run(self, exp_win, ctl_win):
+        exp_win.setColor(self.bg_color)
+        if ctl_win:
+            ctl_win.setColor(self.bg_color)
+
+        txt_stim = visual.TextStim(
+            exp_win,
+            text="+",
+            font=self.txt_font,
+            height=self.txt_size,
+            alignText="center",
+            color=self.txt_color,
+            wrapWidth=config.WRAP_WIDTH,
+        )
+
+        # Display a centered cross for 20s
+        for frameN in range(config.FRAME_RATE * self.cross_duration):
+            txt_stim.draw(exp_win)
+            if ctl_win:
+                txt_stim.draw(ctl_win)
+            yield ()
+
+        # Display each word for 0.5s
+        for word in self.words_list:
+            italic = False
+            if word[0] == "@":
+                italic = True
+                word = word[1:]
+            txt_stim.text = word
+            txt_stim.italic = italic
+
+            for frameN in range(config.FRAME_RATE * WORD_DURATION):
+                txt_stim.draw(exp_win)
+                if ctl_win:
+                    txt_stim.draw(ctl_win)
+                yield ()
