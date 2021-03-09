@@ -179,7 +179,7 @@ class Reading(Task):
             txt_stim.draw(exp_win)
             if ctl_win:
                 txt_stim.draw(ctl_win)
-            yield ()
+            yield frameN < 2
 
         # Display each word for 0.5s
         for word in self.words_list:
@@ -194,4 +194,4 @@ class Reading(Task):
                 txt_stim.draw(exp_win)
                 if ctl_win:
                     txt_stim.draw(ctl_win)
-                yield ()
+                yield frameN < 2
