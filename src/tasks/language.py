@@ -160,15 +160,15 @@ class Reading(Task):
             yield ()
 
     def _run(self, exp_win, ctl_win):
-        exp_win.setColor(self.bg_color)
+        exp_win.setColor(self.bg_color, "rgb")
         if ctl_win:
-            ctl_win.setColor(self.bg_color)
+            ctl_win.setColor(self.bg_color, "rgb")
 
         txt_stim = visual.TextStim(
             exp_win,
             text="+",
             font=self.txt_font,
-            height=self.txt_size,
+            #height=self.txt_size,
             alignText="center",
             color=self.txt_color,
             wrapWidth=config.WRAP_WIDTH,
