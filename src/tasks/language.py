@@ -184,13 +184,14 @@ class Reading(Task):
         # Display each word for 0.5s
         for word in self.words_list:
             italic = False
+            word = word["target"]
             if word[0] == "@":
                 italic = True
                 word = word[1:]
             txt_stim.text = word
             txt_stim.italic = italic
 
-            for frameN in range(config.FRAME_RATE * WORD_DURATION):
+            for frameN in range(int(config.FRAME_RATE * self.word_duration)):
                 txt_stim.draw(exp_win)
                 if ctl_win:
                     txt_stim.draw(ctl_win)
