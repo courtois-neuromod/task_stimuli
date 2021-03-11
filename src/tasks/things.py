@@ -3,7 +3,7 @@ from psychopy import visual, core, data, logging, event
 from .task_base import Task
 import numpy as np
 
-from ..shared import config
+from ..shared import config, utils
 
 RESPONSE_KEY = "d"
 RESPONSE_TIME = 4
@@ -90,8 +90,7 @@ Press the button when you see an unrecognizable object that was generated."""
                 stimuli.draw(ctl_win)
                 self.fixation_cross.draw(ctl_win)
             # wait onset
-            while self.task_timer.getTime() < trial["onset"] - 1 / config.FRAME_RATE:
-                time.sleep(0.0005)  # just to avoid looping to fast
+            utils.wait_until(self.task_timer, trial["onset"] - 1 / config.FRAME_RATE)
             yield True  # flip
             trial["onset_flip"] = (
                 self._exp_win_last_flip_time - self._exp_win_first_flip_time
@@ -102,21 +101,14 @@ Press the button when you see an unrecognizable object that was generated."""
             self.fixation_cross.draw(exp_win)
             if ctl_win:
                 self.fixation_cross.draw(ctl_win)
-            while (
-                self.task_timer.getTime()
-                < trial["onset"] + trial["duration"] - 1 / config.FRAME_RATE
-            ):
-                time.sleep(0.0005)  # just to avoid looping to fast
+            utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] - 1 / config.FRAME_RATE)
             yield True  # flip
             trial["offset_flip"] = (
                 self._exp_win_last_flip_time - self._exp_win_first_flip_time
             )
 
-            while (
-                self.task_timer.getTime()
-                < trial["onset"] + RESPONSE_TIME - 1 / config.FRAME_RATE
-            ):
-                time.sleep(0.0005)  # just to avoid looping to fast
+            utils.wait_until(self.task_timer, trial["onset"] + RESPONSE_TIME - 1 / config.FRAME_RATE)
+
             keypress = event.getKeys([RESPONSE_KEY], timeStamped=self.task_timer)
             trial["response"] = len(keypress) > 0
             trial["response_time"] = (
@@ -124,11 +116,7 @@ Press the button when you see an unrecognizable object that was generated."""
             )
             trial["duration_flip"] = trial["offset_flip"] - trial["onset_flip"]
 
-#        while self.task_timer.getTime() < trial["onset"] + RESPONSE_TIME:
-#            time.sleep(0.0005)
-
-        for frameN in range(config.FRAME_RATE * FINAL_WAIT):
-            yield
+        utils.wait_until(self.task_timer, trial["onset"] + RESPONSE_TIME + FINAL_WAIT)
 
     def _restart(self):
         self.trials = data.TrialHandler(self.design, 1, method="sequential")
@@ -227,8 +215,7 @@ The button mapping will change from trial to trial as indicated at the center of
                 stimuli.draw(ctl_win)
                 self._response_mapping.draw(ctl_win)
             # wait onset
-            while self.task_timer.getTime() < trial["onset"] - 1 / config.FRAME_RATE:
-                time.sleep(0.0005)  # just to avoid looping to fast
+            utils.wait_until(self.task_timer, trial["onset"] - 1 / config.FRAME_RATE)
             keypresses = event.getKeys(self.RESPONSE_KEYS) # flush response keys
             yield True  # flip
             trial["onset_flip"] = (
@@ -240,29 +227,25 @@ The button mapping will change from trial to trial as indicated at the center of
             self.fixation_cross.draw(exp_win)
             if ctl_win:
                 self.fixation_cross.draw(ctl_win)
-            while (
-                self.task_timer.getTime()
-                < trial["onset"] + trial["duration"] - 1 / config.FRAME_RATE
-            ):
-                time.sleep(0.0005)  # just to avoid looping to fast
+            utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] - 1 / config.FRAME_RATE)
             yield True  # flip
             trial["offset_flip"] = (
                 self._exp_win_last_flip_time - self._exp_win_first_flip_time
             )
 
-            while (
-                self.task_timer.getTime()
-                < trial["onset"] + RESPONSE_TIME - 1 / config.FRAME_RATE
-            ):
-                time.sleep(0.0005)  # just to avoid looping to fast
+            utils.wait_until(self.task_timer, trial["onset"] + RESPONSE_TIME - 1 / config.FRAME_RATE)
+
             keypresses = event.getKeys(self.RESPONSE_KEYS, timeStamped=self.task_timer)
             if len(keypresses):
                 trial['keypresses'] = keypresses # log all keypresses with timing
                 #keypress = keypresses[0] # only take the first keypress, TODO: log extra keypresses?
                 idxs = [np.where(self.RESPONSE_MAPPING == k[0]) for k in keypresses]
-                responses = [self.RESPONSE_VALUES[
-                    idx[0][0] * (1-2*trial['response_mapping_flip_v']),
-                    idx[1][0] * (1-2*trial['response_mapping_flip_h'])] for idx in idxs]
+                response_mapping_flipped = self.RESPONSE_VALUES.copy()
+                if trial["response_mapping_flip_h"]:
+                    response_mapping_flipped = np.rot90(np.fliplr(self.RESPONSE_VALUES))
+                if trial["response_mapping_flip_v"]:
+                    response_mapping_flipped = np.rot90(np.fliplr(self.RESPONSE_VALUES),3)
+                responses = [response_mapping_flipped[idx[0][0],idx[1][0]] for idx in idxs]
 
                 main_key = keypresses[0] # take the first response as main one, to be decided
                 main_response = responses[0]
@@ -271,6 +254,7 @@ The button mapping will change from trial to trial as indicated at the center of
                 trial["error"] = trial["response_txt"] != trial["condition"]
                 trial["response_confidence"] = abs(main_response) > 1
                 trial["response_time"] = (main_key[1] - trial["onset"])
+                if trial['error']: print("error")
             else:
                 # we need to force empty values for the first trials
                 # otherwise following values are not recorded!?
@@ -279,9 +263,4 @@ The button mapping will change from trial to trial as indicated at the center of
                 print('Warning: no response')
             trial["duration_flip"] = trial["offset_flip"] - trial["onset_flip"]
 
-
-#        while self.task_timer.getTime() < trial["onset"] + RESPONSE_TIME:
-#            time.sleep(0.0005)
-
-        for frameN in range(config.FRAME_RATE * FINAL_WAIT):
-            yield
+        utils.wait_until(self.task_timer, trial["onset"] + RESPONSE_TIME + FINAL_WAIT)
