@@ -2,6 +2,7 @@ import os, sys, time
 from psychopy import visual, core, data, logging, event
 from .task_base import Task
 import numpy as np
+from colorama import Fore
 
 from ..shared import config, utils
 
@@ -201,9 +202,6 @@ The button mapping will change from trial to trial as indicated at the center of
                 level=logging.EXP,
                 msg=f"image: {trial['condition']}:{trial['image_path']}",
             )
-            self.progress_bar.set_description(
-                f"Trial {trial_n}:: {trial['condition']}:{trial['image_path']}"
-            )
 
             # draw to backbuffer
             stimuli.draw(exp_win)
@@ -220,6 +218,9 @@ The button mapping will change from trial to trial as indicated at the center of
             yield True  # flip
             trial["onset_flip"] = (
                 self._exp_win_last_flip_time - self._exp_win_first_flip_time
+            )
+            self.progress_bar.set_description(
+                f"Trial {trial_n}:: {trial['condition']}:{trial['image_path']}"
             )
 
             # draw to backbuffer
@@ -238,13 +239,12 @@ The button mapping will change from trial to trial as indicated at the center of
             keypresses = event.getKeys(self.RESPONSE_KEYS, timeStamped=self.task_timer)
             if len(keypresses):
                 trial['keypresses'] = keypresses # log all keypresses with timing
-                #keypress = keypresses[0] # only take the first keypress, TODO: log extra keypresses?
                 idxs = [np.where(self.RESPONSE_MAPPING == k[0]) for k in keypresses]
                 response_mapping_flipped = self.RESPONSE_VALUES.copy()
                 if trial["response_mapping_flip_h"]:
-                    response_mapping_flipped = np.rot90(np.fliplr(self.RESPONSE_VALUES))
+                    response_mapping_flipped = np.rot90(np.fliplr(response_mapping_flipped))
                 if trial["response_mapping_flip_v"]:
-                    response_mapping_flipped = np.rot90(np.fliplr(self.RESPONSE_VALUES),3)
+                    response_mapping_flipped = np.rot90(np.fliplr(response_mapping_flipped),3)
                 responses = [response_mapping_flipped[idx[0][0],idx[1][0]] for idx in idxs]
 
                 main_key = keypresses[0] # take the first response as main one, to be decided
@@ -254,13 +254,20 @@ The button mapping will change from trial to trial as indicated at the center of
                 trial["error"] = trial["response_txt"] != trial["condition"]
                 trial["response_confidence"] = abs(main_response) > 1
                 trial["response_time"] = (main_key[1] - trial["onset"])
-                if trial['error']: print("error")
+                if trial['error']:
+                    self.progress_bar.set_description(
+                        f"Trial {trial_n}:: {trial['condition']}:{trial['image_path']} \u274c")
+                else:
+                    self.progress_bar.set_description(
+                        f"Trial {trial_n}:: {trial['condition']}:{trial['image_path']} \u2705")
             else:
                 # we need to force empty values for the first trials
                 # otherwise following values are not recorded!?
                 for k in ['keypresses', 'response', 'response_txt', 'error', 'response_confidence', 'response_time']:
                     trial[k] = ''
-                print('Warning: no response')
+                self.progress_bar.set_description(
+                    f"{Fore.RED}Trial {trial_n}:: {trial['condition']}:{trial['image_path']}: no response{Fore.RESET}")
+
             trial["duration_flip"] = trial["offset_flip"] - trial["onset_flip"]
 
         utils.wait_until(self.task_timer, trial["onset"] + RESPONSE_TIME + FINAL_WAIT)
