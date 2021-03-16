@@ -479,7 +479,7 @@ class VideoGameMultiLevel(VideoGame):
             for level, scenario in zip(self._state_names, self._scenarii):
                 self._nlevels += 1
                 self.state_name = level
-                self.emulator.load_state(level)
+                self.emulator.load_state(level, inttype=retro.data.Integrations.CUSTOM_ONLY)
                 self.emulator.data.load(
                     retro.data.get_file_path(self.game_name, "data.json"),
                     retro.data.get_file_path(self.game_name, f"{scenario}.json")
