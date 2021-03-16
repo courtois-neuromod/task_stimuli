@@ -125,8 +125,8 @@ Please look at the markers that appear on the screen."""
 
         radius_anim = np.hstack(
             [
-                np.linspace(MARKER_SIZE, 0, MARKER_DURATION_FRAMES / 2),
-                np.linspace(0, MARKER_SIZE, MARKER_DURATION_FRAMES / 2),
+                np.linspace(MARKER_SIZE, 0, MARKER_DURATION_FRAMES // 2),
+                np.linspace(0, MARKER_SIZE, MARKER_DURATION_FRAMES // 2),
             ]
         )
 
