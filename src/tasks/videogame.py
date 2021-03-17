@@ -91,7 +91,7 @@ class VideoGameBase(Task):
         return sound_block[:735] / float(2 ** 15)
 
     def _render_graphics_sound(self, obs, sound_block, exp_win, ctl_win):
-        self.game_vis_stim.image = obs / 255.0  # np.flip(obs, 0)/255.
+        self.game_vis_stim.image = obs / 255.0
         self.game_vis_stim.draw(exp_win)
         if ctl_win:
             self.game_vis_stim.draw(ctl_win)
@@ -101,9 +101,9 @@ class VideoGameBase(Task):
 
     def _stop(self, exp_win, ctl_win):
         self.game_sound.stop()
-        exp_win.setColor([0] * 3)
+        exp_win.setColor([0] * 3, colorSpace='rgb')
         if ctl_win:
-            ctl_win.setColor([0] * 3)
+            ctl_win.setColor([0] * 3, colorSpace='rgb')
         yield True
 
     def unload(self):
@@ -156,6 +156,15 @@ class VideoGame(VideoGameBase):
 
     def _setup(self, exp_win):
 
+        retraceRate = exp_win._monitorFrameRate
+        if retraceRate is None:
+            retraceRate = exp_win.getActualFrameRate()
+        if retraceRate is None:
+            logging.warning("FrameRate could not be supplied by psychopy; "
+                            "defaulting to 60.0")
+            retraceRate = 60.0
+        self._retraceInterval = 1.0/retraceRate
+
         self.emulator = retro.make(
             self.game_name,
             state=self.state_name,
@@ -163,6 +172,9 @@ class VideoGame(VideoGameBase):
             record=False,
             inttype=retro.data.Integrations.CUSTOM_ONLY
         )
+
+        self.game_fps = self.emulator.em.get_screen_rate()
+        self._frameInterval = 1.0/self.game_fps
 
         super()._setup(exp_win)
         self._set_recording_file()
@@ -226,8 +238,12 @@ class VideoGame(VideoGameBase):
             },
         )
         yield True
+        _nextFrameT = self.task_timer.getTime()
         while not _done:
             level_step += 1
+            while _nextFrameT > (self.task_timer.getTime() -
+                       self._retraceInterval/2.0):
+                time.sleep(.0001)
             self._handle_controller_presses()
             keys = [k in self.pressed_keys for k in KEY_SET]
             _obs, _rew, _done, _info = self.emulator.step(keys)
@@ -246,8 +262,9 @@ class VideoGame(VideoGameBase):
             if not level_step % config.FRAME_RATE:
                 exp_win.logOnFlip(level=logging.EXP, msg="level step: %d" % level_step)
             yield True
-        self.game_sound.stop()
+            _nextFrameT += self._frameInterval
         self.game_sound.flush()
+        self.game_sound.stop()
 
     def _set_key_handler(self, exp_win):
         # activate repeat keys
@@ -264,9 +281,9 @@ class VideoGame(VideoGameBase):
 
         self._set_key_handler(exp_win)
         self._nlevels = 0
-        exp_win.setColor([-1.0] * 3)
+        exp_win.setColor([-1.0] * 3, colorSpace='rgb')
         if ctl_win:
-            ctl_win.setColor([-1.0] * 3)
+            ctl_win.setColor([-1.0] * 3, colorSpace='rgb')
 
         while True:
             self._nlevels += 1
@@ -284,9 +301,9 @@ class VideoGame(VideoGameBase):
                 break
             self.emulator.reset()
 
-        exp_win.setColor([0] * 3)
+        exp_win.setColor([0] * 3, colorSpace='rgb')
         if ctl_win:
-            ctl_win.setColor([0] * 3)
+            ctl_win.setColor([0] * 3, colorSpace='rgb')
 
     def _run_ratings(self, exp_win, ctl_win):
         for question, n_pts in self.post_level_ratings:
@@ -453,16 +470,16 @@ class VideoGameMultiLevel(VideoGame):
 
         exp_win.waitBlanking = False
 
-        exp_win.setColor([-1.0] * 3)
+        exp_win.setColor([-1.0] * 3, colorSpace='rgb')
         if ctl_win:
-            ctl_win.setColor([-1.0] * 3)
+            ctl_win.setColor([-1.0] * 3, colorSpace='rgb')
 
         self._nlevels = 0
         while True:
             for level, scenario in zip(self._state_names, self._scenarii):
                 self._nlevels += 1
                 self.state_name = level
-                self.emulator.load_state(level)
+                self.emulator.load_state(level, inttype=retro.data.Integrations.CUSTOM_ONLY)
                 self.emulator.data.load(
                     retro.data.get_file_path(self.game_name, "data.json"),
                     retro.data.get_file_path(self.game_name, f"{scenario}.json")
