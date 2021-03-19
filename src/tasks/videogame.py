@@ -67,6 +67,25 @@ class SoundDeviceBlockStream(sound.backend_sounddevice.SoundDeviceSound):
 
 
 class VideoGameBase(Task):
+
+    def __init__(
+        self,
+        game_name=DEFAULT_GAME_NAME,
+        state_name=None,
+        scenario=None,
+        repeat_scenario=True,
+        inttype=retro.data.Integrations.CUSTOM_ONLY,
+        *args,
+        **kwargs
+    ):
+
+        super().__init__(**kwargs)
+        self.game_name = game_name
+        self.state_name = state_name
+        self.scenario = scenario
+        self.repeat_scenario = repeat_scenario
+        self.inttype = inttype
+
     def _setup(self, exp_win):
         self.game_sound = SoundDeviceBlockStream(stereo=True, blockSize=735)
         self._first_frame = self.emulator.reset()
@@ -116,10 +135,6 @@ class VideoGame(VideoGameBase):
 
     def __init__(
         self,
-        game_name=DEFAULT_GAME_NAME,
-        state_name=None,
-        scenario=None,
-        repeat_scenario=True,
         max_duration=0,
         post_level_ratings=None,
         *args,
@@ -127,10 +142,6 @@ class VideoGame(VideoGameBase):
     ):
 
         super().__init__(**kwargs)
-        self.game_name = game_name
-        self.state_name = state_name
-        self.scenario = scenario
-        self.repeat_scenario = repeat_scenario
         self.max_duration = max_duration
         self.duration = max_duration
         self.post_level_ratings = post_level_ratings
@@ -170,7 +181,7 @@ class VideoGame(VideoGameBase):
             state=self.state_name,
             scenario=self.scenario,
             record=False,
-            inttype=retro.data.Integrations.CUSTOM_ONLY
+            inttype=self.inttype
         )
 
         self.game_fps = self.emulator.em.get_screen_rate()
@@ -479,10 +490,14 @@ class VideoGameMultiLevel(VideoGame):
             for level, scenario in zip(self._state_names, self._scenarii):
                 self._nlevels += 1
                 self.state_name = level
-                self.emulator.load_state(level, inttype=retro.data.Integrations.CUSTOM_ONLY)
+                self.emulator.load_state(level, inttype=self.inttype)
+                print(
+                    retro.data.get_file_path(self.game_name, "data.json", inttype=self.inttype),
+                    retro.data.get_file_path(self.game_name, f"{scenario}.json", inttype=self.inttype)
+                )
                 self.emulator.data.load(
-                    retro.data.get_file_path(self.game_name, "data.json"),
-                    retro.data.get_file_path(self.game_name, f"{scenario}.json")
+                    retro.data.get_file_path(self.game_name, "data.json", inttype=self.inttype),
+                    retro.data.get_file_path(self.game_name, f"{scenario}.json", inttype=self.inttype)
                 )
                 self._first_frame = self.emulator.reset()
                 if self._nlevels > 1:
@@ -512,8 +527,6 @@ class VideoGameReplay(VideoGameBase):
     def __init__(
         self,
         movie_filename,
-        game_name=DEFAULT_GAME_NAME,
-        scenario=None,
         *args,
         **kwargs
     ):
