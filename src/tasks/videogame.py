@@ -101,9 +101,9 @@ class VideoGameBase(Task):
 
     def _stop(self, exp_win, ctl_win):
         self.game_sound.stop()
-        exp_win.setColor([0] * 3)
+        exp_win.setColor([0] * 3, colorSpace='rgb')
         if ctl_win:
-            ctl_win.setColor([0] * 3)
+            ctl_win.setColor([0] * 3, colorSpace='rgb')
         yield True
 
     def unload(self):
@@ -264,9 +264,9 @@ class VideoGame(VideoGameBase):
 
         self._set_key_handler(exp_win)
         self._nlevels = 0
-        exp_win.setColor([-1.0] * 3)
+        exp_win.setColor([-1.0] * 3, colorSpace='rgb')
         if ctl_win:
-            ctl_win.setColor([-1.0] * 3)
+            ctl_win.setColor([-1.0] * 3, colorSpace='rgb')
 
         while True:
             self._nlevels += 1
@@ -284,9 +284,9 @@ class VideoGame(VideoGameBase):
                 break
             self.emulator.reset()
 
-        exp_win.setColor([0] * 3)
+        exp_win.setColor([0] * 3, colorSpace='rgb')
         if ctl_win:
-            ctl_win.setColor([0] * 3)
+            ctl_win.setColor([0] * 3, colorSpace='rgb')
 
     def _run_ratings(self, exp_win, ctl_win):
         for question, n_pts in self.post_level_ratings:
@@ -453,9 +453,9 @@ class VideoGameMultiLevel(VideoGame):
 
         exp_win.waitBlanking = False
 
-        exp_win.setColor([-1.0] * 3)
+        exp_win.setColor([-1.0] * 3, colorSpace='rgb')
         if ctl_win:
-            ctl_win.setColor([-1.0] * 3)
+            ctl_win.setColor([-1.0] * 3, colorSpace='rgb')
 
         self._nlevels = 0
         while True:
