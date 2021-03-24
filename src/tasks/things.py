@@ -169,6 +169,7 @@ The button mapping will change from trial to trial as indicated at the center of
             if ctl_win:
                 screen_text.draw(ctl_win)
             yield frameN < 3
+        yield True
         screen_text.text = self.EXTRA_INSTRUCTION
         if self.run_id == 1:
             for  frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION * 2):
@@ -178,6 +179,7 @@ The button mapping will change from trial to trial as indicated at the center of
                     screen_text.draw(ctl_win)
                     self._response_mapping.draw(ctl_win)
                 yield frameN
+        yield True
 
     def _setup(self, exp_win):
         super()._setup(exp_win)
