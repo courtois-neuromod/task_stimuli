@@ -1,5 +1,6 @@
 import os, sys, time
 from psychopy import visual, core, data, logging, event
+from pandas import read_csv
 from .task_base import Task
 
 from ..shared import config
@@ -140,7 +141,7 @@ class Reading(Task):
             self.txt_font = txt_font
             self.txt_size = txt_size
             self.bg_color = bg_color
-            self.words_list = data.importConditions(self.words_file)
+            self.words_list = read_csv(self.words_file, sep='\t')
         else:
             raise ValueError("File %s does not exists" % words_file)
 
@@ -182,13 +183,9 @@ class Reading(Task):
             yield frameN < 2
 
         # Display each word for 0.5s
-        for word in self.words_list:
-            italic = False
-            word = word["target"]
-            if word[0] == "@":
-                italic = True
-                word = word[1:]
-            txt_stim.text = word
+        for id_word, word in self.words_list.iterrows():
+            italic = word["format"] == "italic"
+            txt_stim.text = word["word"]
             txt_stim.italic = italic
 
             for frameN in range(int(config.FRAME_RATE * self.word_duration)):
@@ -196,3 +193,12 @@ class Reading(Task):
                 if ctl_win:
                     txt_stim.draw(ctl_win)
                 yield frameN < 2
+
+        # Display a centered cross for 20s
+        txt_stim.text = "+"
+        for frameN in range(config.FRAME_RATE * self.cross_duration):
+            txt_stim.draw(exp_win)
+            if ctl_win:
+                txt_stim.draw(ctl_win)
+            yield frameN < 2
+
