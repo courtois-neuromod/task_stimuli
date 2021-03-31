@@ -1,12 +1,11 @@
 from ..tasks import language
 
 TASKS = []
-for seg_idx in range(1, 2):
+for seg_idx in range(1, 8):
     TASKS.append(
         language.Reading(
-            "data/language/triplet/first1000triples.csv",
+            "data/language/harrypotter/task-harry_run-%d_events.tsv" % seg_idx,
             name="harrypotter_seg-%d" % seg_idx,
         )
     )
 
-# ??? volumes each, last run is ??? volumes long
