@@ -130,7 +130,7 @@ class Reading(Task):
     DEFAULT_INSTRUCTION = """You will be presented a text to read word by word."""
 
     def __init__(self, words_file, word_duration=0.5, cross_duration=20,
-                 txt_color="black", txt_font="Palatino", txt_size=42,
+                 txt_color="black", txt_font="Palatino Linotype", txt_size=42,
                  bg_color=(.5, .5, .5), *args, **kwargs):
         super().__init__(**kwargs)
         if os.path.exists(words_file):
@@ -182,10 +182,9 @@ class Reading(Task):
         # Display each word
         for trial_n, trial in self.words_list.iterrows():
             self.txt_stim.text = trial["word"]
-            self.txt_stim.alignText = "center"
-            self.txt_stim.italic = trial["format"] == 'italic'
+            self.txt_stim._pygletTextObj.set_style('italic', trial["format"] == "italic")
             self.txt_stim.draw(exp_win)
-            self.progress_bar.set_description(f"Trial {trial_n}:: {trial['word']}")
+            self.progress_bar.set_description(f"Trial {trial_n}:: {trial['word']} {trial['format']}")
             utils.wait_until(self.task_timer, trial["onset"] - 1 / config.FRAME_RATE)
             yield True  # flip
             self.words_list.at[trial_n, "onset_flip"] = (
