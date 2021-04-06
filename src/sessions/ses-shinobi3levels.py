@@ -26,7 +26,7 @@ levels_scenario = [
     ("Level1-0", "scenario_Level1"),
     ("Level4-1", "scenario_Level4-1"),
     ("Level5-0", "scenario_Level5-0")]
-random.shuffle(levels_scenario)  # randomize order
+#random.shuffle(levels_scenario)  # randomize order
 
 TASKS = sum(
     [
