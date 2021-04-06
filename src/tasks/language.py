@@ -1,5 +1,6 @@
 import os, sys, time
 from psychopy import visual, core, data, logging, event
+from pandas import read_csv
 from .task_base import Task
 
 from ..shared import config, utils
