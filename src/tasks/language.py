@@ -2,7 +2,7 @@ import os, sys, time
 from psychopy import visual, core, data, logging, event
 from .task_base import Task
 
-from ..shared import config
+from ..shared import config, utils
 
 STIMULI_DURATION = 4
 BASELINE_BEGIN = 5
@@ -130,7 +130,7 @@ class Reading(Task):
 
     def __init__(self, words_file, word_duration=0.5, cross_duration=20,
                  txt_color="black", txt_font="Palatino", txt_size=42,
-                 bg_color=(125,125,125), *args, **kwargs):
+                 bg_color=(.5, .5, .5), *args, **kwargs):
         super().__init__(**kwargs)
         if os.path.exists(words_file):
             self.words_file = words_file
@@ -140,7 +140,9 @@ class Reading(Task):
             self.txt_font = txt_font
             self.txt_size = txt_size
             self.bg_color = bg_color
-            self.words_list = data.importConditions(self.words_file)
+            import pandas
+            self.words_list = pandas.read_csv(words_file, sep="\t")
+            self.duration = len(self.words_list)
         else:
             raise ValueError("File %s does not exists" % words_file)
 
@@ -149,9 +151,12 @@ class Reading(Task):
             exp_win,
             text=self.instruction,
             alignText="center",
-            color="white",
-            wrapWidth=config.WRAP_WIDTH,
+            color="black",
+            wrapWidth=1.2,
         )
+        exp_win.setColor(self.bg_color, "rgb")
+        if ctl_win:
+            ctl_win.setColor(self.bg_color, "rgb")
 
         for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
             screen_text.draw(exp_win)
@@ -159,12 +164,9 @@ class Reading(Task):
                 screen_text.draw(ctl_win)
             yield ()
 
-    def _run(self, exp_win, ctl_win):
-        exp_win.setColor(self.bg_color, "rgb")
-        if ctl_win:
-            ctl_win.setColor(self.bg_color, "rgb")
+    def _setup(self, exp_win):
 
-        txt_stim = visual.TextStim(
+        self.txt_stim = visual.TextStim(
             exp_win,
             text="+",
             font=self.txt_font,
@@ -172,28 +174,41 @@ class Reading(Task):
             units='pixels',
             alignText="center",
             color=self.txt_color,
-            wrapWidth=config.WRAP_WIDTH,
         )
 
-        # Display a centered cross for 20s
-        for frameN in range(config.FRAME_RATE * self.cross_duration):
-            txt_stim.draw(exp_win)
-            if ctl_win:
-                txt_stim.draw(ctl_win)
-            yield frameN < 2
+    def _run(self, exp_win, ctl_win):
 
-        # Display each word for 0.5s
-        for word in self.words_list:
-            italic = False
-            word = word["target"]
-            if word[0] == "@":
-                italic = True
-                word = word[1:]
-            txt_stim.text = word
-            txt_stim.italic = italic
+        # Display each word
+        for trial_n, trial in self.words_list.iterrows():
+            self.txt_stim.text = trial["word"]
+            self.txt_stim.alignText = "center"
+            self.txt_stim.italic = trial["format"] == 'italic'
+            self.txt_stim.draw(exp_win)
+            self.progress_bar.set_description(f"Trial {trial_n}:: {trial['word']}")
+            utils.wait_until(self.task_timer, trial["onset"] - 1 / config.FRAME_RATE)
+            yield True  # flip
+            self.words_list.at[trial_n, "onset_flip"] = (
+                self._exp_win_last_flip_time - self._exp_win_first_flip_time
+            )
+            if trial_n > 0:
+                self.words_list.at[trial_n - 1, "offset_flip"] = self.words_list.at[trial_n, "onset_flip"]
+                self.words_list.at[trial_n -1, "duration_flip"] = (
+                    self.words_list.at[trial_n - 1, "offset_flip"]
+                    - self.words_list.at[trial_n - 1, "onset_flip"]
+                )
+            utils.wait_until(self.task_timer, trial["onset"]+trial["duration"] - 1 / config.FRAME_RATE)
 
-            for frameN in range(int(config.FRAME_RATE * self.word_duration)):
-                txt_stim.draw(exp_win)
-                if ctl_win:
-                    txt_stim.draw(ctl_win)
-                yield frameN < 2
+    def _stop(self, exp_win, ctl_win):
+        exp_win.setColor((0,0,0), "rgb")
+        for _ in range(2):
+            yield True
+
+    def _save(self):
+        #self.words_list.saveAsWideText(self._generate_unique_filename("events", "tsv")
+        self.words_list.to_csv(
+            self._generate_unique_filename("events", "tsv"),
+            sep = '\t',
+            index = False,
+
+        )
+        return False

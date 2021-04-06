@@ -1,11 +1,11 @@
 from ..tasks import language
 
 TASKS = []
-for seg_idx in range(1, 2):
+for run in range(1, 8):
     TASKS.append(
         language.Reading(
-            "data/language/triplet/first1000triples.csv",
-            name="harrypotter_seg-%d" % seg_idx,
+            f"data/harrypotter/task-harry_run-{run}_events.tsv",
+            name=f"harrypotter_run-{run}",
             cross_duration=2,
             txt_size=124,
         )
