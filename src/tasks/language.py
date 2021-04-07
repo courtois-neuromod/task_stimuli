@@ -185,7 +185,10 @@ class Reading(Task):
             self.txt_stim._pygletTextObj.set_style('italic', trial["format"] == "italic")
             self.txt_stim.draw(exp_win)
             self.progress_bar.set_description(f"Trial {trial_n}:: {trial['word']} {trial['format']}")
-            utils.wait_until(self.task_timer, trial["onset"] - 1 / config.FRAME_RATE)
+            utils.wait_until(
+                self.task_timer,
+                trial["onset"] - 1 / config.FRAME_RATE,
+                hogCPUperiod=0.2)
             yield True  # flip
             self.words_list.at[trial_n, "onset_flip"] = (
                 self._exp_win_last_flip_time - self._exp_win_first_flip_time
@@ -196,7 +199,6 @@ class Reading(Task):
                     self.words_list.at[trial_n - 1, "offset_flip"]
                     - self.words_list.at[trial_n - 1, "onset_flip"]
                 )
-            utils.wait_until(self.task_timer, trial["onset"]+trial["duration"] - 1 / config.FRAME_RATE)
 
     def _stop(self, exp_win, ctl_win):
         exp_win.setColor((0,0,0), "rgb")
