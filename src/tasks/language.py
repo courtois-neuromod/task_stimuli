@@ -176,6 +176,7 @@ class Reading(Task):
             alignText="center",
             color=self.txt_color,
         )
+        self._progress_bar_refresh_rate = 1 # 1 flip / trial
 
     def _run(self, exp_win, ctl_win):
 
