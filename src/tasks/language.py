@@ -163,7 +163,8 @@ class Reading(Task):
             screen_text.draw(exp_win)
             if ctl_win:
                 screen_text.draw(ctl_win)
-            yield ()
+            yield True
+        yield True
 
     def _setup(self, exp_win):
 
