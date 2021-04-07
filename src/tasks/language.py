@@ -200,6 +200,12 @@ class Reading(Task):
                     self.words_list.at[trial_n - 1, "offset_flip"]
                     - self.words_list.at[trial_n - 1, "onset_flip"]
                 )
+        # wait for last event duration
+        utils.wait_until(
+            self.task_timer,
+            trial["onset"]+trial["duration"] - 1 / config.FRAME_RATE
+        )
+        yield
 
     def _stop(self, exp_win, ctl_win):
         exp_win.setColor((0,0,0), "rgb")
