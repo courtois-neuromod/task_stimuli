@@ -26,7 +26,7 @@ def listen_shortcuts():
     return False
 
 
-def run_task_loop(loop, eyetracker=None, gaze_drawer=None, record_movie=False):
+def run_task_loop(task, loop, eyetracker=None, gaze_drawer=None, record_movie=False):
     for frameN, _ in enumerate(loop):
         if gaze_drawer:
             gaze = eyetracker.get_gaze()
@@ -47,6 +47,7 @@ def run_task(
 
     # show instruction
     shortcut_evt = run_task_loop(
+        task,
         task.instructions(exp_win, ctl_win),
         eyetracker,
         gaze_drawer,
@@ -64,10 +65,11 @@ def run_task(
         eyetracker.start_recording(task.name)
     # send start trigger/marker to MEG + Biopac (or anything else on parallel port)
     if task.use_meg and not shortcut_evt:
-        meg.send_signal(meg.MEG_settings["TASK_START_CODE"])
+        exp_win.callOnFlip(meg.send_signal, meg.MEG_settings["TASK_START_CODE"])
 
     if not shortcut_evt:
         shortcut_evt = run_task_loop(
+            task,
             task.run(exp_win, ctl_win),
             eyetracker,
             gaze_drawer,
@@ -76,7 +78,7 @@ def run_task(
 
     # send stop trigger/marker to MEG + Biopac (or anything else on parallel port)
     if task.use_meg and not shortcut_evt:
-        meg.send_signal(meg.MEG_settings["TASK_STOP_CODE"])
+        exp_win.callOnFlip(meg.send_signal, meg.MEG_settings["TASK_STOP_CODE"])
 
     if eyetracker:
         eyetracker.stop_recording()
@@ -84,6 +86,7 @@ def run_task(
     task.save()
 
     run_task_loop(
+        task,
         task.stop(exp_win, ctl_win),
         eyetracker,
         gaze_drawer,

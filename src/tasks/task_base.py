@@ -44,6 +44,7 @@ class Task(object):
             self._progress_bar_refresh_rate = config.FRAME_RATE
 
     def _setup(self, exp_win):
+        self._exp_win = exp_win
         pass
 
     def _generate_unique_filename(self, suffix, ext="tsv"):
@@ -87,6 +88,8 @@ class Task(object):
         for clearBuffer in self._run(exp_win, ctl_win):
             # yield first to allow external draw before flip
             yield
+            if meg.MEG_MARKERS_ON_FLIP and self.use_meg:
+                exp_win.callOnFlip(meg.send_signal, meg.MEG_settings["TASK_FLIP"])
             self._flip_all_windows(exp_win, ctl_win, clearBuffer)
             if not hasattr(self, "_exp_win_first_flip_time"):
                 self._exp_win_first_flip_time = self._exp_win_last_flip_time
