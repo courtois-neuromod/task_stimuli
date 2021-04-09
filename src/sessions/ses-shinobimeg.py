@@ -36,7 +36,7 @@ TASKS = sum(
                 scenarii=[s for l,s in levels_scenario]
                 ,  # this scenario repeats the same level
                 repeat_scenario=True,
-                max_duration=10
+                max_duration=9
                 * 60,  # if when level completed or dead we exceed that time in secs, stop the task
                 name=f"task-shinobi_run-{run+1:02d}",
                 post_level_ratings = [(q, 7) for q in flow_ratings]
