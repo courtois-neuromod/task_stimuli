@@ -350,7 +350,7 @@ class VideoGame(VideoGameBase):
 
         # create all stimuli
         #all_questions_text = ""
-        for q_n, (question, n_pts) in enumerate(self.post_level_ratings):
+        for q_n, (key, question, n_pts) in enumerate(self.post_level_ratings):
             default_response = n_pts // 2
             responses.append(default_response)
             x_spacing = extent * 2 / (n_pts - 1)
@@ -418,10 +418,28 @@ class VideoGame(VideoGameBase):
             elif "l" in new_key_pressed and responses[active_question] > 0:
                 responses[active_question] -= 1
             elif "a" in new_key_pressed:
+                for (key, question, n_pts), value in zip(self.post_level_ratings, responses):
+                    self._log_event({
+                        "trial_type": "questionnaire-answer",
+                        "game": self.game_name,
+                        "level": self.state_name,
+                        "stim_file": self.movie_path,
+                        "question": key,
+                        "value": value
+                    })
                 break
             elif n_flips > 1:
                 time.sleep(.01)
                 continue
+
+            self._log_event({
+                "trial_type": "questionnaire-value-change",
+                "game": self.game_name,
+                "level": self.state_name,
+                "stim_file": self.movie_path,
+                "question": self.post_level_ratings[active_question][0],
+                "value": responses[active_question]
+            })
 
             exp_win.logOnFlip(
                 level=logging.EXP,
@@ -528,10 +546,6 @@ class VideoGameMultiLevel(VideoGame):
                 self._nlevels += 1
                 self.state_name = level
                 self.emulator.load_state(level, inttype=self.inttype)
-                print(
-                    retro.data.get_file_path(self.game_name, "data.json", inttype=self.inttype),
-                    retro.data.get_file_path(self.game_name, f"{scenario}.json", inttype=self.inttype)
-                )
                 self.emulator.data.load(
                     retro.data.get_file_path(self.game_name, "data.json", inttype=self.inttype),
                     retro.data.get_file_path(self.game_name, f"{scenario}.json", inttype=self.inttype)
