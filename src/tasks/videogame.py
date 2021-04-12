@@ -432,14 +432,15 @@ class VideoGame(VideoGameBase):
                 time.sleep(.01)
                 continue
 
-            self._log_event({
-                "trial_type": "questionnaire-value-change",
-                "game": self.game_name,
-                "level": self.state_name,
-                "stim_file": self.movie_path,
-                "question": self.post_level_ratings[active_question][0],
-                "value": responses[active_question]
-            })
+            if n_flips > 0: #avoid double log when first loading questionnaire
+                self._log_event({
+                    "trial_type": "questionnaire-value-change",
+                    "game": self.game_name,
+                    "level": self.state_name,
+                    "stim_file": self.movie_path,
+                    "question": self.post_level_ratings[active_question][0],
+                    "value": responses[active_question]
+                })
 
             exp_win.logOnFlip(
                 level=logging.EXP,
