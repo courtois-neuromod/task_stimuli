@@ -45,6 +45,7 @@ CAPTURE_SETTINGS = {
     "frame_rate": 250,
     "exposure_time": 4000,
     "global_gain": 1,
+    "auto_noise_suppression": True,
     #"gev_packet_size": 9140,
     #"uid": "Aravis-Fake-GV01",  # for test purposes
     "uid": "MRC Systems GmbH-GVRD-MRC HighSpeed-MR_CAM_HS_0014",
