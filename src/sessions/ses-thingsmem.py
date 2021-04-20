@@ -12,7 +12,7 @@ def get_tasks(parsed):
         "memory_designs",
         f"sub-{parsed.subject}_ses-{parsed.session}_design.tsv",
     )
-    n_runs_session = n_runs if int(parsed.session) > 1 else 6
+    n_runs_session = n_runs if int(parsed.session) > 1 else n_runs//2
     tasks = [
         ThingsMemory(session_design_filename, IMAGE_PATH, run, name=f"task-thingsmemory_run-{run}")
         for run in range(1, n_runs_session + 1)
@@ -22,10 +22,11 @@ def get_tasks(parsed):
 
 # experiment
 
-n_sessions = 18  # number of sessions
-n_runs = 12  # number of runs
+n_sessions = 36  # number of sessions
+n_runs = 6  # number of runs
 n_trials = 60  # number of trials for each run
-splits = n_trials * 2
+splits = n_trials * 1
+new_samples_nsplits = 720//splits//2
 
 final_wait = 9  # time to wait after last trial
 initial_wait = 3  # time until first trial starts
@@ -60,10 +61,24 @@ def generate_design_file(subject):
     props['seen_between_within2'] = props['unseen_between']
     props['seen_within_between'] = props['unseen_within']
 
+    #props_session1 = pandas.DataFrame()
+    #props_session1['unseen_between'] = [12, 16, 18, 22, 24, 28]
+    #props_session1['unseen_within'] = [28, 24 , 22, 18, 16, 12]
+    #props_session1['seen_within'] = [20] * (n_runs//2)
+
+    props = pandas.DataFrame()
+    props['unseen_between'] = [6, 8, 10, 10, 12, 14]
+    props['unseen_within'] = [14, 12, 10, 10, 8, 6]
+    props['seen_within'] = props['unseen_between']
+    props['seen_between_within'] = props['unseen_within']
+    props['seen_between_within2'] = props['unseen_between']
+    props['seen_within_between'] = props['unseen_within']
+
     props_session1 = pandas.DataFrame()
-    props_session1['unseen_between'] = [12, 16, 18, 22, 24, 28]
-    props_session1['unseen_within'] = [28, 24 , 22, 18, 16, 12]
+    props_session1['unseen_between'] = [12, 20, 28]
+    props_session1['unseen_within'] = [28, 20, 12]
     props_session1['seen_within'] = [20] * (n_runs//2)
+
 
     images_list = pandas.read_csv(
         os.path.join(THINGS_DATA_PATH, "images", "image_paths_fmri.csv")
@@ -75,6 +90,21 @@ def generate_design_file(subject):
         images_list.condition.eq("exp") &
         (images_list.exemplar_nr < 7 ) # > 6 for pilot < 7 for study
     ]
+
+    # randomize examplar order across participants
+    exemplar_sorting = np.random.permutation(np.arange(1,7))
+    if subject in ["%02d" % sn for sn  in [2, 6]]:
+        print("already seen examplars 1 and 2")
+        exemplar_sorting = np.hstack([
+            np.random.permutation(np.arange(3,7)),
+            np.random.permutation(np.arange(1,3))
+        ])
+    elif subject in ["%02d" % sn for sn  in [1, 3 , 4]]:
+        print("already seen examplars 1")
+        exemplar_sorting = np.hstack([
+            np.random.permutation(np.arange(2,7)),
+            [1]
+        ])
 
     # seed numpy with subject id to have reproducible design generation
     seed = int(
@@ -94,13 +124,14 @@ def generate_design_file(subject):
 
     for session in range(n_sessions):
         # select the examplar
-        exemplar = session//3+1 #  + 6 here for pilot, remove for study!!
+        exemplar = exemplar_sorting[session//6]
+        #exemplar = session//3+1 #  + 6 here for pilot, remove for study!!
 
         # subselect 240 categories for new stimuli
         # loop through the 3 sets of 240 across sessions and thus avoid
         # having distractors from the same category within-session
         # but there will still be between session distractors
-        new_stimuli_categories = categories[splits*2*(session%3):splits*2*(session%3+1)]
+        new_stimuli_categories = categories[splits*2*(session%new_samples_nsplits):splits*2*(session%new_samples_nsplits+1)]
         #randomize categories to be used as within and between repeated new stimuli to avoid systematic bias
         new_stimuli_categories = np.random.permutation(new_stimuli_categories)
         cat_unseen_within = new_stimuli_categories[:splits]
