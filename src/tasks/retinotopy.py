@@ -30,7 +30,7 @@ class Retinotopy(Task):
             exp_win,
             size=.15,
             units='deg',
-            opacity=.5,
+            opacity=.8,
             color=self.DOT_COLORS[0],
             colorSpace='rgb255'
         )
@@ -86,17 +86,17 @@ class Retinotopy(Task):
             level=logging.EXP, msg=f"Retinotopy {self.condition}: task starting at {time.time()}"
         )
 
-        initial_wait = 16 if self.condition == 'RETBAR' else 22
-        utils.wait_until(self.task_timer, initial_wait - 1 / config.FRAME_RATE)
         color_state = 0
-        dot_next_change = self.DOT_MIN_DURATION + random.random()*5
+        dot_next_change = 0
+        dot_changes = []
 
-        dot_changes = [dot_next_change]
-        self.fixation_dot.draw(exp_win)
-        yield True
-        for clearBuffer in self._run_condition(exp_win, ctl_win, initial_wait):
+        for do_yield in self._run_condition(exp_win, ctl_win):
             #TODO: log responses
             keypresses = event.getKeys(self.RESPONSE_KEY, timeStamped=self.task_timer)
+            for k in keypresses:
+                rt = k[2] - dot_changes[-1]
+                print(k, rt)
+
 
             if self.task_timer.getTime() > dot_next_change:
                 color_state = (color_state+1)%2
@@ -104,14 +104,24 @@ class Retinotopy(Task):
                     self.DOT_COLORS[color_state],
                     colorSpace='rgb255')
                 dot_next_change += self.DOT_MIN_DURATION + random.random()*5
-                dot_changes.append
+                dot_changes.append((color_state, self.task_timer.getTime()))
+                do_yield = True
             self.fixation_dot.draw(exp_win)
             if ctl_win:
                 self.fixation_dot.draw(exp_win)
-            yield clearBuffer
+            if do_yield:
+                yield True
 
 
-    def _run_condition(self, exp_win, ctl_win, initial_wait):
+    def _run_condition(self, exp_win, ctl_win):
+
+        initial_wait = 16 if self.condition == 'RETBAR' else 22
+        yield True
+        yield from utils.wait_until_yield(
+            self.task_timer,
+            initial_wait - 1,
+            keyboard_accuracy=.001,
+            hogCPUperiod=2/config.FRAME_RATE)
         if 'BAR' in self.condition:
             middle_blank = 12
             conds = np.asarray([0,1,0,1,2,3,2,3])
@@ -128,7 +138,11 @@ class Retinotopy(Task):
                     self.img.image = self._images[..., image_idx]
                     self.img.mask = self._apertures[..., start_idx+frame]
 
-                    utils.wait_until(self.task_timer, flip_time)
+                    yield from utils.wait_until_yield
+                        self.task_timer,
+                        flip_time,
+                        keyboard_accuracy=.001,
+                        hogCPUperiod=2/config.FRAME_RATE)
 
                     self.img.draw(exp_win)
                     if ctl_win:
@@ -145,7 +159,12 @@ class Retinotopy(Task):
                     image_idx = self._images_random[ci*32*15+fi]
                     self.img.image = self._images[..., image_idx]
                     self.img.mask = self._apertures[..., frame]
-                    utils.wait_until(self.task_timer, flip_time)
+
+                    yield from utils.wait_until_yield
+                        self.task_timer,
+                        flip_time,
+                        keyboard_accuracy=.001,
+                        hogCPUperiod=2/config.FRAME_RATE)
 
                     self.img.draw(exp_win)
                     if ctl_win:
