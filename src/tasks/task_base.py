@@ -82,7 +82,7 @@ class Task(object):
     def run(self, exp_win, ctl_win):
 
         self.task_timer = core.Clock()
-        frame_idx = 0
+        flip_idx = 0
 
         for clearBuffer in self._run(exp_win, ctl_win):
             # yield first to allow external draw before flip
@@ -90,11 +90,11 @@ class Task(object):
             self._flip_all_windows(exp_win, ctl_win, clearBuffer)
             if not hasattr(self, "_exp_win_first_flip_time"):
                 self._exp_win_first_flip_time = self._exp_win_last_flip_time
-            # increment the progress bar every second
+            # increment the progress bar depending on task flip rate
             if self.progress_bar:
-                frame_idx += 1
-                if not frame_idx % self._progress_bar_refresh_rate:
+                if flip_idx % self._progress_bar_refresh_rate == 0:
                     self.progress_bar.update(1)
+            flip_idx += 1
 
         if self.progress_bar:
             self.progress_bar.clear()

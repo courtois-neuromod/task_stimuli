@@ -34,6 +34,7 @@ def wait_until_yield(clock, deadline, hogCPUperiod=0.1, keyboard_accuracy=.0005)
     while current_time < deadline:
         if current_time < sleep_until:
             time.sleep(keyboard_accuracy)
-            yield
+            yield False
+
         poll_windows()
         current_time = clock.getTime()
