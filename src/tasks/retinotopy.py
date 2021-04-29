@@ -7,6 +7,10 @@ import pandas
 
 from ..shared import config, utils
 
+
+def generate_wedge():
+    pass
+
 class Retinotopy(Task):
 
     DEFAULT_INSTRUCTION = """You will see a dot in the center of the screen.
@@ -43,7 +47,7 @@ class Retinotopy(Task):
 
         self._images = np.load('data/retinotopy/images.npz')['images'].astype(np.float32)/255.
         if 'CW' in self.condition:
-            aperture_file = 'apertures_wedge.npz'
+            aperture_file = 'apertures_wedge_newtr.npz'
         elif self.condition in ['RETEXP', 'RETCON']:
             aperture_file = '/apertures_ring.npz'
         elif self.condition == 'RETBAR':
@@ -81,21 +85,25 @@ class Retinotopy(Task):
         yield True
 
     def _run(self, exp_win, ctl_win):
-
+        event.getKeys() # flush all keypresses
         exp_win.logOnFlip(
             level=logging.EXP, msg=f"Retinotopy {self.condition}: task starting at {time.time()}"
         )
 
         color_state = 0
         dot_next_change = 0
-        dot_changes = []
+        dot_change_idx = 0
 
         for do_yield in self._run_condition(exp_win, ctl_win):
             #TODO: log responses
             keypresses = event.getKeys(self.RESPONSE_KEY, timeStamped=self.task_timer)
             for k in keypresses:
-                rt = k[2] - dot_changes[-1]
-                print(k, rt)
+                rt = k[1] - dot_last_change
+                self._log_event({
+                    'trial_type':'response',
+                    'trial_number': dot_change_idx,
+                    'response_time': rt
+                })
 
 
             if self.task_timer.getTime() > dot_next_change:
@@ -103,8 +111,16 @@ class Retinotopy(Task):
                 self.fixation_dot.setColor(
                     self.DOT_COLORS[color_state],
                     colorSpace='rgb255')
+                dot_last_change = dot_next_change
                 dot_next_change += self.DOT_MIN_DURATION + random.random()*5
-                dot_changes.append((color_state, self.task_timer.getTime()))
+                exp_win.callOnFlip(
+                    self._log_event,
+                    {'trial_type':'dot_color',
+                    'trial_number': dot_change_idx,
+                    'color': color_state},
+                    clock='flip'
+                )
+                dot_change_idx += 1
                 do_yield = True
             self.fixation_dot.draw(exp_win)
             if ctl_win:
@@ -119,6 +135,8 @@ class Retinotopy(Task):
 
         initial_wait = 16 if self.condition == 'RETBAR' else 22
         initial_wait = 2 if self.condition == 'RETBAR' else 4
+
+        cycle_length = 21*config.TR # 31.29, a bit shorter than 32s
         yield True
         # wait until it's almost time to render first frame
         yield from utils.wait_until_yield(
@@ -134,7 +152,7 @@ class Retinotopy(Task):
                 order = 1-(ci%4>1)*2
                 for fi, frame in enumerate(range(28*15)[::order]):
                     flip_time = (initial_wait + (ci>3) * middle_blank +
-                        (ci*32*15+fi) * frame_duration
+                        (ci*cycle_length*15+fi) * frame_duration
                         - 1/config.FRAME_RATE)
 
                     #flipVert = 1 - 2*(ci in [3,6,7])
@@ -152,19 +170,21 @@ class Retinotopy(Task):
                     self.img.draw(exp_win)
                     if ctl_win:
                         self.img.draw(ctl_win)
+
+                    exp_win.callOnFlip(
+                        self._log_event,
+                        {'condition': self.condition, 'image_idx': image_idx, 'aperture': frame},
+                        clock='flip'
+                    )
                     yield True
                 print(self.task_timer.getTime(),flip_time)
                 yield True
         else:
             order = -1 if self.condition in ['RETCW', 'RETCON'] else 1
-            if 'CW' in self.condition:
-                # change the frame duration to sync to the TR
-                TR = 1.49
-                frame_duration = (21*TR)/(15*32)
             for ci in range(2): # 8 cycles
-                cycle_length = 32 if 'CW' in self.condition else 28 # shorten next loop, adds 4s blank
-                for fi, frame in enumerate(range(cycle_length*15)[::order]): # 32/28 sec at 15Hz
-                    flip_time = initial_wait + (ci*32*15+fi) * frame_duration - 1/config.FRAME_RATE
+                display_length = cycle_length if 'CW' in self.condition else 28 # shorten next loop, adds 4s blank
+                for fi, frame in enumerate(range(int(display_length*15))[::order]): # 32/28 sec at 15Hz
+                    flip_time = initial_wait + (ci*cycle_length*15+fi) * frame_duration - 1/config.FRAME_RATE
                     image_idx = self._images_random[ci*32*15+fi]
                     self.img.image = self._images[..., image_idx]
                     self.img.mask = self._apertures[..., frame]
@@ -178,13 +198,14 @@ class Retinotopy(Task):
                     self.img.draw(exp_win)
                     if ctl_win:
                         self.img.draw(ctl_win)
-                    yield True
-                    real_flip_time = self._exp_win_last_flip_time - self._exp_win_first_flip_time
 
                     exp_win.callOnFlip(
                         self._log_event,
-                        {'image_idx': image_idx, 'aperture': frame}
+                        {'condition': self.condition, 'image_idx': image_idx, 'aperture': frame},
+                        clock='flip'
                     )
+                    yield True
+
                 if 'CW' not in self.condition:
                     yield True # blank
         yield True

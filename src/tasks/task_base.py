@@ -80,7 +80,6 @@ class Task(object):
         self._flip_all_windows(exp_win, ctl_win, True)
 
     def run(self, exp_win, ctl_win):
-
         self.task_timer = core.Clock()
         flip_idx = 0
 
@@ -113,8 +112,12 @@ class Task(object):
         if hasattr(self, "_restart"):
             self._restart()
 
-    def _log_event(self, event):
-        event.update({"onset": self.task_timer.getTime(),"sample":time.monotonic()})
+    def _log_event(self, event, clock='task'):
+        if clock == 'task':
+            onset = self.task_timer.getTime()
+        elif clock == 'flip':
+            onset = self._exp_win_last_flip_time - self._exp_win_first_flip_time
+        event.update({"onset": onset, "sample": time.monotonic()})
         self._events.append(event)
 
     def _save(self):
