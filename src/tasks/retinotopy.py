@@ -115,13 +115,18 @@ class Retinotopy(Task):
 
     def _run_condition(self, exp_win, ctl_win):
 
+        frame_duration = 1/15.
+
         initial_wait = 16 if self.condition == 'RETBAR' else 22
+        initial_wait = 2 if self.condition == 'RETBAR' else 4
         yield True
+        # wait until it's almost time to render first frame
         yield from utils.wait_until_yield(
             self.task_timer,
-            initial_wait - 1,
+            initial_wait - .2,
             keyboard_accuracy=.001,
             hogCPUperiod=2/config.FRAME_RATE)
+
         if 'BAR' in self.condition:
             middle_blank = 12
             conds = np.asarray([0,1,0,1,2,3,2,3])
@@ -129,7 +134,7 @@ class Retinotopy(Task):
                 order = 1-(ci%4>1)*2
                 for fi, frame in enumerate(range(28*15)[::order]):
                     flip_time = (initial_wait + (ci>3) * middle_blank +
-                        (ci*32*15+fi) * 4/config.FRAME_RATE
+                        (ci*32*15+fi) * frame_duration
                         - 1/config.FRAME_RATE)
 
                     #flipVert = 1 - 2*(ci in [3,6,7])
@@ -138,7 +143,7 @@ class Retinotopy(Task):
                     self.img.image = self._images[..., image_idx]
                     self.img.mask = self._apertures[..., start_idx+frame]
 
-                    yield from utils.wait_until_yield
+                    yield from utils.wait_until_yield(
                         self.task_timer,
                         flip_time,
                         keyboard_accuracy=.001,
@@ -152,15 +157,19 @@ class Retinotopy(Task):
                 yield True
         else:
             order = -1 if self.condition in ['RETCW', 'RETCON'] else 1
-            for ci in range(8): # 8 cycles
+            if 'CW' in self.condition:
+                # change the frame duration to sync to the TR
+                TR = 1.49
+                frame_duration = (21*TR)/(15*32)
+            for ci in range(2): # 8 cycles
                 cycle_length = 32 if 'CW' in self.condition else 28 # shorten next loop, adds 4s blank
                 for fi, frame in enumerate(range(cycle_length*15)[::order]): # 32/28 sec at 15Hz
-                    flip_time = initial_wait + (ci*32*15+fi) * 4/config.FRAME_RATE - 1/config.FRAME_RATE
+                    flip_time = initial_wait + (ci*32*15+fi) * frame_duration - 1/config.FRAME_RATE
                     image_idx = self._images_random[ci*32*15+fi]
                     self.img.image = self._images[..., image_idx]
                     self.img.mask = self._apertures[..., frame]
 
-                    yield from utils.wait_until_yield
+                    yield from utils.wait_until_yield(
                         self.task_timer,
                         flip_time,
                         keyboard_accuracy=.001,
@@ -170,14 +179,20 @@ class Retinotopy(Task):
                     if ctl_win:
                         self.img.draw(ctl_win)
                     yield True
-                    flip_time = self._exp_win_last_flip_time - self._exp_win_first_flip_time
+                    real_flip_time = self._exp_win_last_flip_time - self._exp_win_first_flip_time
+
+                    exp_win.callOnFlip(
+                        self._log_event,
+                        {'image_idx': image_idx, 'aperture': frame}
+                    )
                 if 'CW' not in self.condition:
                     yield True # blank
+        yield True
 
-        utils.wait_until(self.task_timer, self.duration)
-
-    def _save(self):
-        return False
+        yield from utils.wait_until_yield(
+            self.task_timer,
+            32,#self.duration,
+            keyboard_accuracy=.001)
 
     def unload(self):
         del self._apertures
