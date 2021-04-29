@@ -135,7 +135,7 @@ class Retinotopy(Task):
 
         initial_wait = 16 if self.condition == 'RETBAR' else 22
         initial_wait = 2 if self.condition == 'RETBAR' else 4
-
+        middle_blank = 0
         cycle_length = 21*config.TR # 31.29, a bit shorter than 32s
         yield True
         # wait until it's almost time to render first frame
@@ -212,9 +212,9 @@ class Retinotopy(Task):
 
         yield from utils.wait_until_yield(
             self.task_timer,
-            32,#self.duration,
+            initial_wait * 2 + ((ci+1)*cycle_length*15+fi) * frame_duration + middle_blank,
             keyboard_accuracy=.001)
 
     def unload(self):
-        del self._apertures
-        del self._images
+        del self._apertures, self._images
+        del self.img, self._images_random, self.fixation_dot

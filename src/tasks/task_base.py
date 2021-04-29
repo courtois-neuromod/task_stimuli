@@ -44,6 +44,9 @@ class Task(object):
             self._progress_bar_refresh_rate = config.FRAME_RATE
 
     def _setup(self, exp_win):
+        self._exp_win_first_flip_time = None
+        self._exp_win_last_flip_time = None
+        self._ctl_win_last_flip_time = None
         pass
 
     def _generate_unique_filename(self, suffix, ext="tsv"):
@@ -67,8 +70,13 @@ class Task(object):
 
     def _flip_all_windows(self, exp_win, ctl_win=None, clearBuffer=True):
         if not ctl_win is None:
-            self._ctl_win_last_flip_time = ctl_win.flip(clearBuffer=clearBuffer)
-        self._exp_win_last_flip_time = exp_win.flip(clearBuffer=clearBuffer)
+            ctl_win.timeOnFlip(self, '_ctl_win_last_flip_time')
+            ctl_win.flip(clearBuffer=clearBuffer)
+
+        if not self._exp_win_first_flip_time:
+            exp_win.timeOnFlip(self, '_exp_win_first_flip_time')
+        exp_win.timeOnFlip(self, '_exp_win_last_flip_time')
+        exp_win.flip(clearBuffer=clearBuffer)
 
     def instructions(self, exp_win, ctl_win):
         if hasattr(self, "_instructions"):
@@ -87,8 +95,6 @@ class Task(object):
             # yield first to allow external draw before flip
             yield
             self._flip_all_windows(exp_win, ctl_win, clearBuffer)
-            if not hasattr(self, "_exp_win_first_flip_time"):
-                self._exp_win_first_flip_time = self._exp_win_last_flip_time
             # increment the progress bar depending on task flip rate
             if self.progress_bar:
                 if flip_idx % self._progress_bar_refresh_rate == 0:
