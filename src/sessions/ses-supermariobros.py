@@ -4,7 +4,7 @@ import retro
 
 # point to a copy of the whole gym-retro with custom states and scenarii
 retro.data.Integrations.add_custom_path(
-        os.path.join(os.getcwd(), "data", "videogames", "supermariobros")
+        os.path.join(os.getcwd(), "data", "videogames", "mario")
 )
 
 from ..tasks import images, videogame, memory, task_base
@@ -26,7 +26,7 @@ levels_scenario = [
     ("Level1-1", "scenario"),
     ("Level1-2", "scenario"),
     ("Level1-3", "scenario")]
-random.shuffle(levels_scenario)  # randomize order
+#random.shuffle(levels_scenario)  # randomize order
 
 TASKS = sum(
     [

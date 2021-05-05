@@ -87,8 +87,13 @@ class VideoGameBase(Task):
         self.inttype = inttype
 
     def _setup(self, exp_win):
-        self.game_sound = SoundDeviceBlockStream(stereo=True, blockSize=735)
         self._first_frame = self.emulator.reset()
+        first_sound_chunk = self.emulator.em.get_audio()
+        blockSize = first_sound_chunk.shape[0]
+        self.game_sound = SoundDeviceBlockStream(
+            sampleRate = self.emulator.em.get_audio_rate(),
+            stereo=(first_sound_chunk.ndim==2 & first_sound_chunk.shape[1]==2),
+            blockSize=blockSize)
 
         min_ratio = min(
             exp_win.size[0] / self._first_frame.shape[1],
@@ -107,7 +112,7 @@ class VideoGameBase(Task):
         )
 
     def _transform_soundblock(self, sound_block):
-        return sound_block[:735] / float(2 ** 15)
+        return sound_block[:self.game_sound.blockSize] / float(2 ** 15)
 
     def _render_graphics_sound(self, obs, sound_block, exp_win, ctl_win):
         self.game_vis_stim.image = obs / 255.0
