@@ -11,7 +11,8 @@ from src.shared import parser, config, screen
 
 def run(parsed):
     # initializing the screen need to be done before loading any psychopy
-    screen.init_exp_screen()
+    if not parsed.no_force_resolution:
+        screen.init_exp_screen()
     try:
         ses_mod = importlib.import_module('src.sessions.ses-%s'%parsed.tasks)
         tasks = ses_mod.get_tasks(parsed) if hasattr(ses_mod, 'get_tasks') else ses_mod.TASKS
@@ -33,7 +34,8 @@ def run(parsed):
             parsed.record_movie,
             )
     finally:
-        screen.reset_exp_screen()
+        if not parsed.no_force_resolution:
+            screen.reset_exp_screen()
 
 def run_profiled(parsed):
     import cProfile
