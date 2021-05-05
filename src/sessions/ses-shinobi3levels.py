@@ -39,6 +39,7 @@ TASKS = sum(
                 max_duration=10
                 * 60,  # if when level completed or dead we exceed that time in secs, stop the task
                 name=f"task-shinobi_run-{run+1:02d}",
+                instruction="Let's play Shinobi III: {state_name}\nHave fun!",
                 # post_level_ratings = [(q, 7) for q in flow_ratings]
             ),
             task_base.Pause(),

@@ -136,7 +136,7 @@ class VideoGameBase(Task):
 
 class VideoGame(VideoGameBase):
 
-    DEFAULT_INSTRUCTION = "Let's play a video game.\n%s: %s\nHave fun!"
+    DEFAULT_INSTRUCTION = "Let's play {game_name}: {state_name}\nHave fun!"
 
     def __init__(
         self,
@@ -153,7 +153,9 @@ class VideoGame(VideoGameBase):
 
     def _instructions(self, exp_win, ctl_win):
 
-        instruction = self.instruction % (self.game_name, self.state_name)
+        instruction = self.instruction.format(
+            **{'game_name':self.game_name,
+             'state_name':self.state_name})
 
         screen_text = visual.TextStim(
             exp_win,
