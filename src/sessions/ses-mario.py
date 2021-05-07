@@ -28,6 +28,7 @@ levels_scenario = [
     ("Level1-3", "scenario")]
 #random.shuffle(levels_scenario)  # randomize order
 
+
 TASKS = sum(
     [
         [
@@ -39,8 +40,9 @@ TASKS = sum(
                 repeat_scenario=True,
                 max_duration=10
                 * 60,  # if when level completed or dead we exceed that time in secs, stop the task
-                name=f"task-supermariobros_run-{run+1:02d}",
-                # post_level_ratings = [(q, 7) for q in flow_ratings]
+                name=f"task-mario_run-{run+1:02d}",
+                instruction="playing Super Mario Bros {state_name} \n\n Let's-a go!",
+                # post_level_ratings = [(q, 7) for q in flow_ratings],
             ),
             task_base.Pause(),
         ]

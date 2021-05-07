@@ -258,7 +258,7 @@ class VideoGame(VideoGameBase):
             },
         )
         yield True
-        _nextFrameT = self.task_timer.getTime()
+        _nextFrameT = self._retraceInterval
         while not _done:
             level_step += 1
             while _nextFrameT > (self.task_timer.getTime() -
@@ -546,7 +546,7 @@ class VideoGameMultiLevel(VideoGame):
 
     def _run(self, exp_win, ctl_win):
 
-        exp_win.waitBlanking = False
+        #exp_win.waitBlanking = False
 
         self._nlevels = 0
         while True:
@@ -581,7 +581,7 @@ class VideoGameMultiLevel(VideoGame):
             if time_exceeded or not self._repeat_scenario_multilevel:
                 break
 
-        exp_win.waitBlanking = True
+        #exp_win.waitBlanking = True
 
 
 class VideoGameReplay(VideoGameBase):
