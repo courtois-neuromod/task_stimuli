@@ -10,6 +10,7 @@ from ..shared import fmri, meg, config
 class Task(object):
 
     DEFAULT_INSTRUCTION = ""
+    PROGRESS_BAR_FORMAT = '{l_bar}{bar}{r_bar}'
 
     def __init__(self, name, instruction=None):
         self.name = name
@@ -38,7 +39,9 @@ class Task(object):
         self._setup(exp_win)
         # initialize a progress bar if we know the duration of the task
         self.progress_bar = (
-            tqdm.tqdm(total=self.duration) if hasattr(self, "duration") else False
+            tqdm.tqdm(total=self.duration,
+            bar_format=self.PROGRESS_BAR_FORMAT,
+            ) if hasattr(self, "duration") else False
         )
         if not hasattr(self, "_progress_bar_refresh_rate"):
             self._progress_bar_refresh_rate = config.FRAME_RATE
@@ -97,7 +100,7 @@ class Task(object):
             self._flip_all_windows(exp_win, ctl_win, clearBuffer)
             # increment the progress bar depending on task flip rate
             if self.progress_bar:
-                if flip_idx % self._progress_bar_refresh_rate == 0:
+                if self._progress_bar_refresh_rate and flip_idx % self._progress_bar_refresh_rate == 0:
                     self.progress_bar.update(1)
             flip_idx += 1
 
@@ -110,6 +113,8 @@ class Task(object):
             for clearBuffer in self._stop(exp_win, ctl_win):
                 yield
                 self._flip_all_windows(exp_win, ctl_win, clearBuffer)
+        if self.progress_bar:
+            self.progress_bar.close()
         # 2 flips to clear screen and backbuffer
         for i in range(2):
             self._flip_all_windows(exp_win, ctl_win, True)
