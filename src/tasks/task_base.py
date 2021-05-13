@@ -47,6 +47,9 @@ class Task(object):
             self._progress_bar_refresh_rate = config.FRAME_RATE
 
     def _setup(self, exp_win):
+        # needs to be the 1rst callbacks
+        exp_win.timeOnFlip(self, '_exp_win_last_flip_time')
+        exp_win.timeOnFlip(self, '_exp_win_first_flip_time')
         self._exp_win_first_flip_time = None
         self._exp_win_last_flip_time = None
         self._ctl_win_last_flip_time = None
@@ -76,10 +79,9 @@ class Task(object):
             ctl_win.timeOnFlip(self, '_ctl_win_last_flip_time')
             ctl_win.flip(clearBuffer=clearBuffer)
 
-        if not self._exp_win_first_flip_time:
-            exp_win.timeOnFlip(self, '_exp_win_first_flip_time')
-        exp_win.timeOnFlip(self, '_exp_win_last_flip_time')
         exp_win.flip(clearBuffer=clearBuffer)
+        # set callback for next flip, to be the first callback for other callbacks to use
+        exp_win.timeOnFlip(self, '_exp_win_last_flip_time')
 
     def instructions(self, exp_win, ctl_win):
         if hasattr(self, "_instructions"):
@@ -104,16 +106,13 @@ class Task(object):
                     self.progress_bar.update(1)
             flip_idx += 1
 
-        if self.progress_bar:
-            self.progress_bar.clear()
-            self.progress_bar.close()
-
     def stop(self, exp_win, ctl_win):
         if hasattr(self, "_stop"):
             for clearBuffer in self._stop(exp_win, ctl_win):
                 yield
                 self._flip_all_windows(exp_win, ctl_win, clearBuffer)
         if self.progress_bar:
+            self.progress_bar.clear()
             self.progress_bar.close()
         # 2 flips to clear screen and backbuffer
         for i in range(2):
