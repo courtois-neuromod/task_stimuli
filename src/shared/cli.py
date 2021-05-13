@@ -214,7 +214,7 @@ Thanks for your participation!"""
 
     print("Here are the stimuli planned for today\n" + "_" * 50)
     for task in all_tasks:
-        print("- " + task.name)
+        print(f"- {task.name} {getattr(task,'duration','')}" )
     print("_" * 50)
 
     try:
