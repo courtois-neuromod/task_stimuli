@@ -37,7 +37,6 @@ class Retinotopy(Task):
             exp_win,
             size=.15,
             units='deg',
-            opacity=.8,
             color=self.DOT_COLORS[0],
             colorSpace='rgb255'
         )
@@ -65,8 +64,8 @@ class Retinotopy(Task):
         elif self.condition in ['RETEXP', 'RETCON', 'RETRINGS']:
             aperture_file = '/apertures_ring.npz'
         elif self.condition == 'RETBAR':
+            self.ncycles = 8
             aperture_file =  'apertures_bars.npz'
-            self.duration = 8*32 + 16*2 + 12 # cycles + initial_final_waits + middle_blank
         self._apertures = np.load(f"data/retinotopy/{aperture_file}")['apertures'].astype(np.float32)/128.-1
 
         self.cycle_length = 21*config.TR # a bit less than 32s for TR=1.49
@@ -84,7 +83,6 @@ class Retinotopy(Task):
             self._images_random[self._images_random==100] = 0
 
         self._progress_bar_refresh_rate = False
-
 
         self.events = pandas.DataFrame()
         super()._setup(exp_win)
@@ -111,17 +109,24 @@ class Retinotopy(Task):
         color_state = 0
         dot_next_change = 0
         dot_change_idx = 0
-
+        rt_sum = 0
+        n_keypresses = 0
         for do_yield in self._run_condition(exp_win, ctl_win):
             #TODO: log responses
             keypresses = event.getKeys(self.RESPONSE_KEY, timeStamped=self.task_timer)
             for k in keypresses:
                 rt = k[1] - dot_last_change
+                rt_sum += rt
+                n_keypresses += 1
+                mean_rt = rt_sum / n_keypresses
                 self._log_event({
                     'trial_type':'response',
                     'trial_number': dot_change_idx-1,
                     'response_time': rt
                 })
+                self.progress_bar.set_description(
+                    f"({dot_change_idx-1}/{n_keypresses}), mean RT: {mean_rt}"
+                )
 
             if self.task_timer.getTime() > dot_next_change:
                 color_state = (color_state+1)%2
@@ -148,8 +153,8 @@ class Retinotopy(Task):
                     self.fixation_dot.draw(ctl_win)
                 previous_flip_time = self._exp_win_last_flip_time
                 yield True
+                #print(self._exp_win_last_flip_time, previous_flip_time)
                 self.progress_bar.update(self._exp_win_last_flip_time - previous_flip_time)
-
 
     def _run_condition(self, exp_win, ctl_win):
 
@@ -194,7 +199,6 @@ class Retinotopy(Task):
                         clock='flip'
                     )
                     yield True
-                print(self.task_timer.getTime(),flip_time)
                 yield True
         else:
             orders = [-1 if self.condition in ['RETCW', 'RETCON'] else 1] * self.ncycles
@@ -208,7 +212,7 @@ class Retinotopy(Task):
                 for fi, frame in enumerate(range(int(display_length*15))[::order]): # 32/28 sec at 15Hz
                     flip_time = (self.initial_wait +
                         (ci*self.cycle_length*15+fi) * frame_duration +
-                        self.middle_blank - 1/config.FRAME_RATE)
+                        (ci>self.ncycles//2) * self.middle_blank - 1/config.FRAME_RATE)
                     image_idx = self._images_random[ci*32*15+fi]
                     self.img.image = self._images[..., image_idx]
                     self.img.mask = self._apertures[..., frame]
@@ -236,7 +240,7 @@ class Retinotopy(Task):
 
         yield from utils.wait_until_yield(
             self.task_timer,
-            self.initial_wait * 2 + ((ci+1)*self.cycle_length*15+fi) * frame_duration + self.middle_blank,
+            self.duration,
             keyboard_accuracy=.001)
 
     def unload(self):
