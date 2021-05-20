@@ -28,6 +28,11 @@ def parse_args():
     )
     parser.add_argument("--ctl_win", help="show control window", action="store_true")
     parser.add_argument(
+        "--no-force-resolution",
+        help="do not run xrandr to force screen resolution",
+        action="store_true")
+
+    parser.add_argument(
         "--run_on_battery",
         help="allow the script to run on battery",
         action="store_true",
