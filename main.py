@@ -4,15 +4,19 @@ from subprocess import Popen
 import os, sys, importlib
 
 from src.shared import parser, config, screen
+from src.shared.didyoumean import suggest_session_tasks
+
 
 def run(parsed):
     # initializing the screen need to be done before loading any psychopy
-    screen.init_exp_screen()
+    if not parsed.no_force_resolution:
+        screen.init_exp_screen()
     try:
         ses_mod = importlib.import_module('src.sessions.ses-%s'%parsed.tasks)
         tasks = ses_mod.get_tasks(parsed) if hasattr(ses_mod, 'get_tasks') else ses_mod.TASKS
     except ImportError:
-        raise(ValueError('session tasks file cannot be found for %s'%parsed.session))
+        suggestion = suggest_session_tasks(parsed.tasks)
+        raise(ValueError('session tasks file cannot be found for %s. Did you mean %s ?'%(parsed.tasks, suggestion)))
     from src.shared import cli
     try:
         cli.main_loop(
@@ -29,7 +33,8 @@ def run(parsed):
             parsed.record_movie,
             )
     finally:
-        screen.reset_exp_screen()
+        if not parsed.no_force_resolution:
+            screen.reset_exp_screen()
 
 def run_profiled(parsed):
     import cProfile

@@ -34,7 +34,7 @@ Please keep your eyes open."""
             grey = [
                 -float(frameN) / config.FRAME_RATE / config.INSTRUCTION_DURATION
             ] * 3
-            exp_win.setColor(grey)
+            exp_win.setColor(grey, colorSpace='rgb')
             screen_text.draw(exp_win)
             if ctl_win:
                 ctl_win.setColor(grey)
@@ -83,7 +83,7 @@ Please keep your eyes open."""
         self.movie_stim.stop()
         for frameN in range(config.FRAME_RATE * FADE_TO_GREY_DURATION):
             grey = [float(frameN) / config.FRAME_RATE / FADE_TO_GREY_DURATION - 1] * 3
-            exp_win.setColor(grey)
+            exp_win.setColor(grey, colorSpace='rgb')
             if ctl_win:
                 ctl_win.setColor(grey)
             yield True
