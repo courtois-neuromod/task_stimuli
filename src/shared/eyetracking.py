@@ -69,7 +69,9 @@ class EyetrackerCalibration(Task):
 
     def _instructions(self, exp_win, ctl_win):
         instruction_text = """We're going to calibrate the eyetracker.
-Please look at the markers that appear on the screen."""
+Please look at the markers that appear on the screen.
+
+While awaiting for the calibration to start please roll your eyes in one direction then in the other."""
         screen_text = visual.TextStim(
             exp_win,
             text=instruction_text,
@@ -85,7 +87,6 @@ Please look at the markers that appear on the screen."""
 
     def _setup(self, exp_win):
         self.use_fmri = False
-        self._pupils_list = []
 
     def _pupil_cb(self, pupil):
         if pupil["timestamp"] > self.task_stop:
@@ -95,97 +96,108 @@ Please look at the markers that appear on the screen."""
             self._pupils_list.append(pupil)
 
     def _run(self, exp_win, ctl_win):
-        while True:
-            allKeys = event.getKeys([CALIBRATE_HOTKEY])
-            start_calibration = False
-            for key in allKeys:
-                if key == CALIBRATE_HOTKEY:
-                    start_calibration = True
-            if start_calibration:
-                break
-            yield False
-        logging.info("calibration started")
-        print("calibration started")
+        calibration_success = False
+        while not calibration_success:
+            while True:
+                allKeys = event.getKeys([CALIBRATE_HOTKEY])
+                start_calibration = False
+                for key in allKeys:
+                    if key == CALIBRATE_HOTKEY:
+                        start_calibration = True
+                if start_calibration:
+                    break
+                yield False
+            logging.info("calibration started")
+            print("calibration started")
 
-        window_size_frame = exp_win.size - MARKER_SIZE * 2
-        circle_marker = visual.Circle(
-            exp_win,
-            edges=64,
-            units="pixels",
-            lineColor=None,
-            fillColor=self.marker_fill_color,
-            autoLog=False,
-        )
+            window_size_frame = exp_win.size - MARKER_SIZE * 2
+            circle_marker = visual.Circle(
+                exp_win,
+                edges=64,
+                units="pixels",
+                lineColor=None,
+                fillColor=self.marker_fill_color,
+                autoLog=False,
+            )
 
-        markers_order = np.arange(len(self.markers))
-        if self.markers_order == "random":
-            markers_order = np.random.permutation(markers_order)
+            markers_order = np.arange(len(self.markers))
+            if self.markers_order == "random":
+                markers_order = np.random.permutation(markers_order)
 
-        self.all_refs_per_flip = []
+            self.all_refs_per_flip = []
+            self._pupils_list = []
 
-        radius_anim = np.hstack(
-            [
-                np.linspace(MARKER_SIZE, 0, MARKER_DURATION_FRAMES / 2),
-                np.linspace(0, MARKER_SIZE, MARKER_DURATION_FRAMES / 2),
-            ]
-        )
+            radius_anim = np.hstack(
+                [
+                    np.linspace(MARKER_SIZE, 0, MARKER_DURATION_FRAMES // 2),
+                    np.linspace(0, MARKER_SIZE, MARKER_DURATION_FRAMES // 2),
+                ]
+            )
 
-        self.task_start = time.monotonic()
-        self.task_stop = np.inf
-        self.eyetracker.set_pupil_cb(self._pupil_cb)
+            self.task_start = time.monotonic()
+            self.task_stop = np.inf
+            self.eyetracker.set_pupil_cb(self._pupil_cb)
 
-        while not len(self._pupils_list):  # wait until we get at least a pupil
-            yield False
+            while not len(self._pupils_list):  # wait until we get at least a pupil
+                yield False
 
-        exp_win.logOnFlip(
-            level=logging.EXP,
-            msg="eyetracker_calibration: starting at %f" % time.time(),
-        )
-        for site_id in markers_order:
-            marker_pos = self.markers[site_id]
-            pos = (marker_pos - 0.5) * window_size_frame
-            circle_marker.pos = pos
             exp_win.logOnFlip(
                 level=logging.EXP,
-                msg="calibrate_position,%d,%d,%d,%d"
-                % (marker_pos[0], marker_pos[1], pos[0], pos[1]),
+                msg="eyetracker_calibration: starting at %f" % time.time(),
             )
-            exp_win.callOnFlip(
-                self._log_event, {"marker_x": pos[0], "marker_y": pos[1]}
-            )
-            for f, r in enumerate(radius_anim):
-                circle_marker.radius = r
-                circle_marker.draw(exp_win)
-                circle_marker.draw(ctl_win)
+            for site_id in markers_order:
+                marker_pos = self.markers[site_id]
+                pos = (marker_pos - 0.5) * window_size_frame
+                circle_marker.pos = pos
+                exp_win.logOnFlip(
+                    level=logging.EXP,
+                    msg="calibrate_position,%d,%d,%d,%d"
+                    % (marker_pos[0], marker_pos[1], pos[0], pos[1]),
+                )
+                exp_win.callOnFlip(
+                    self._log_event, {"marker_x": pos[0], "marker_y": pos[1]}
+                )
+                for f, r in enumerate(radius_anim):
+                    circle_marker.radius = r
+                    circle_marker.draw(exp_win)
+                    circle_marker.draw(ctl_win)
 
-                if (
-                    f > CALIBRATION_LEAD_IN
-                    and f < len(radius_anim) - CALIBRATION_LEAD_OUT
-                ):
-                    screen_pos = pos + exp_win.size / 2
-                    norm_pos = screen_pos / exp_win.size
-                    ref = {
-                        "norm_pos": norm_pos.tolist(),
-                        "screen_pos": screen_pos.tolist(),
-                        "timestamp": time.monotonic(),  # =pupil frame timestamp on same computer
-                    }
-                    self.all_refs_per_flip.append(ref)  # accumulate all refs
-                yield True
-        yield True
-        self.task_stop = time.monotonic()
-        logging.info(
-            f"calibrating on {len(self._pupils_list)} pupils and {len(self.all_refs_per_flip)} markers"
-        )
-        self.eyetracker.calibrate(self._pupils_list, self.all_refs_per_flip)
+                    if (
+                        f > CALIBRATION_LEAD_IN
+                        and f < len(radius_anim) - CALIBRATION_LEAD_OUT
+                    ):
+                        screen_pos = pos + exp_win.size / 2
+                        norm_pos = screen_pos / exp_win.size
+                        ref = {
+                            "norm_pos": norm_pos.tolist(),
+                            "screen_pos": screen_pos.tolist(),
+                            "timestamp": time.monotonic(),  # =pupil frame timestamp on same computer
+                        }
+                        self.all_refs_per_flip.append(ref)  # accumulate all refs
+                    yield True
+            yield True
+            self.task_stop = time.monotonic()
+            logging.info(
+                f"calibrating on {len(self._pupils_list)} pupils and {len(self.all_refs_per_flip)} markers"
+            )
+            self.eyetracker.calibrate(self._pupils_list, self.all_refs_per_flip)
+            while True:
+                notes = getattr(self.eyetracker, '_last_calibration_notification',None)
+                if notes:
+                    calibration_success = notes['topic'].startswith("notify.calibration.successful")
+                    if not calibration_success:
+                        print('#### CALIBRATION FAILED: restart with <c> ####')
+                    break
+
 
     def stop(self, exp_win, ctl_win):
         self.eyetracker.unset_pupil_cb()
         yield
 
     def _save(self):
-        if hasattr(self, "all_pupils"):
-            fname = self._generate_unique_filename("calib-data", ".npz")
-            np.savez(fname, pupils=self.all_pupils, markers=self.all_refs_per_flip)
+        if hasattr(self, "_pupils_list"):
+            fname = self._generate_unique_filename("calib-data", "npz")
+            np.savez(fname, pupils=self._pupils_list, markers=self.all_refs_per_flip)
 
 
 from subprocess import Popen
@@ -204,6 +216,9 @@ def nonblocking(lock):
 
 
 class EyeTrackerClient(threading.Thread):
+
+    EYE = "eye0"
+
     def __init__(self, output_path, output_fname_base, profile=False, debug=False):
         super(EyeTrackerClient, self).__init__()
         self.stoprequest = threading.Event()
@@ -275,12 +290,26 @@ class EyeTrackerClient(threading.Thread):
             }
         )
 
+        # restart 2d detector plugin with custom output settings
+        self.send_recv_notification(
+            {
+                "subject": "start_eye_plugin",
+                "name": "Detector2DPlugin",
+                "target": self.EYE,
+                "args": {
+                    "properties": {
+                        "intensity_range": 4,
+                    }
+                },
+            }
+        )
+
         # stop a bunch of eye plugins for performance
-        for plugin in ["NDSI_Manager", "Pye3DPlugin"]:
+        for plugin in ["NDSI_Manager"]:
             self.send_recv_notification(
                 {
                     "subject": "stop_eye_plugin",
-                    "target": "eye0",
+                    "target": self.EYE,
                     "name": plugin,
                 }
             )
@@ -289,7 +318,7 @@ class EyeTrackerClient(threading.Thread):
             {
                 "subject": "start_eye_plugin",
                 "name": "Aravis_Source",
-                "target": "eye0",
+                "target": self.EYE,
                 "args": CAPTURE_SETTINGS,
             }
         )
@@ -337,7 +366,8 @@ class EyeTrackerClient(threading.Thread):
         ipc_sub_port = int(self._req_socket.recv())
         logging.info(f"ipc_sub_port: {ipc_sub_port}")
         self.pupil_monitor = Msg_Receiver(
-            self._ctx, f"tcp://localhost:{ipc_sub_port}", topics=("gaze", "pupil")
+            self._ctx, f"tcp://localhost:{ipc_sub_port}",
+            topics=("gaze", "pupil", "notify.calibration.successful", "notify.calibration.failed")
         )
         while not self.stoprequest.isSet():
             msg = self.pupil_monitor.recv()
@@ -350,6 +380,8 @@ class EyeTrackerClient(threading.Thread):
                             self._pupil_cb(tmp)
                     elif topic.startswith("gaze"):
                         self.gaze = tmp
+                    elif topic.startswith("notify.calibration"):
+                        self._last_calibration_notification = tmp
             time.sleep(1e-3)
         logging.info("eyetracker listener: stopping")
 
@@ -377,14 +409,15 @@ class EyeTrackerClient(threading.Thread):
         calib_data = {"ref_list": ref_list, "pupil_list": pupil_list}
 
         logging.info("sending calibration data to pupil")
-        self.send_recv_notification(
+        calib_res = self.send_recv_notification(
             {
                 "subject": "start_plugin",
                 "name": "Gazer2D",
                 "args": {"calib_data": calib_data},
-                "raise_calibration_error": True,
+                "raise_calibration_error": False,
             }
         )
+
 
 
 class GazeDrawer:

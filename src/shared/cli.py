@@ -80,8 +80,6 @@ def run_task(
 
     if eyetracker:
         eyetracker.stop_recording()
-    # now that time is less sensitive: save files
-    task.save()
 
     run_task_loop(
         task.stop(exp_win, ctl_win),
@@ -89,6 +87,9 @@ def run_task(
         gaze_drawer,
         record_movie=exp_win if record_movie else False,
     )
+
+    # now that time is less sensitive: save files
+    task.save()
 
     return shortcut_evt
 
@@ -132,7 +133,7 @@ def main_loop(
     logfile_path = os.path.join(log_path, log_name_prefix + ".log")
     log_file = logging.LogFile(logfile_path, level=logging.INFO, filemode="w")
 
-    exp_win = visual.Window(**config.EXP_WINDOW)
+    exp_win = visual.Window(**config.EXP_WINDOW, monitor=config.EXP_MONITOR)
     exp_win.mouseVisible = False
 
     if show_ctl_win:
@@ -214,7 +215,7 @@ Thanks for your participation!"""
 
     print("Here are the stimuli planned for today\n" + "_" * 50)
     for task in all_tasks:
-        print("- " + task.name)
+        print(f"- {task.name} {getattr(task,'duration','')}" )
     print("_" * 50)
 
     try:
