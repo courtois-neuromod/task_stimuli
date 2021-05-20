@@ -177,6 +177,8 @@ class Retinotopy(Task):
                         (ci*self.cycle_length*15+fi) * frame_duration
                         - 1/config.FRAME_RATE)
 
+                    exp_win.timeOnFlip(self, '_cycle_start')
+
                     #flipVert = 1 - 2*(ci in [3,6,7])
                     #flipHoriz = 1 - 2*(ci in [2])
                     image_idx = self._images_random[ci*32*15+fi]
@@ -199,6 +201,13 @@ class Retinotopy(Task):
                         clock='flip'
                     )
                     yield True
+                    self._events.append({
+                        'condition': self.condition,
+                        'trial_type': 'cycle',
+                        'onset': self._cycle_start,
+                        'duration': self._exp_win_last_flip_time - self._cycle_start
+                        })
+
                 yield True
         else:
             orders = [-1 if self.condition in ['RETCW', 'RETCON'] else 1] * self.ncycles
@@ -217,6 +226,8 @@ class Retinotopy(Task):
                     self.img.image = self._images[..., image_idx]
                     self.img.mask = self._apertures[..., frame]
 
+                    exp_win.timeOnFlip(self, '_cycle_start')
+
                     yield from utils.wait_until_yield(
                         self.task_timer,
                         flip_time,
@@ -233,7 +244,12 @@ class Retinotopy(Task):
                         clock='flip'
                     )
                     yield True
-
+                    self._events.append({
+                        'condition': self.condition,
+                        'trial_type': 'cycle',
+                        'onset': self._cycle_start,
+                        'duration': self._exp_win_last_flip_time - self._cycle_start
+                        })
                 if 'CW' not in self.condition:
                     yield True # blank
         yield True
