@@ -9,5 +9,6 @@ TASKS = [
         condition = condition,
         ncycles=4,
         name=f"task-retinotopy{condition}",
+        use_eyetracking=True,
     ) for condition in conditions #'RETCCW','RETCW','RETEXP','RETCON']
 ]
