@@ -26,3 +26,15 @@ def poll_windows():
         if (win.winType == "pyglet" and
                 hasattr(win.winHandle, "dispatch_events")):
             win.winHandle.dispatch_events()  # pump events
+
+def wait_until_yield(clock, deadline, hogCPUperiod=0.1, keyboard_accuracy=.0005):
+    sleep_until = deadline - hogCPUperiod
+    poll_windows()
+    current_time = clock.getTime()
+    while current_time < deadline:
+        if current_time < sleep_until:
+            time.sleep(keyboard_accuracy)
+            yield False
+
+        poll_windows()
+        current_time = clock.getTime()
