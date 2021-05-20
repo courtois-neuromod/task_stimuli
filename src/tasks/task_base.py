@@ -47,9 +47,6 @@ class Task(object):
             self._progress_bar_refresh_rate = config.FRAME_RATE
 
     def _setup(self, exp_win):
-        # needs to be the 1rst callbacks
-        exp_win.timeOnFlip(self, '_exp_win_last_flip_time')
-        exp_win.timeOnFlip(self, '_exp_win_first_flip_time')
         self._exp_win_first_flip_time = None
         self._exp_win_last_flip_time = None
         self._ctl_win_last_flip_time = None
@@ -93,7 +90,14 @@ class Task(object):
         self._flip_all_windows(exp_win, ctl_win, True)
 
     def run(self, exp_win, ctl_win):
+        # needs to be the 1rst callbacks
+        for attr in ['_exp_win_last_flip_time', '_exp_win_first_flip_time']:
+            exp_win.timeOnFlip(self, attr)
+
         self.task_timer = core.Clock()
+
+        if self.progress_bar:
+            self.progress_bar.reset()
         flip_idx = 0
 
         for clearBuffer in self._run(exp_win, ctl_win):
