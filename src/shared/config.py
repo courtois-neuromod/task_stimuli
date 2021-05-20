@@ -8,6 +8,8 @@ from psychopy.monitors import Monitor
 prefs.hardware["audioLib"] = ["sounddevice"]
 # prefs.hardware['general'] = ['glfw']
 
+TR = 1.49 #seconds
+
 OUTPUT_DIR = "output"
 
 EYETRACKING_ROI = (60, 30, 660, 450)
