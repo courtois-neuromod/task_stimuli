@@ -60,7 +60,7 @@ def run_task(
                 return shortcut_evt
 
     logging.info("GO")
-    if eyetracker and not shortcut_evt:
+    if eyetracker and not shortcut_evt and task.use_eyetracking:
         eyetracker.start_recording(task.name)
     # send start trigger/marker to MEG + Biopac (or anything else on parallel port)
     if task.use_meg and not shortcut_evt:
@@ -185,7 +185,7 @@ def main_loop(
         all_tasks.insert(
             0,
             video.VideoAudioCheckLoop(
-                setup_video_path[0], name="setup_soundcheck_video"
+                setup_video_path[0], name="setup_soundcheck_video",
             ),
         )
         all_tasks.insert(
@@ -234,7 +234,6 @@ Thanks for your participation!"""
                 log_path,
                 log_name_prefix,
                 use_fmri=use_fmri,
-                use_eyetracking=use_eyetracking,
                 use_meg=use_meg,
             )
             print("READY")

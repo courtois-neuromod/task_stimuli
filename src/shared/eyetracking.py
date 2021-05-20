@@ -72,7 +72,7 @@ class EyetrackerCalibration(Task):
         instruction_text = """We're going to calibrate the eyetracker.
 Please look at the markers that appear on the screen.
 
-While awaiting for the calibration to start please roll your eyes in one direction then in the other."""
+While awaiting for the calibration to start you will be asked to roll your eyes."""
         screen_text = visual.TextStim(
             exp_win,
             text=instruction_text,
@@ -88,6 +88,7 @@ While awaiting for the calibration to start please roll your eyes in one directi
 
     def _setup(self, exp_win):
         self.use_fmri = False
+        super()._setup(exp_win)
 
     def _pupil_cb(self, pupil):
         if pupil["timestamp"] > self.task_stop:
@@ -97,6 +98,17 @@ While awaiting for the calibration to start please roll your eyes in one directi
             self._pupils_list.append(pupil)
 
     def _run(self, exp_win, ctl_win):
+
+        roll_eyes_text = "Please roll your eyes ~2-3 times in clockwise and counterclockwise directions"
+
+        text_roll = visual.TextStim(
+            exp_win,
+            text=roll_eyes_text,
+            alignText="center",
+            color="white",
+            wrapWidth=config.WRAP_WIDTH,
+            )
+
         calibration_success = False
         while not calibration_success:
             while True:
@@ -107,6 +119,7 @@ While awaiting for the calibration to start please roll your eyes in one directi
                         start_calibration = True
                 if start_calibration:
                     break
+                text_roll.draw(exp_win)
                 yield False
             logging.info("calibration started")
             print("calibration started")
