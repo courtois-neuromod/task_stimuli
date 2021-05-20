@@ -108,6 +108,7 @@ class Retinotopy(Task):
 
         color_state = 0
         dot_next_change = 0
+        responded = False
         dot_change_idx = 0
         rt_sum = 0
         n_keypresses = 0
@@ -124,11 +125,14 @@ class Retinotopy(Task):
                     'trial_number': dot_change_idx-1,
                     'response_time': rt
                 })
-                self.progress_bar.set_description(
-                    f"({dot_change_idx-1}/{n_keypresses}), mean RT: {mean_rt}"
-                )
+                if not responded:
+                    self.progress_bar.set_description(
+                        f"({dot_change_idx-1}/{n_keypresses}), mean RT: {mean_rt}"
+                    )
+                responded = True
 
             if self.task_timer.getTime() > dot_next_change:
+                responded = False
                 color_state = (color_state+1)%2
                 self.fixation_dot.setColor(
                     self.DOT_COLORS[color_state],
@@ -159,6 +163,8 @@ class Retinotopy(Task):
     def _run_condition(self, exp_win, ctl_win):
 
         frame_duration = 1/15.
+
+        self._cycle_start = None
 
         yield True
         # wait until it's almost time to render first frame

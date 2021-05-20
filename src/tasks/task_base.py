@@ -91,8 +91,7 @@ class Task(object):
 
     def run(self, exp_win, ctl_win):
         # needs to be the 1rst callbacks
-        for attr in ['_exp_win_last_flip_time', '_exp_win_first_flip_time']:
-            exp_win.timeOnFlip(self, attr)
+        exp_win.timeOnFlip(self, '_exp_win_first_flip_time')
 
         self.task_timer = core.Clock()
 
