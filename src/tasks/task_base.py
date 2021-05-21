@@ -36,6 +36,11 @@ class Task(object):
         self.use_meg = use_meg
         self.use_eyetracking = use_eyetracking
         self._events = []
+
+        self._exp_win_first_flip_time = None
+        self._exp_win_last_flip_time = None
+        self._ctl_win_last_flip_time = None
+
         self._setup(exp_win)
         # initialize a progress bar if we know the duration of the task
         self.progress_bar = (
@@ -47,9 +52,6 @@ class Task(object):
             self._progress_bar_refresh_rate = config.FRAME_RATE
 
     def _setup(self, exp_win):
-        self._exp_win_first_flip_time = None
-        self._exp_win_last_flip_time = None
-        self._ctl_win_last_flip_time = None
         pass
 
     def _generate_unique_filename(self, suffix, ext="tsv"):

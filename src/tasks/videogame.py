@@ -87,6 +87,9 @@ class VideoGameBase(Task):
         self.inttype = inttype
 
     def _setup(self, exp_win):
+
+        super()._setup(exp_win)
+
         self._first_frame = self.emulator.reset()
         first_sound_chunk = self.emulator.em.get_audio()
         blockSize = first_sound_chunk.shape[0]
@@ -150,6 +153,7 @@ class VideoGame(VideoGameBase):
         self.max_duration = max_duration
         self.duration = max_duration
         self.post_level_ratings = post_level_ratings
+        self._completed = False
 
     def _instructions(self, exp_win, ctl_win):
 
@@ -266,7 +270,7 @@ class VideoGame(VideoGameBase):
                 time.sleep(.0001)
             self._handle_controller_presses(exp_win)
             keys = [k in self.pressed_keys for k in KEY_SET]
-            _obs, _rew, _done, _info = self.emulator.step(keys)
+            _obs, _rew, _done, self._game_info = self.emulator.step(keys)
             total_reward += _rew
             if _rew > 0:
                 exp_win.logOnFlip(level=logging.EXP, msg="Reward %f" % (total_reward))
@@ -282,7 +286,9 @@ class VideoGame(VideoGameBase):
             if not level_step % config.FRAME_RATE:
                 exp_win.logOnFlip(level=logging.EXP, msg="level step: %d" % level_step)
             yield True
+
             _nextFrameT += self._frameInterval
+        self._completed = self._completed or self._game_info['lives'] > -1
         self.game_sound.flush()
         self.game_sound.stop()
 
