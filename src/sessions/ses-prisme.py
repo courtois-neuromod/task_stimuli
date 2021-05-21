@@ -19,7 +19,7 @@ def get_tasks(parsed):
         f"sub-{parsed.subject}_ses-{parsed.session}_design.tsv",
     )
     tasks = [
-        Prisme(session_design_filename, IMAGE_PATH, run, name=f"task-prisme_run-{run}")
+        Prisme(session_design_filename, IMAGE_PATH, run, name=f"task-prisme_run-{run}",use_eyetracking=True)
         for run in range(1, fmri_runs + 1)
     ]
     return tasks
