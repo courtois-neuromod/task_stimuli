@@ -10,6 +10,7 @@ from ..shared import fmri, meg, config
 class Task(object):
 
     DEFAULT_INSTRUCTION = ""
+    PROGRESS_BAR_FORMAT = '{l_bar}{bar}{r_bar}'
 
     def __init__(self, name, instruction=None):
         self.name = name
@@ -38,12 +39,17 @@ class Task(object):
         self._setup(exp_win)
         # initialize a progress bar if we know the duration of the task
         self.progress_bar = (
-            tqdm.tqdm(total=self.duration) if hasattr(self, "duration") else False
+            tqdm.tqdm(total=self.duration,
+            bar_format=self.PROGRESS_BAR_FORMAT,
+            ) if hasattr(self, "duration") else False
         )
         if not hasattr(self, "_progress_bar_refresh_rate"):
             self._progress_bar_refresh_rate = config.FRAME_RATE
 
     def _setup(self, exp_win):
+        self._exp_win_first_flip_time = None
+        self._exp_win_last_flip_time = None
+        self._ctl_win_last_flip_time = None
         pass
 
     def _generate_unique_filename(self, suffix, ext="tsv"):
@@ -67,8 +73,12 @@ class Task(object):
 
     def _flip_all_windows(self, exp_win, ctl_win=None, clearBuffer=True):
         if not ctl_win is None:
-            self._ctl_win_last_flip_time = ctl_win.flip(clearBuffer=clearBuffer)
-        self._exp_win_last_flip_time = exp_win.flip(clearBuffer=clearBuffer)
+            ctl_win.timeOnFlip(self, '_ctl_win_last_flip_time')
+            ctl_win.flip(clearBuffer=clearBuffer)
+
+        exp_win.flip(clearBuffer=clearBuffer)
+        # set callback for next flip, to be the first callback for other callbacks to use
+        exp_win.timeOnFlip(self, '_exp_win_last_flip_time')
 
     def instructions(self, exp_win, ctl_win):
         if hasattr(self, "_instructions"):
@@ -80,31 +90,33 @@ class Task(object):
         self._flip_all_windows(exp_win, ctl_win, True)
 
     def run(self, exp_win, ctl_win):
+        # needs to be the 1rst callbacks
+        exp_win.timeOnFlip(self, '_exp_win_first_flip_time')
 
         self.task_timer = core.Clock()
-        frame_idx = 0
+
+        if self.progress_bar:
+            self.progress_bar.reset()
+        flip_idx = 0
 
         for clearBuffer in self._run(exp_win, ctl_win):
             # yield first to allow external draw before flip
             yield
             self._flip_all_windows(exp_win, ctl_win, clearBuffer)
-            if not hasattr(self, "_exp_win_first_flip_time"):
-                self._exp_win_first_flip_time = self._exp_win_last_flip_time
-            # increment the progress bar every second
+            # increment the progress bar depending on task flip rate
             if self.progress_bar:
-                frame_idx += 1
-                if not frame_idx % self._progress_bar_refresh_rate:
+                if self._progress_bar_refresh_rate and flip_idx % self._progress_bar_refresh_rate == 0:
                     self.progress_bar.update(1)
-
-        if self.progress_bar:
-            self.progress_bar.clear()
-            self.progress_bar.close()
+            flip_idx += 1
 
     def stop(self, exp_win, ctl_win):
         if hasattr(self, "_stop"):
             for clearBuffer in self._stop(exp_win, ctl_win):
                 yield
                 self._flip_all_windows(exp_win, ctl_win, clearBuffer)
+        if self.progress_bar:
+            self.progress_bar.clear()
+            self.progress_bar.close()
         # 2 flips to clear screen and backbuffer
         for i in range(2):
             self._flip_all_windows(exp_win, ctl_win, True)
@@ -113,8 +125,12 @@ class Task(object):
         if hasattr(self, "_restart"):
             self._restart()
 
-    def _log_event(self, event):
-        event.update({"onset": self.task_timer.getTime(),"sample":time.monotonic()})
+    def _log_event(self, event, clock='task'):
+        if clock == 'task':
+            onset = self.task_timer.getTime()
+        elif clock == 'flip':
+            onset = self._exp_win_last_flip_time - self._exp_win_first_flip_time
+        event.update({"onset": onset, "sample": time.monotonic()})
         self._events.append(event)
 
     def _save(self):
