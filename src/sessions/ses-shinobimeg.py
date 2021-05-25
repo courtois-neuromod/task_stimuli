@@ -10,16 +10,16 @@ retro.data.Integrations.add_custom_path(
 from ..tasks import images, videogame, memory, task_base
 
 flow_ratings = [
-    "I feel just the right amount of challenge.",
-    "My thoughts/activities run fluidly and smoothly.",
-    "I don’t notice time passing.",
-    "I have no difficulty concentrating.",
-    "My mind is completely clear.",
-    "I am totally absorbed in what I am doing.",
-    "The right thoughts/movements occur of their own accord.",
-    "I know what I have to do each step of the way.",
-    "I feel that I have everything under control.",
-    "I am completely lost in thought.",
+    ("challenge", "I feel just the right amount of challenge."),
+    ("fluidity", "My thoughts/activities run fluidly and smoothly."),
+    ("time","I don’t notice time passing."),
+    ("focus", "I have no difficulty concentrating."),
+    ("insight","My mind is completely clear."),
+    ("absorption","I am totally absorbed in what I am doing."),
+    ("spontaneous","The right thoughts/movements occur of their own accord."),
+    ("planning", "I know what I have to do each step of the way."),
+    ("control", "I feel that I have everything under control."),
+    ("wandering", "I am completely lost in thought."),
 ]
 
 levels_scenario = [
@@ -36,11 +36,10 @@ TASKS = sum(
                 scenarii=[s for l,s in levels_scenario]
                 ,  # this scenario repeats the same level
                 repeat_scenario=True,
-                max_duration=10
+                max_duration=9
                 * 60,  # if when level completed or dead we exceed that time in secs, stop the task
                 name=f"task-shinobi_run-{run+1:02d}",
-                instruction="Let's play Shinobi III: {state_name}\nHave fun!",
-                # post_level_ratings = [(q, 7) for q in flow_ratings]
+                post_level_ratings = [(k, q, 7) for k, q in flow_ratings]
             ),
             task_base.Pause(),
         ]
