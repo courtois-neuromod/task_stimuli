@@ -62,7 +62,7 @@ def run_task(
                 return shortcut_evt
 
     logging.info("GO")
-    if eyetracker and not shortcut_evt:
+    if eyetracker and task.use_eyetracking and not shortcut_evt:
         eyetracker.start_recording(task.name)
     # send start trigger/marker to MEG + Biopac (or anything else on parallel port)
     if task.use_meg and not shortcut_evt:
@@ -79,6 +79,8 @@ def run_task(
     # send stop trigger/marker to MEG + Biopac (or anything else on parallel port)
     if task.use_meg and not shortcut_evt:
         meg.send_signal(meg.MEG_settings["TASK_STOP_CODE"])
+    if task.stop_scanner:
+        fmri.trigger_scanner('stop')
 
     if eyetracker:
         eyetracker.stop_recording()
@@ -231,9 +233,6 @@ Thanks for your participation!"""
                 exp_win,
                 log_path,
                 log_name_prefix,
-                use_fmri=use_fmri,
-                use_eyetracking=use_eyetracking,
-                use_meg=use_meg,
             )
             print("READY")
 
