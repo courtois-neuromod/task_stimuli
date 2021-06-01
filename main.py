@@ -3,6 +3,10 @@ from subprocess import Popen
 
 import os, sys, importlib
 
+paths_to_remove = [p for p in sys.path if "/home" in p]
+for p in paths_to_remove:
+    sys.path.remove(p)
+
 from src.shared import parser, config, screen
 from src.shared.didyoumean import suggest_session_tasks
 
