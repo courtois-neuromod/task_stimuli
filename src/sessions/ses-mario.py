@@ -53,9 +53,13 @@ def get_tasks(parsed):
             state_names=[current_level],
             scenarii=[scenario],
             repeat_scenario=True,
-            max_duration=10 * 60,  # if when level completed or dead we exceed that time in secs, stop the task
+            max_duration=1 * 60,  # if when level completed or dead we exceed that time in secs, stop the task
             name=f"task-mario_run-{run+1:02d}",
             instruction="playing Super Mario Bros {state_name} \n\n Let's-a go!",
+            use_eyetracking=True,
+            use_fmri=parsed.fmri,
+            use_meg=parsed.meg,
+            stop_scanner=True,
             # post_level_ratings = [(q, 7) for q in flow_ratings],
         )
         yield task

@@ -12,9 +12,21 @@ class Task(object):
     DEFAULT_INSTRUCTION = ""
     PROGRESS_BAR_FORMAT = '{l_bar}{bar}{r_bar}'
 
-    def __init__(self, name, instruction=None, use_eyetracking=False):
+    def __init__(
+        self,
+        name,
+        instruction=None,
+        use_fmri=False,
+        use_eyetracking=False,
+        use_meg=False,
+        stop_scanner=False,
+    ):
         self.name = name
         self.use_eyetracking = use_eyetracking
+        self.use_fmri = use_fmri
+        self.use_meg = use_meg
+        self.stop_scanner = stop_scanner
+
         if instruction is None:
             self.instruction = self.__class__.DEFAULT_INSTRUCTION
         else:
@@ -25,14 +37,11 @@ class Task(object):
         self,
         exp_win,
         output_path,
-        output_fname_base,
-        use_fmri=False,
-        use_meg=False,
+        output_fname_base
     ):
         self.output_path = output_path
         self.output_fname_base = output_fname_base
-        self.use_fmri = use_fmri
-        self.use_meg = use_meg
+
         self._events = []
 
         self._exp_win_first_flip_time = None

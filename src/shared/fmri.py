@@ -32,3 +32,18 @@ def wait_for_ttl():
             return
         time.sleep(0.0005)  # just to avoid looping to fast
         yield
+
+
+SCANNER_TRIGGER = {
+    'start': 5,
+    'stop': 0
+}
+DEVICE_NAME = '/dev/serial/by-id/usb-SparkFun_SparkFun_Pro_Micro-if00'
+
+def trigger_scanner(signal):
+    if signal in SCANNER_TRIGGER.keys():
+        with open(DEVICE_NAME,'w') as f:
+            f.write(SCANNER_TRIGGER[signal])
+            logging.info(f"sent {signal} to scanner")
+    else:
+        raise ValueError('Unknown scanner signal')
