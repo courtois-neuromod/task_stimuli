@@ -2,6 +2,8 @@
 from subprocess import Popen
 
 import os, sys, importlib
+import itertools
+from collections.abc import Iterable, Iterator
 
 paths_to_remove = [p for p in sys.path if "/home" in p]
 for p in paths_to_remove:
@@ -22,9 +24,14 @@ def run(parsed):
         suggestion = suggest_session_tasks(parsed.tasks)
         raise(ValueError('session tasks file cannot be found for %s. Did you mean %s ?'%(parsed.tasks, suggestion)))
     from src.shared import cli
+    if parsed.skip_n_tasks:
+        if isinstance(tasks, Iterator):
+            tasks = itertools.islice(tasks, parsed.skip_n_tasks, None)
+        else:
+            tasks[parsed.skip_n_tasks:]
     try:
         cli.main_loop(
-            tasks[parsed.skip_n_tasks:],
+            tasks,
             parsed.subject,
             parsed.session,
             parsed.output,
