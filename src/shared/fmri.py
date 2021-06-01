@@ -43,7 +43,7 @@ DEVICE_NAME = '/dev/serial/by-id/usb-SparkFun_SparkFun_Pro_Micro-if00'
 def trigger_scanner(signal):
     if signal in SCANNER_TRIGGER.keys():
         with open(DEVICE_NAME,'w') as f:
-            f.write(SCANNER_TRIGGER[signal])
+            f.write(str(SCANNER_TRIGGER[signal]))
             logging.info(f"sent {signal} to scanner")
     else:
         raise ValueError('Unknown scanner signal')

@@ -54,6 +54,8 @@ def run_task(
         gaze_drawer,
         record_movie=exp_win if record_movie else False,
     )
+    if task.stop_scanner:
+        fmri.trigger_scanner('start')
 
     if task.use_fmri and not shortcut_evt:
         for _ in fmri.wait_for_ttl():
@@ -233,11 +235,6 @@ Thanks for your participation!"""
                 exp_win,
                 log_path,
                 log_name_prefix,
-<<<<<<< HEAD
-                use_fmri=use_fmri,
-                use_meg=use_meg,
-=======
->>>>>>> origin/scanner_trigger
             )
             print("READY")
 
