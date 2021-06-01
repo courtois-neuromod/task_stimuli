@@ -67,9 +67,36 @@ class SoundDeviceBlockStream(sound.backend_sounddevice.SoundDeviceSound):
 
 
 class VideoGameBase(Task):
+
+    def __init__(
+        self,
+        game_name=DEFAULT_GAME_NAME,
+        state_name=None,
+        scenario=None,
+        repeat_scenario=True,
+        inttype=retro.data.Integrations.CUSTOM_ONLY,
+        *args,
+        **kwargs
+    ):
+
+        super().__init__(**kwargs)
+        self.game_name = game_name
+        self.state_name = state_name
+        self.scenario = scenario
+        self.repeat_scenario = repeat_scenario
+        self.inttype = inttype
+
     def _setup(self, exp_win):
-        self.game_sound = SoundDeviceBlockStream(stereo=True, blockSize=735)
+
+        super()._setup(exp_win)
+
         self._first_frame = self.emulator.reset()
+        first_sound_chunk = self.emulator.em.get_audio()
+        blockSize = first_sound_chunk.shape[0]
+        self.game_sound = SoundDeviceBlockStream(
+            sampleRate = self.emulator.em.get_audio_rate(),
+            stereo=(first_sound_chunk.ndim==2 & first_sound_chunk.shape[1]==2),
+            blockSize=blockSize)
 
         min_ratio = min(
             exp_win.size[0] / self._first_frame.shape[1],
@@ -88,10 +115,10 @@ class VideoGameBase(Task):
         )
 
     def _transform_soundblock(self, sound_block):
-        return sound_block[:735] / float(2 ** 15)
+        return sound_block[:self.game_sound.blockSize] / float(2 ** 15)
 
     def _render_graphics_sound(self, obs, sound_block, exp_win, ctl_win):
-        self.game_vis_stim.image = obs / 255.0  # np.flip(obs, 0)/255.
+        self.game_vis_stim.image = obs / 255.0
         self.game_vis_stim.draw(exp_win)
         if ctl_win:
             self.game_vis_stim.draw(ctl_win)
@@ -112,14 +139,10 @@ class VideoGameBase(Task):
 
 class VideoGame(VideoGameBase):
 
-    DEFAULT_INSTRUCTION = "Let's play a video game.\n%s: %s\nHave fun!"
+    DEFAULT_INSTRUCTION = "Let's play {game_name}: {state_name}\nHave fun!"
 
     def __init__(
         self,
-        game_name=DEFAULT_GAME_NAME,
-        state_name=None,
-        scenario=None,
-        repeat_scenario=True,
         max_duration=0,
         post_level_ratings=None,
         *args,
@@ -127,17 +150,16 @@ class VideoGame(VideoGameBase):
     ):
 
         super().__init__(**kwargs)
-        self.game_name = game_name
-        self.state_name = state_name
-        self.scenario = scenario
-        self.repeat_scenario = repeat_scenario
         self.max_duration = max_duration
         self.duration = max_duration
         self.post_level_ratings = post_level_ratings
+        self._completed = False
 
     def _instructions(self, exp_win, ctl_win):
 
-        instruction = self.instruction % (self.game_name, self.state_name)
+        instruction = self.instruction.format(
+            **{'game_name':self.game_name,
+             'state_name':self.state_name})
 
         screen_text = visual.TextStim(
             exp_win,
@@ -156,13 +178,25 @@ class VideoGame(VideoGameBase):
 
     def _setup(self, exp_win):
 
+        retraceRate = exp_win._monitorFrameRate
+        if retraceRate is None:
+            retraceRate = exp_win.getActualFrameRate()
+        if retraceRate is None:
+            logging.warning("FrameRate could not be supplied by psychopy; "
+                            "defaulting to 60.0")
+            retraceRate = 60.0
+        self._retraceInterval = 1.0/retraceRate
+
         self.emulator = retro.make(
             self.game_name,
             state=self.state_name,
             scenario=self.scenario,
             record=False,
-            inttype=retro.data.Integrations.CUSTOM_ONLY
+            inttype=self.inttype
         )
+
+        self.game_fps = self.emulator.em.get_screen_rate()
+        self._frameInterval = 1.0/self.game_fps
 
         super()._setup(exp_win)
         self._set_recording_file()
@@ -182,7 +216,8 @@ class VideoGame(VideoGameBase):
         logging.exp("VideoGame: recording movie in %s" % self.movie_path)
         self.emulator.record_movie(self.movie_path)
 
-    def _handle_controller_presses(self):
+    def _handle_controller_presses(self, exp_win):
+        exp_win.winHandle.dispatch_events()
         global _keyPressBuffer, _keyReleaseBuffer
 
         for k in _keyReleaseBuffer:
@@ -192,6 +227,7 @@ class VideoGame(VideoGameBase):
         for k in _keyPressBuffer:
             # print('press',k)
             self.pressed_keys.add(k[0])
+        self._new_key_pressed = _keyPressBuffer[:] #copy
         _keyPressBuffer.clear()
         return self.pressed_keys
 
@@ -226,11 +262,15 @@ class VideoGame(VideoGameBase):
             },
         )
         yield True
+        _nextFrameT = self._retraceInterval
         while not _done:
             level_step += 1
-            self._handle_controller_presses()
+            while _nextFrameT > (self.task_timer.getTime() -
+                       self._retraceInterval/2.0):
+                time.sleep(.0001)
+            self._handle_controller_presses(exp_win)
             keys = [k in self.pressed_keys for k in KEY_SET]
-            _obs, _rew, _done, _info = self.emulator.step(keys)
+            _obs, _rew, _done, self._game_info = self.emulator.step(keys)
             total_reward += _rew
             if _rew > 0:
                 exp_win.logOnFlip(level=logging.EXP, msg="Reward %f" % (total_reward))
@@ -246,8 +286,11 @@ class VideoGame(VideoGameBase):
             if not level_step % config.FRAME_RATE:
                 exp_win.logOnFlip(level=logging.EXP, msg="level step: %d" % level_step)
             yield True
-        self.game_sound.stop()
+
+            _nextFrameT += self._frameInterval
+        self._completed = self._completed or self._game_info['lives'] > -1
         self.game_sound.flush()
+        self.game_sound.stop()
 
     def _set_key_handler(self, exp_win):
         # activate repeat keys
@@ -301,34 +344,40 @@ class VideoGame(VideoGameBase):
             yield True
 
     def _questionnaire(self, exp_win, ctl_win):
+
+        exp_win.setColor([0] * 3, colorSpace='rgb')
         if self.post_level_ratings is None:
             return
         lines = []
         bullets = []
         responses = []
-        y_spacing = 40
+        texts = []
+        y_spacing = 80
         win_width = exp_win.size[0]
         scales_block_x = win_width * 0.25
-        scales_block_y = -len(self.post_level_ratings) / 2 * y_spacing
+        scales_block_y = len(self.post_level_ratings) // 2 * y_spacing
         extent = win_width * 0.2
 
+
+        active_question = 0
+
         # create all stimuli
-        all_questions_text = ""
-        for q_n, q_vals in enumerate(self.post_level_ratings):
-            question, n_pts = q_vals
-            print(question)
+        #all_questions_text = ""
+        for q_n, (key, question, n_pts) in enumerate(self.post_level_ratings):
             default_response = n_pts // 2
             responses.append(default_response)
             x_spacing = extent * 2 / (n_pts - 1)
-            all_questions_text += question + "\n\n"
+            #all_questions_text += question + "\n\n"
+
+            y_pos = scales_block_y - q_n * y_spacing
 
             lines.append(
                 visual.Line(
                     exp_win,
-                    (scales_block_x - extent, scales_block_y + q_n * y_spacing),
-                    (scales_block_x + extent, scales_block_y + q_n * y_spacing),
+                    (scales_block_x - extent, y_pos),
+                    (scales_block_x + extent, y_pos),
                     units="pixels",
-                    lineWidth=2,
+                    lineWidth=6,
                     autoLog=False,
                     lineColor=((0, -1, -1) if q_n == 0 else (-1, -1, -1)),
                 )
@@ -341,7 +390,7 @@ class VideoGame(VideoGameBase):
                         radius=10,
                         pos=(
                             scales_block_x - extent + i * x_spacing,
-                            scales_block_y + q_n * y_spacing,
+                            y_pos,
                         ),
                         fillColor=(
                             (1, 1, 1) if default_response == i else (-1, -1, -1)
@@ -353,22 +402,74 @@ class VideoGame(VideoGameBase):
                     for i in range(n_pts)
                 ]
             )
+            texts.append(visual.TextStim(
+                exp_win,
+                text = question,
+                units="pixels",
+                bold = q_n == active_question,
+                pos=(0, y_pos),
+                wrapWidth= win_width * 0.5,
+                height= y_spacing / 3,
+                anchorHoriz="right",
+                alignText="right"
+            ))
+            responses[q_n] = default_response
 
-        text = visual.TextStim(
-            exp_win,
-            all_questions_text,
-            units="pixels",
-            pos=(0.1 * win_width, 0),
-            wrapWidth=win_width * 0.5,
-            height=y_spacing / 2,
-            anchorHoriz="right",
-        )
+
 
         # questionnaire interaction loop
+        n_flips = 0
         while True:
-            for stim in lines + sum(bullets, []) + [text]:
+            self._handle_controller_presses(exp_win)
+            new_key_pressed = [k[0] for k in self._new_key_pressed]
+            if "u" in new_key_pressed and active_question > 0:
+                active_question -= 1
+            elif "d" in new_key_pressed and active_question < len(self.post_level_ratings)-1:
+                active_question += 1
+            elif "r" in new_key_pressed and responses[active_question] < n_pts - 1:
+                responses[active_question] += 1
+            elif "l" in new_key_pressed and responses[active_question] > 0:
+                responses[active_question] -= 1
+            elif "a" in new_key_pressed:
+                for (key, question, n_pts), value in zip(self.post_level_ratings, responses):
+                    self._log_event({
+                        "trial_type": "questionnaire-answer",
+                        "game": self.game_name,
+                        "level": self.state_name,
+                        "stim_file": self.movie_path,
+                        "question": key,
+                        "value": value
+                    })
+                break
+            elif n_flips > 1:
+                time.sleep(.01)
+                continue
+
+            if n_flips > 0: #avoid double log when first loading questionnaire
+                self._log_event({
+                    "trial_type": "questionnaire-value-change",
+                    "game": self.game_name,
+                    "level": self.state_name,
+                    "stim_file": self.movie_path,
+                    "question": self.post_level_ratings[active_question][0],
+                    "value": responses[active_question]
+                })
+
+            exp_win.logOnFlip(
+                level=logging.EXP,
+                msg="level ratings %s" % responses)
+            for q_n, (txt, line, bullet_q) in enumerate(zip(texts, lines, bullets)):
+                #txt.bold = q_n == active_question
+                txt._pygletTextObj.set_style('bold', q_n == active_question)
+                line.lineColor = ((0, -1, -1) if q_n == active_question else (-1, -1, -1)),
+                for bullet_n, bullet in enumerate(bullet_q):
+                    bullet.fillColor = (1, 1, 1) if responses[q_n] == bullet_n else (-1, -1, -1)
+
+            for stim in lines + sum(bullets, []) + texts:
                 stim.draw(exp_win)
             yield True
+            n_flips += 1
+        # TODO save responses
 
     def _likert_scale_answer(
         self, exp_win, ctl_win, question, n_pts=7, extent=0.6, autoLog=False
@@ -405,7 +506,7 @@ class VideoGame(VideoGameBase):
             frame += 1
             for stim in [text, line] + circles:
                 stim.draw(exp_win)
-            self._handle_controller_presses()
+            self._handle_controller_presses(exp_win)
             if "a" in self.pressed_keys:
                 exp_win.logOnFlip(
                     level=logging.EXP,
@@ -451,34 +552,32 @@ class VideoGameMultiLevel(VideoGame):
 
     def _run(self, exp_win, ctl_win):
 
-        exp_win.waitBlanking = False
-
-        exp_win.setColor([-1.0] * 3, colorSpace='rgb')
-        if ctl_win:
-            ctl_win.setColor([-1.0] * 3, colorSpace='rgb')
+        #exp_win.waitBlanking = False
 
         self._nlevels = 0
         while True:
             for level, scenario in zip(self._state_names, self._scenarii):
                 self._nlevels += 1
                 self.state_name = level
-                self.emulator.load_state(level)
+                self.emulator.load_state(level, inttype=self.inttype)
                 self.emulator.data.load(
-                    retro.data.get_file_path(self.game_name, "data.json"),
-                    retro.data.get_file_path(self.game_name, f"{scenario}.json")
+                    retro.data.get_file_path(self.game_name, "data.json", inttype=self.inttype),
+                    retro.data.get_file_path(self.game_name, f"{scenario}.json", inttype=self.inttype)
                 )
                 self._first_frame = self.emulator.reset()
                 if self._nlevels > 1:
                     self._set_recording_file()
                     yield from self._instructions(exp_win, ctl_win)
-                yield from self._questionnaire(
-                    exp_win, ctl_win
-                )  # here for tests, to move after _run_emulator
 
+                exp_win.setColor([-1.0] * 3, colorSpace='rgb')
+                if ctl_win:
+                    ctl_win.setColor([-1.0] * 3, colorSpace='rgb')
                 yield from super()._run_emulator(exp_win, ctl_win)
                 self.game_sound.stop()
-                if self.post_level_ratings:
-                    yield from self._run_ratings(exp_win, ctl_win)
+
+                yield from self._questionnaire(
+                    exp_win, ctl_win
+                )
 
                 time_exceeded = (
                     self.max_duration and self.task_timer.getTime() > self.max_duration
@@ -488,15 +587,13 @@ class VideoGameMultiLevel(VideoGame):
             if time_exceeded or not self._repeat_scenario_multilevel:
                 break
 
-        exp_win.waitBlanking = True
+        #exp_win.waitBlanking = True
 
 
 class VideoGameReplay(VideoGameBase):
     def __init__(
         self,
         movie_filename,
-        game_name=DEFAULT_GAME_NAME,
-        scenario=None,
         *args,
         **kwargs
     ):
