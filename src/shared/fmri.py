@@ -1,6 +1,6 @@
 from psychopy import core, event, logging
 from psychopy.hardware.emulator import launchScan
-import time
+import time, os
 
 MR_settings = {
     "TR": 2.000,  # duration (sec) per whole-brain volume
@@ -41,6 +41,8 @@ SCANNER_TRIGGER = {
 DEVICE_NAME = '/dev/serial/by-id/usb-SparkFun_SparkFun_Pro_Micro-if00'
 
 def trigger_scanner(signal):
+    if not os.path.exists(DEVICE_NAME):
+        raise RuntimeError("The gizmo is not connected")
     if signal in SCANNER_TRIGGER.keys():
         with open(DEVICE_NAME,'w') as f:
             f.write(str(SCANNER_TRIGGER[signal]))
