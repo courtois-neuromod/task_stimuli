@@ -352,11 +352,36 @@ class VideoGame(VideoGameBase):
         bullets = []
         responses = []
         texts = []
+        legends = []
         y_spacing = 80
         win_width = exp_win.size[0]
         scales_block_x = win_width * 0.25
         scales_block_y = len(self.post_level_ratings) // 2 * y_spacing
         extent = win_width * 0.2
+
+        # add legends to Likert scale
+        legends.append(visual.TextStim(
+            exp_win,
+            text = 'Disagree',
+            units="pixels",
+            pos=(scales_block_x - extent*0.75, scales_block_y*1.1),
+            wrapWidth= win_width * 0.5,
+            height= y_spacing / 3,
+            anchorHoriz="right",
+            alignText="right",
+            bold=True
+        ))
+        legends.append(visual.TextStim(
+            exp_win,
+            text = 'Agree',
+            units="pixels",
+            pos=(scales_block_x + extent*1.15, scales_block_y*1.1),
+            wrapWidth= win_width * 0.5,
+            height= y_spacing / 3,
+            anchorHoriz="right",
+            alignText="right",
+            bold=True
+        ))
 
 
         active_question = 0
@@ -465,7 +490,7 @@ class VideoGame(VideoGameBase):
                 for bullet_n, bullet in enumerate(bullet_q):
                     bullet.fillColor = (1, 1, 1) if responses[q_n] == bullet_n else (-1, -1, -1)
 
-            for stim in lines + sum(bullets, []) + texts:
+            for stim in lines + sum(bullets, []) + texts + legends:
                 stim.draw(exp_win)
             yield True
             n_flips += 1
