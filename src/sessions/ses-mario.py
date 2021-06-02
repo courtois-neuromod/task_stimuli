@@ -60,7 +60,7 @@ def get_tasks(parsed):
             use_fmri=parsed.fmri,
             use_meg=parsed.meg,
             stop_scanner=True,
-            # post_level_ratings = [(q, 7) for q in flow_ratings],
+            post_level_ratings = [(k, q, 7) for k, q in enumerate(flow_ratings)]
         )
         yield task
 
