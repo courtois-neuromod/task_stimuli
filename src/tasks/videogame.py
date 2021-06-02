@@ -128,6 +128,7 @@ class VideoGameBase(Task):
 
     def _stop(self, exp_win, ctl_win):
         self.game_sound.stop()
+        self.emulator.stop_record() # to be sure to save the bk2
         exp_win.setColor([0] * 3, colorSpace='rgb')
         if ctl_win:
             ctl_win.setColor([0] * 3, colorSpace='rgb')
@@ -221,11 +222,10 @@ class VideoGame(VideoGameBase):
         global _keyPressBuffer, _keyReleaseBuffer
 
         for k in _keyReleaseBuffer:
-            # print('release',k)
             self.pressed_keys.discard(k[0])
+            logging.data(f"Keyrelease: {k[0]}")
         _keyReleaseBuffer.clear()
         for k in _keyPressBuffer:
-            # print('press',k)
             self.pressed_keys.add(k[0])
         self._new_key_pressed = _keyPressBuffer[:] #copy
         _keyPressBuffer.clear()
@@ -291,6 +291,7 @@ class VideoGame(VideoGameBase):
         self._completed = self._completed or self._game_info['lives'] > -1
         self.game_sound.flush()
         self.game_sound.stop()
+        self.emulator.stop_record()
 
     def _set_key_handler(self, exp_win):
         # activate repeat keys
@@ -469,7 +470,6 @@ class VideoGame(VideoGameBase):
                 stim.draw(exp_win)
             yield True
             n_flips += 1
-        # TODO save responses
 
     def _likert_scale_answer(
         self, exp_win, ctl_win, question, n_pts=7, extent=0.6, autoLog=False
