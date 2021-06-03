@@ -59,13 +59,13 @@ class EyetrackerCalibration(Task):
         markers_order="random",
         marker_fill_color=MARKER_FILL_COLOR,
         markers=MARKER_POSITIONS,
+        use_eyetracking=True,
         **kwargs,
     ):
-        self.use_eyetracking = True
         self.markers_order = markers_order
         self.markers = markers
         self.marker_fill_color = marker_fill_color
-        super().__init__(**kwargs)
+        super().__init__(use_eyetracking=use_eyetracking, **kwargs)
         self.eyetracker = eyetracker
 
     def _instructions(self, exp_win, ctl_win):

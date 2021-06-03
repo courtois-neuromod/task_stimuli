@@ -56,7 +56,8 @@ def get_tasks(parsed):
             max_duration=10 * 60,  # if when level completed or dead we exceed that time in secs, stop the task
             name=f"task-mario_run-{run+1:02d}",
             instruction="playing Super Mario Bros {state_name} \n\n Let's-a go!",
-            post_level_ratings = [(k, q, 7) for k, q in enumerate(flow_ratings)]
+            post_level_ratings = [(k, q, 7) for k, q in enumerate(flow_ratings)],
+            use_eyetracking=True,
         )
         yield task
 
