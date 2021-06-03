@@ -68,10 +68,8 @@ class EyetrackerCalibration(Task):
         self.eyetracker = eyetracker
 
     def _instructions(self, exp_win, ctl_win):
-        instruction_text = """We're going to calibrate the eyetracker.
-Please look at the markers that appear on the screen.
-
-While awaiting for the calibration to start please roll your eyes in one direction then in the other."""
+        instruction_text = """Veuillez tournez vos yeux dans toutes les directions.
+Des marqueurs apparaitront à l'écran, veuillez les fixer."""
         screen_text = visual.TextStim(
             exp_win,
             text=instruction_text,
@@ -97,7 +95,9 @@ While awaiting for the calibration to start please roll your eyes in one directi
 
     def _run(self, exp_win, ctl_win):
         calibration_success = False
-        while not calibration_success:
+        self.task_stop = np.inf
+        task_first_attempt_start = time.monotonic()
+        while not calibration_success and self.task_stop - task_first_attempt_start < 60.:
             while True:
                 allKeys = event.getKeys([CALIBRATE_HOTKEY])
                 start_calibration = False

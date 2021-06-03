@@ -6,14 +6,15 @@ from colorama import Fore
 
 from ..shared import config, utils
 
-RESPONSE_KEY = "d"
+RESPONSE_KEYS = None # "d" # None == all keys possible
 RESPONSE_TIME = 2.49*2
 FINAL_WAIT = 9
 
 class Prisme(Task):
 
     # @nuks
-    DEFAULT_INSTRUCTION = """Regardez les images à l'écran."""
+    DEFAULT_INSTRUCTION = """Veuillez regardez les images durant les 5 prochaines minutes
+en essayant de ne pas bouger la tête."""
 
     def __init__(self, design, images_path, run, *args, **kwargs):
         super().__init__(**kwargs)
@@ -32,10 +33,9 @@ class Prisme(Task):
         self.fixation_cross = visual.ImageStim(
             exp_win,
             os.path.join("data", "prisme", "pngs", "fixation_cross.png"),
-            size=2,
+            size=0.5,
             units='deg',
         )
-
         # preload all images
         self._stimuli = []
         for trial in self.design:
@@ -50,6 +50,10 @@ class Prisme(Task):
         super()._setup(exp_win)
 
     def _instructions(self, exp_win, ctl_win):
+        # Cleanup screen first, might not be necessary but
+        # eyetracking instructions used to stay displayed.
+        yield
+
         screen_text = visual.TextStim(
             exp_win,
             text=self.instruction,
@@ -90,9 +94,13 @@ class Prisme(Task):
 
             # display transition:
             if transition == "test":
+                ## Cleanup screen first.
+                yield
+
                 screen_text = visual.TextStim(
                     exp_win,
-                    text="Des images que vous venez de voir ou non vont apparaître, veuillez appuyer sur le bouton si vous pensez avoir vue l'image.",
+                    text="""Pour chaque image dites si OUI ou NON vous l'avez vu dans la séquence précédente.
+OUI (bouton gauche)                         NON (bouton droit)""",
                     alignText="center",
                     color="white",
                     wrapWidth=config.WRAP_WIDTH,
@@ -174,13 +182,39 @@ class Prisme(Task):
                 )
 
                 # Then record.
-                keypress = event.getKeys([RESPONSE_KEY], timeStamped=self.task_timer)
-                trial["response"] = len(keypress) > 0
-                trial["response_time"] = (
-                    (keypress[0][1] - trial["onset"]) if len(keypress) else None
-                )
-                trial["duration_flip"] = trial["offset_flip"] - trial["onset_flip"]
+                keypresses = event.getKeys(RESPONSE_KEYS, timeStamped=self.task_timer)
+                if len(keypresses):
+                    trial['keypresses'] = keypresses # log all keypresses with timing
+                    idxs = [np.where(self.RESPONSE_MAPPING == k[0]) for k in keypresses]
+                    response_mapping_flipped = self.RESPONSE_VALUES.copy()
+                    if trial["response_mapping_flip_h"]:
+                        response_mapping_flipped = np.rot90(np.fliplr(response_mapping_flipped))
+                    if trial["response_mapping_flip_v"]:
+                        response_mapping_flipped = np.rot90(np.fliplr(response_mapping_flipped),3)
+                    responses = [response_mapping_flipped[idx[0][0],idx[1][0]] for idx in idxs]
 
+                    main_key = keypresses[0] # take the first response as main one, to be decided
+                    main_response = responses[0]
+                    trial["response"] = main_response
+                    trial["response_txt"] = "seen" if main_response > 0 else "unseen"
+                    trial["error"] = trial["response_txt"] != trial["condition"]
+                    trial["response_confidence"] = abs(main_response) > 1
+                    trial["response_time"] = (main_key[1] - trial["onset"])
+                    if trial['error']:
+                        self.progress_bar.set_description(
+                            f"Trial {trial_n}:: {trial['condition']}:{trial['image_path']} \u274c")
+                    else:
+                        self.progress_bar.set_description(
+                            f"Trial {trial_n}:: {trial['condition']}:{trial['image_path']} \u2705")
+                else:
+                    # we need to force empty values for the first trials
+                    # otherwise following values are not recorded!?
+                    for k in ['keypresses', 'response', 'response_txt', 'error', 'response_confidence', 'response_time']:
+                        trial[k] = ''
+                    self.progress_bar.set_description(
+                        f"{Fore.RED}Trial {trial_n}:: {trial['condition']}:{trial['image_path']}: no response{Fore.RESET}")
+                trial["duration_flip"] = trial["offset_flip"] - trial["onset_flip"]
+                
         utils.wait_until(self.task_timer, trial["onset"] + RESPONSE_TIME + FINAL_WAIT)
 
     def _restart(self):
