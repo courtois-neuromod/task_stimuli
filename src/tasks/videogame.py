@@ -405,7 +405,7 @@ class VideoGame(VideoGameBase):
                     units="pixels",
                     lineWidth=6,
                     autoLog=False,
-                    lineColor=((0, -1, -1) if q_n == 0 else (-1, -1, -1)),
+                    lineColor=(0, -1, -1) if q_n == 0 else (-1, -1, -1),
                 )
             )
             bullets.append(
@@ -418,9 +418,7 @@ class VideoGame(VideoGameBase):
                             scales_block_x - extent + i * x_spacing,
                             y_pos,
                         ),
-                        fillColor=(
-                            (1, 1, 1) if default_response == i else (-1, -1, -1)
-                        ),
+                        fillColor= (1, 1, 1) if default_response == i else (-1, -1, -1),
                         lineColor=(-1, -1, -1),
                         lineWidth=10,
                         autoLog=False,
@@ -487,7 +485,7 @@ class VideoGame(VideoGameBase):
             for q_n, (txt, line, bullet_q) in enumerate(zip(texts, lines, bullets)):
                 #txt.bold = q_n == active_question
                 txt._pygletTextObj.set_style('bold', q_n == active_question)
-                line.lineColor = ((0, -1, -1) if q_n == active_question else (-1, -1, -1)),
+                line.lineColor = (0, -1, -1) if q_n == active_question else (-1, -1, -1)
                 for bullet_n, bullet in enumerate(bullet_q):
                     bullet.fillColor = (1, 1, 1) if responses[q_n] == bullet_n else (-1, -1, -1)
 
