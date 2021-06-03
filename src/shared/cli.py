@@ -108,6 +108,7 @@ def main_loop(
     allow_run_on_battery=False,
     enable_ptt=False,
     record_movie=False,
+    skip_soundcheck=False,
 ):
 
     # force screen resolution to solve issues with video splitter at scanner
@@ -163,26 +164,37 @@ def main_loop(
         print("starting et client")
         eyetracker_client.start()
         print("done")
-        all_tasks = sum(([
-            eyetracking.EyetrackerCalibration(
-                eyetracker_client, name="EyeTracker-Calibration"
-                ), t] for t in all_tasks), [])
+        def interleave_calibration(tasks):
+            calibration_index=0
+            for task in tasks:
+                calibration_index+=1
+                yield eyetracking.EyetrackerCalibration(
+                    eyetracker_client,
+                    name=f"eyeTrackercalibration-{calibration_index}"
+                )
+                yield task
+        all_tasks = interleave_calibration(all_tasks)
 
         if show_ctl_win:
             gaze_drawer = eyetracking.GazeDrawer(ctl_win)
     if use_fmri:
-        setup_video_path = glob.glob(
-            os.path.join("data", "videos", "subject_setup_videos", "sub-%s_*" % subject)
-        )
-        if not len(setup_video_path):
-            setup_video_path = [
-                os.path.join(
-                    "data",
-                    "videos",
-                    "subject_setup_videos",
-                    "sub-default_setup_video.mp4",
+        if not skip_soundcheck:
+            setup_video_path = glob.glob(
+                os.path.join("data", "videos", "subject_setup_videos", "sub-%s_*" % subject)
                 )
-            ]
+            if not len(setup_video_path):
+                setup_video_path = [
+                    os.path.join(
+                        "data",
+                        "videos",
+                        "subject_setup_videos",
+                        "sub-default_setup_video.mp4",
+                    )
+                ]
+                all_tasks = itertools.chain([
+                    video.VideoAudioCheckLoop(setup_video_path[0], name="setup_soundcheck_video",)],
+                    all_tasks,
+                )
 
         all_tasks = itertools.chain(
             [task_base.Pause(
