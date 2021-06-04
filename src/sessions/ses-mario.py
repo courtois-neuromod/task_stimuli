@@ -32,6 +32,7 @@ levels_scenario = [
 
 scenario = "scenario"
 
+exclude_list = [(1,4),(2,2)]
 
 # code adaptive design for learning phase
 
@@ -67,6 +68,11 @@ def get_tasks(parsed):
             if savestate['level'] > 3:
                 savestate['world'] +=1
                 savestate['level'] = 1
+            while (savestate['world'], savestate['level']) in exclude_list:
+                savestate['level'] += 1
+                if savestate['level'] > 3:
+                    savestate['world'] +=1
+                    savestate['level'] = 1
             with open(savestate_path, 'w') as f:
                 json.dump(savestate, f)
         else:
