@@ -32,7 +32,7 @@ levels_scenario = [
 
 scenario = "scenario"
 
-exclude_list = [(1,4),(2,2)]
+exclude_list = [(2,2),(7,2)] # all levels 4 are excluded below
 
 # code adaptive design for learning phase
 
