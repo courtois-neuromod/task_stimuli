@@ -146,6 +146,7 @@ class VideoGame(VideoGameBase):
         self,
         max_duration=0,
         post_level_ratings=None,
+        post_run_ratings=None,
         *args,
         **kwargs
     ):
@@ -154,6 +155,7 @@ class VideoGame(VideoGameBase):
         self.max_duration = max_duration
         self.duration = max_duration
         self.post_level_ratings = post_level_ratings
+        self.post_run_ratings = post_run_ratings
         self._completed = False
 
     def _instructions(self, exp_win, ctl_win):
@@ -344,10 +346,10 @@ class VideoGame(VideoGameBase):
         for i in range(2):
             yield True
 
-    def _questionnaire(self, exp_win, ctl_win):
+    def _questionnaire(self, exp_win, ctl_win, questions):
 
         exp_win.setColor([0] * 3, colorSpace='rgb')
-        if self.post_level_ratings is None:
+        if questions is None:
             return
         lines = []
         bullets = []
@@ -357,7 +359,7 @@ class VideoGame(VideoGameBase):
         y_spacing = 80
         win_width = exp_win.size[0]
         scales_block_x = win_width * 0.25
-        scales_block_y = len(self.post_level_ratings) // 2 * y_spacing
+        scales_block_y = len(questions) // 2 * y_spacing
         extent = win_width * 0.2
 
         # add legends to Likert scale
@@ -389,7 +391,7 @@ class VideoGame(VideoGameBase):
 
         # create all stimuli
         #all_questions_text = ""
-        for q_n, (key, question, n_pts) in enumerate(self.post_level_ratings):
+        for q_n, (key, question, n_pts) in enumerate(questions):
             default_response = n_pts // 2
             responses.append(default_response)
             x_spacing = extent * 2 / (n_pts - 1)
@@ -448,14 +450,14 @@ class VideoGame(VideoGameBase):
             new_key_pressed = [k[0] for k in self._new_key_pressed]
             if "u" in new_key_pressed and active_question > 0:
                 active_question -= 1
-            elif "d" in new_key_pressed and active_question < len(self.post_level_ratings)-1:
+            elif "d" in new_key_pressed and active_question < len(questions)-1:
                 active_question += 1
             elif "r" in new_key_pressed and responses[active_question] < n_pts - 1:
                 responses[active_question] += 1
             elif "l" in new_key_pressed and responses[active_question] > 0:
                 responses[active_question] -= 1
             elif "a" in new_key_pressed:
-                for (key, question, n_pts), value in zip(self.post_level_ratings, responses):
+                for (key, question, n_pts), value in zip(questions, responses):
                     self._log_event({
                         "trial_type": "questionnaire-answer",
                         "game": self.game_name,
@@ -475,7 +477,7 @@ class VideoGame(VideoGameBase):
                     "game": self.game_name,
                     "level": self.state_name,
                     "stim_file": self.movie_path,
-                    "question": self.post_level_ratings[active_question][0],
+                    "question": questions[active_question][0],
                     "value": responses[active_question]
                 })
 
@@ -599,7 +601,7 @@ class VideoGameMultiLevel(VideoGame):
                 self.game_sound.stop()
 
                 yield from self._questionnaire(
-                    exp_win, ctl_win
+                    exp_win, ctl_win, self.post_level_ratings
                 )
 
                 time_exceeded = (
@@ -609,6 +611,9 @@ class VideoGameMultiLevel(VideoGame):
                     break
             if time_exceeded or not self._repeat_scenario_multilevel:
                 break
+        yield from self._questionnaire(
+            exp_win, ctl_win, self.post_run_ratings
+        )
 
         #exp_win.waitBlanking = True
 

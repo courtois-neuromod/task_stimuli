@@ -32,6 +32,7 @@ levels_scenario = [
 
 scenario = "scenario"
 
+exclude_list = [(1,4),(2,2)]
 
 # code adaptive design for learning phase
 
@@ -53,10 +54,10 @@ def get_tasks(parsed):
             state_names=[current_level],
             scenarii=[scenario],
             repeat_scenario=True,
-            max_duration=10 * 60,  # if when level completed or dead we exceed that time in secs, stop the task
+            max_duration=1 * 60,  # if when level completed or dead we exceed that time in secs, stop the task
             name=f"task-mario_run-{run+1:02d}",
             instruction="playing Super Mario Bros {state_name} \n\n Let's-a go!",
-            post_level_ratings = [(k, q, 7) for k, q in enumerate(flow_ratings)],
+            post_run_ratings = [(k, q, 7) for k, q in enumerate(flow_ratings)],
             use_eyetracking=True,
         )
         yield task
@@ -67,6 +68,11 @@ def get_tasks(parsed):
             if savestate['level'] > 3:
                 savestate['world'] +=1
                 savestate['level'] = 1
+            while (savestate['world'], savestate['level']) in exclude_list:
+                savestate['level'] += 1
+                if savestate['level'] > 3:
+                    savestate['world'] +=1
+                    savestate['level'] = 1
             with open(savestate_path, 'w') as f:
                 json.dump(savestate, f)
         else:
