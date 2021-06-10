@@ -1,7 +1,7 @@
 from ..tasks import retinotopy
 import random
 
-conditions = ['RETBAR','RETRINGS','RETWEDGES',]
+conditions = ['RETWEDGES','RETBAR','RETRINGS',]
 #conditions = random.shuffle(conditions)
 
 TASKS = [
