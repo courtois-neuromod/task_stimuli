@@ -163,10 +163,12 @@ def main_loop(
         print("starting et client")
         eyetracker_client.start()
         print("done")
-        all_tasks = sum(([
-            eyetracking.EyetrackerCalibration(
-                eyetracker_client, name="EyeTracker-Calibration"
-                ), t] for t in all_tasks), [])
+        all_tasks.insert(5, eyetracking.EyetrackerCalibration(
+            eyetracker_client, name="EyeTracker-Calibration"
+        ))
+        all_tasks.insert(0, eyetracking.EyetrackerCalibration(
+            eyetracker_client, name="EyeTracker-Calibration"
+        ))
 
         if show_ctl_win:
             gaze_drawer = eyetracking.GazeDrawer(ctl_win)
