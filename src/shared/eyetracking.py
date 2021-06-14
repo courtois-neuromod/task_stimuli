@@ -97,7 +97,7 @@ Des marqueurs apparaitront à l'écran, veuillez les fixer."""
         calibration_success = False
         self.task_stop = np.inf
         task_first_attempt_start = time.monotonic()
-        while not calibration_success and self.task_stop - task_first_attempt_start < 60.:
+        while not calibration_success:# and self.task_stop - task_first_attempt_start < 60.:
             while True:
                 allKeys = event.getKeys([CALIBRATE_HOTKEY])
                 start_calibration = False
