@@ -189,8 +189,10 @@ Des marqueurs apparaitront à l'écran, veuillez les fixer."""
                 f"calibrating on {len(self._pupils_list)} pupils and {len(self.all_refs_per_flip)} markers"
             )
             self.eyetracker.calibrate(self._pupils_list, self.all_refs_per_flip)
+            print("REGISTER_CALIB")
             while True:
                 notes = getattr(self.eyetracker, '_last_calibration_notification',None)
+                time.sleep(5*1e-3)
                 if notes:
                     calibration_success = notes['topic'].startswith("notify.calibration.successful")
                     if not calibration_success:
