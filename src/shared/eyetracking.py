@@ -241,16 +241,17 @@ class EyeTrackerClient(threading.Thread):
         if profile:
             dev_opts.append("--profile")
 
-        self._pupil_process = Popen(
-            [
-                "python3",
-                os.path.join(os.environ["PUPIL_PATH"], "pupil_src", "main.py"),
-                "capture",
-                "--port",
-                str(PUPIL_REMOTE_PORT),
-            ]
-            + dev_opts
-        )
+        if os.name != 'nt':
+            self._pupil_process = Popen(
+                [
+                    "python3",
+                    os.path.join(os.environ["PUPIL_PATH"], "pupil_src", "main.py"),
+                    "capture",
+                    "--port",
+                    str(PUPIL_REMOTE_PORT),
+                ]
+                + dev_opts
+            )
 
         self._ctx = zmq.Context()
         self._req_socket = self._ctx.socket(zmq.REQ)
@@ -355,8 +356,9 @@ class EyeTrackerClient(threading.Thread):
         # stop world and children process
         self.send_recv_notification({"subject": "world_process.should_stop"})
         self.send_recv_notification({"subject": "launcher_process.should_stop"})
-        self._pupil_process.wait(timeout)
-        self._pupil_process.terminate()
+        if os.name != 'nt':
+            self._pupil_process.wait(timeout)
+            self._pupil_process.terminate()
         time.sleep(1 / 60.0)
         super(EyeTrackerClient, self).join(timeout)
 
