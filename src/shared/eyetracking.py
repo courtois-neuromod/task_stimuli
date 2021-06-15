@@ -195,10 +195,11 @@ Des marqueurs apparaitront à l'écran, veuillez les fixer."""
                 time.sleep(5*1e-3)
                 if notes:
                     calibration_success = notes['topic'].startswith("notify.calibration.successful")
+                    print('REGISTER_CALIB:SUCCESS')
                     if not calibration_success:
                         print('#### CALIBRATION FAILED: restart with <c> ####')
                     break
-
+            print('REGISTER_CALIB:SUCCESS :)')
 
     def stop(self, exp_win, ctl_win):
         self.eyetracker.unset_pupil_cb()
