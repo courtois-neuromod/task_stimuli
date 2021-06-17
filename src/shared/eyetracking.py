@@ -195,9 +195,9 @@ While awaiting for the calibration to start please roll your eyes in one directi
         yield
 
     def _save(self):
-        if hasattr(self, "all_pupils"):
-            fname = self._generate_unique_filename("calib-data", ".npz")
-            np.savez(fname, pupils=self.all_pupils, markers=self.all_refs_per_flip)
+        if hasattr(self, "_pupils_list"):
+            fname = self._generate_unique_filename("calib-data", "npz")
+            np.savez(fname, pupils=self._pupils_list, markers=self.all_refs_per_flip)
 
 
 from subprocess import Popen
@@ -216,6 +216,9 @@ def nonblocking(lock):
 
 
 class EyeTrackerClient(threading.Thread):
+
+    EYE = "eye0"
+
     def __init__(self, output_path, output_fname_base, profile=False, debug=False):
         super(EyeTrackerClient, self).__init__()
         self.stoprequest = threading.Event()
@@ -287,12 +290,26 @@ class EyeTrackerClient(threading.Thread):
             }
         )
 
+        # restart 2d detector plugin with custom output settings
+        self.send_recv_notification(
+            {
+                "subject": "start_eye_plugin",
+                "name": "Detector2DPlugin",
+                "target": self.EYE,
+                "args": {
+                    "properties": {
+                        "intensity_range": 4,
+                    }
+                },
+            }
+        )
+
         # stop a bunch of eye plugins for performance
-        for plugin in ["NDSI_Manager", "Pye3DPlugin"]:
+        for plugin in ["NDSI_Manager"]:
             self.send_recv_notification(
                 {
                     "subject": "stop_eye_plugin",
-                    "target": "eye0",
+                    "target": self.EYE,
                     "name": plugin,
                 }
             )
@@ -301,7 +318,7 @@ class EyeTrackerClient(threading.Thread):
             {
                 "subject": "start_eye_plugin",
                 "name": "Aravis_Source",
-                "target": "eye0",
+                "target": self.EYE,
                 "args": CAPTURE_SETTINGS,
             }
         )

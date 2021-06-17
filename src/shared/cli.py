@@ -1,7 +1,9 @@
 # CLI: command line interface options and main loop
 
 import os, datetime, traceback, glob, time
+from collections.abc import Iterable, Iterator
 from psychopy import core, visual, logging, event
+import itertools
 
 visual.window.reportNDroppedFrames = 10e10
 
@@ -80,8 +82,6 @@ def run_task(
 
     if eyetracker:
         eyetracker.stop_recording()
-    # now that time is less sensitive: save files
-    task.save()
 
     run_task_loop(
         task.stop(exp_win, ctl_win),
@@ -89,6 +89,9 @@ def run_task(
         gaze_drawer,
         record_movie=exp_win if record_movie else False,
     )
+
+    # now that time is less sensitive: save files
+    task.save()
 
     return shortcut_evt
 
@@ -168,54 +171,46 @@ def main_loop(
         if show_ctl_win:
             gaze_drawer = eyetracking.GazeDrawer(ctl_win)
     if use_fmri:
-        setup_video_path = glob.glob(
-            os.path.join("data", "videos", "subject_setup_videos", "sub-%s_*" % subject)
-        )
-        if not len(setup_video_path):
-            setup_video_path = [
-                os.path.join(
-                    "data",
-                    "videos",
-                    "subject_setup_videos",
-                    "sub-default_setup_video.mp4",
-                )
-            ]
-
-        all_tasks.insert(
-            0,
-            video.VideoAudioCheckLoop(
-                setup_video_path[0], name="setup_soundcheck_video"
-            ),
-        )
-        all_tasks.insert(
-            1,
-            task_base.Pause(
+        all_tasks = itertools.chain(
+            [task_base.Pause(
                 """We are completing the setup and initializing the scanner.
 We will start the tasks in a few minutes.
 Please remain still."""
-            ),
-        )
-        all_tasks.append(
-            task_base.Pause(
+            )],
+            all_tasks,
+            [task_base.Pause(
                 """We are done for today.
 The scanner might run for a few seconds to acquire reference images.
 Please remain still.
 We are coming to get you out of the scanner shortly."""
-            )
+            )],
         )
+
+        if not skip_soundcheck:
+            setup_video_path = utils.get_subject_soundcheck_video(subject)
+            all_tasks = itertools.chain([
+                video.VideoAudioCheckLoop(setup_video_path, name="setup_soundcheck_video",)],
+                all_tasks,
+            )
+
+
     else:
-        all_tasks.append(
-            task_base.Pause(
+        all_tasks = itertools.chain(
+            all_tasks,
+            [task_base.Pause(
                 """We are done with the tasks for today.
 Thanks for your participation!"""
-            )
+            )],
         )
-    # list of tasks to be ran in a session
 
-    print("Here are the stimuli planned for today\n" + "_" * 50)
-    for task in all_tasks:
-        print(f"- {task.name} {getattr(task,'duration','')}" )
-    print("_" * 50)
+    if not isinstance(all_tasks, Iterator):
+
+        # list of tasks to be ran in a session
+
+        print("Here are the stimuli planned for today\n" + "_" * 50)
+        for task in all_tasks:
+            print(f"- {task.name} {getattr(task,'duration','')}" )
+        print("_" * 50)
 
     try:
         for task in all_tasks:
