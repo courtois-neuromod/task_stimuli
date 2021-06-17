@@ -69,7 +69,7 @@ class Retinotopy(Task):
         self._apertures = np.load(f"data/retinotopy/{aperture_file}")['apertures'].astype(np.float32)/128.-1
 
         self.cycle_length = 21*config.TR # a bit less than 32s for TR=1.49
-        self.initial_wait = 16 if self.condition == 'RETBAR' else 22
+        self.initial_wait = 16 # if self.condition == 'RETBAR' else 22
         self.middle_blank = 12 if self.condition in ['RETRINGS', 'RETWEDGES', 'RETBAR'] else 0
         self.duration = (
             32 * self.ncycles * (1 + (self.condition in ['RETRINGS', 'RETWEDGES']))
@@ -159,6 +159,7 @@ class Retinotopy(Task):
                 yield True
                 #print(self._exp_win_last_flip_time, previous_flip_time)
                 self.progress_bar.update(self._exp_win_last_flip_time - previous_flip_time)
+        yield True
 
     def _run_condition(self, exp_win, ctl_win):
 
@@ -210,7 +211,8 @@ class Retinotopy(Task):
                 self._events.append({
                     'condition': self.condition,
                     'trial_type': 'cycle',
-                    'onset': self._cycle_start,
+                    'sample': self._cycle_start,
+                    'onset': self._cycle_start - self._exp_win_first_flip_time,
                     'duration': self._exp_win_last_flip_time - self._cycle_start
                     })
 
@@ -254,6 +256,7 @@ class Retinotopy(Task):
                 self._events.append({
                     'condition': self.condition,
                     'trial_type': 'cycle',
+                    'sample': self._cycle_start,
                     'onset': self._cycle_start - self._exp_win_first_flip_time,
                     'duration': self._exp_win_last_flip_time - self._cycle_start
                     })
