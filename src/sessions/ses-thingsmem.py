@@ -20,8 +20,8 @@ def get_tasks(parsed):
             run,
             name=f"task-thingsmemory_run-{run}",
             use_eyetracking=True,
-            use_fmri=parsed.fmri,
-            use_meg=parsed.meg,
+#            use_fmri=parsed.fmri,
+#            use_meg=parsed.meg,
             )
         for run in range(1, n_runs_session + 1)
     ]
