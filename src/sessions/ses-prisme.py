@@ -19,6 +19,7 @@ def get_tasks(parsed):
         f"sub-{parsed.subject}_ses-{parsed.session}_design.tsv",
     )
     tasks = [
+
         Prisme(session_design_filename, IMAGE_PATH, run, name=f"task-prisme_run-{run}",use_eyetracking=True)
         for run in range(1, fmri_runs + 1)
     ]
@@ -38,6 +39,9 @@ def get_tasks(parsed):
 
 
 n_sessions = 12  # number of sessions
+
+assert n_sessions <= 12 # just because input image list csv exemplar_nr max is 12
+
 fmri_runs = 8
 eeg_runs = 3
 n_runs = fmri_runs + eeg_runs  # number of runs
@@ -75,6 +79,9 @@ def generate_design_file(subject, session):
         os.path.join(THINGS_DATA_PATH, "images/image_paths_fmri.csv")
     )
 
+
+    # exemplar_nr.eq keeps one cat per session.
+
     images_exp = images_list[
         images_list.condition.eq("exp") & images_list.exemplar_nr.eq(int(session))
     ].sample(frac=1)
@@ -88,7 +95,11 @@ def generate_design_file(subject, session):
         hashlib.sha1(("%s-%s" % (subject, session)).encode("utf-8")).hexdigest(), 16
     ) % (2 ** 32 - 1)
     print("seed", seed)
+
     np.random.seed(seed)
+
+    np.random.seed(seed) # @warning seed will be reset between #random calls so probably misworking! @todo checkout
+
 
     all_run_trials = pandas.DataFrame()
 
@@ -174,6 +185,7 @@ def generate_design_file(subject, session):
     #     "designs",
     #     f"sub-{parsed.subject}_ses-{parsed.session}_test_design.tsv",
     # )
+
 
 
 if __name__ == "__main__":

@@ -69,10 +69,9 @@ class EyetrackerCalibration(Task):
         self.eyetracker = eyetracker
 
     def _instructions(self, exp_win, ctl_win):
-        instruction_text = """We're going to calibrate the eyetracker.
-Please look at the markers that appear on the screen.
 
-While awaiting for the calibration to start you will be asked to roll your eyes."""
+        instruction_text = """Veuillez tournez vos yeux dans toutes les directions.
+Des marqueurs apparaitront à l'écran, veuillez les fixer."""
         screen_text = visual.TextStim(
             exp_win,
             text=instruction_text,
@@ -108,9 +107,19 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
             color="white",
             wrapWidth=config.WRAP_WIDTH,
             )
+        # Bypass calibration on windows 7.
+        # cf. https://github.com/pupil-labs/pupil/issues/2098
+        if os.name == 'nt':
+            yield True
+            return
 
         calibration_success = False
-        while not calibration_success:
+        self.task_stop = np.inf
+        task_first_attempt_start = time.monotonic()
+        print("A")
+        while not calibration_success:# and self.task_stop - task_first_attempt_start < 60.:
+            print("CALIB LOOP")
+            print("KEY LOOP")
             while True:
                 allKeys = event.getKeys([CALIBRATE_HOTKEY])
                 start_calibration = False
@@ -121,6 +130,7 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
                     break
                 text_roll.draw(exp_win)
                 yield False
+            print("KEY LOOP END")
             logging.info("calibration started")
             print("calibration started")
 
@@ -151,10 +161,12 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
             self.task_start = time.monotonic()
             self.task_stop = np.inf
             self.eyetracker.set_pupil_cb(self._pupil_cb)
+            print("WAIT_PUPIL")
 
             while not len(self._pupils_list):  # wait until we get at least a pupil
                 yield False
 
+            print("START_CALIB")
             exp_win.logOnFlip(
                 level=logging.EXP,
                 msg="eyetracker_calibration: starting at %f" % time.time(),
@@ -163,6 +175,7 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
                 marker_pos = self.markers[site_id]
                 pos = (marker_pos - 0.5) * window_size_frame
                 circle_marker.pos = pos
+                print("DISPLAY_MARKER")
                 exp_win.logOnFlip(
                     level=logging.EXP,
                     msg="calibrate_position,%d,%d,%d,%d"
@@ -191,20 +204,30 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
                     yield True
             yield True
             self.task_stop = time.monotonic()
+            print("REGISTER_CALIB")
             logging.info(
                 f"calibrating on {len(self._pupils_list)} pupils and {len(self.all_refs_per_flip)} markers"
             )
             self.eyetracker.calibrate(self._pupils_list, self.all_refs_per_flip)
+            print("REGISTER_CALIB")
             while True:
                 notes = getattr(self.eyetracker, '_last_calibration_notification',None)
+                time.sleep(5*1e-3)
                 if notes:
                     calibration_success = notes['topic'].startswith("notify.calibration.successful")
+                    print('REGISTER_CALIB:SUCCESS')
                     if not calibration_success:
                         print('#### CALIBRATION FAILED: restart with <c> ####')
                     break
-
+            print('REGISTER_CALIB:SUCCESS :)')
 
     def stop(self, exp_win, ctl_win):
+        # Bypass calibration on windows 7.
+        # cf. https://github.com/pupil-labs/pupil/issues/2098
+        if os.name == 'nt':
+            yield
+            return
+
         self.eyetracker.unset_pupil_cb()
         yield
 
@@ -255,16 +278,17 @@ class EyeTrackerClient(threading.Thread):
         if profile:
             dev_opts.append("--profile")
 
-        self._pupil_process = Popen(
-            [
-                "python3",
-                os.path.join(os.environ["PUPIL_PATH"], "pupil_src", "main.py"),
-                "capture",
-                "--port",
-                str(PUPIL_REMOTE_PORT),
-            ]
-            + dev_opts
-        )
+        if os.name != 'nt':
+            self._pupil_process = Popen(
+                [
+                    "python3",
+                    os.path.join(os.environ["PUPIL_PATH"], "pupil_src", "main.py"),
+                    "capture",
+                    "--port",
+                    str(PUPIL_REMOTE_PORT),
+                ]
+                + dev_opts
+            )
 
         self._ctx = zmq.Context()
         self._req_socket = self._ctx.socket(zmq.REQ)
@@ -369,8 +393,9 @@ class EyeTrackerClient(threading.Thread):
         # stop world and children process
         self.send_recv_notification({"subject": "world_process.should_stop"})
         self.send_recv_notification({"subject": "launcher_process.should_stop"})
-        self._pupil_process.wait(timeout)
-        self._pupil_process.terminate()
+        if os.name != 'nt':
+            self._pupil_process.wait(timeout)
+            self._pupil_process.terminate()
         time.sleep(1 / 60.0)
         super(EyeTrackerClient, self).join(timeout)
 
