@@ -3,3 +3,4 @@ gym-retro>=0.8.0
 pandas>=1.1.1
 python-dotenv
 tqdm>=4.60.0
+textdistance
