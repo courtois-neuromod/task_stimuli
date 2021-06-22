@@ -1,7 +1,9 @@
 # CLI: command line interface options and main loop
 
 import os, datetime, traceback, glob, time
+from collections.abc import Iterable, Iterator
 from psychopy import core, visual, logging, event
+import itertools
 
 visual.window.reportNDroppedFrames = 10e10
 
@@ -82,8 +84,6 @@ def run_task(
 
     if eyetracker:
         eyetracker.stop_recording()
-    # now that time is less sensitive: save files
-    task.save()
 
     run_task_loop(
         task,
@@ -92,6 +92,9 @@ def run_task(
         gaze_drawer,
         record_movie=exp_win if record_movie else False,
     )
+
+    # now that time is less sensitive: save files
+    task.save()
 
     return shortcut_evt
 
@@ -184,41 +187,37 @@ def main_loop(
                 )
             ]
 
-        all_tasks.insert(
-            0,
-            video.VideoAudioCheckLoop(
-                setup_video_path[0], name="setup_soundcheck_video"
-            ),
-        )
-        all_tasks.insert(
-            1,
-            task_base.Pause(
+        all_tasks = itertools.chain(
+            [task_base.Pause(
                 """We are completing the setup and initializing the scanner.
 We will start the tasks in a few minutes.
 Please remain still."""
-            ),
-        )
-        all_tasks.append(
-            task_base.Pause(
+            )],
+            all_tasks,
+            [task_base.Pause(
                 """We are done for today.
 The scanner might run for a few seconds to acquire reference images.
 Please remain still.
 We are coming to get you out of the scanner shortly."""
-            )
+            )],
         )
     else:
-        all_tasks.append(
-            task_base.Pause(
+        all_tasks = itertools.chain(
+            all_tasks,
+            [task_base.Pause(
                 """We are done with the tasks for today.
 Thanks for your participation!"""
-            )
+            )],
         )
-    # list of tasks to be ran in a session
 
-    print("Here are the stimuli planned for today\n" + "_" * 50)
-    for task in all_tasks:
-        print("- " + task.name)
-    print("_" * 50)
+    if not isinstance(all_tasks, Iterator):
+
+        # list of tasks to be ran in a session
+
+        print("Here are the stimuli planned for today\n" + "_" * 50)
+        for task in all_tasks:
+            print(f"- {task.name} {getattr(task,'duration','')}" )
+        print("_" * 50)
 
     try:
         for task in all_tasks:
