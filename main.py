@@ -24,7 +24,7 @@ def run(parsed):
         if isinstance(tasks, Iterator):
             tasks = itertools.islice(tasks, parsed.skip_n_tasks, None)
         else:
-            tasks[parsed.skip_n_tasks:]
+            tasks = tasks[parsed.skip_n_tasks:]
     try:
         cli.main_loop(
             tasks,
