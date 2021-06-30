@@ -9,5 +9,6 @@ TASKS = [
         condition = condition,
         ncycles=4,
         name=f"task-{condition[3:].lower()}",
+        use_eyetracking=True,
     ) for condition in conditions
 ]
