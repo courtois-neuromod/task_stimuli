@@ -211,7 +211,7 @@ Des marqueurs apparaitront à l'écran, veuillez les fixer."""
             np.savez(fname, pupils=self._pupils_list, markers=self.all_refs_per_flip)
 
 
-from subprocess import Popen
+from subprocess import Popen, PIPE
 
 from contextlib import contextmanager
 
@@ -225,6 +225,13 @@ def nonblocking(lock):
         if locked:
             lock.release()
 
+
+# Write eyetracker log without breaking tqdm's progress bar while ensuring
+# proper logging storage.
+def print_process_stderr(output):
+    logging.exp(msg="eyetracker stderr: " + output)
+def print_process_stdout(output):
+    logging.exp(msg="eyetracker stdout: " + output)
 
 class EyeTrackerClient(threading.Thread):
 
@@ -259,8 +266,17 @@ class EyeTrackerClient(threading.Thread):
                     "--port",
                     str(PUPIL_REMOTE_PORT),
                 ]
-                + dev_opts
+                + dev_opts,
+                stdout=PIPE,
+                stderr=PIPE
             )
+            self._pupil_process_err_thread = Thread(target=print_process_stderr, args=(self._pupil_process.stderr))
+            self._pupil_process_err_thread.daemon = True # thread gets killed when the main thread finishes
+            self._pupil_process_err_thread.start()
+            self._pupil_process_out_thread = Thread(target=print_process_stdout, args=(self._pupil_process.stdout))
+            self._pupil_process_out_thread.daemon = True # thread gets killed when the main thread finishes
+            self._pupil_process_out_thread.start()
+
 
         self._ctx = zmq.Context()
         self._req_socket = self._ctx.socket(zmq.REQ)
@@ -368,6 +384,8 @@ class EyeTrackerClient(threading.Thread):
         if os.name != 'nt':
             self._pupil_process.wait(timeout)
             self._pupil_process.terminate()
+            self._pupil_process_out_thread.terminate()
+            self._pupil_process_err_thread.terminate()
         time.sleep(1 / 60.0)
         super(EyeTrackerClient, self).join(timeout)
 
