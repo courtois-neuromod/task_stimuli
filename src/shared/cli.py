@@ -163,12 +163,17 @@ def main_loop(
         print("starting et client")
         eyetracker_client.start()
         print("done")
-        all_tasks.insert(5, eyetracking.EyetrackerCalibration(
-            eyetracker_client, name="EyeTracker-Calibration"
-        ))
-        all_tasks.insert(0, eyetracking.EyetrackerCalibration(
-            eyetracker_client, name="EyeTracker-Calibration"
-        ))
+
+        # Setup calibration.
+        # @note bypass calibration on windows 7.
+        # cf. https://github.com/pupil-labs/pupil/issues/2098
+        if os.name != 'nt':
+            all_tasks.insert(5, eyetracking.EyetrackerCalibration(
+                eyetracker_client, name="EyeTracker-Calibration"
+            ))
+            all_tasks.insert(0, eyetracking.EyetrackerCalibration(
+                eyetracker_client, name="EyeTracker-Calibration"
+            ))
 
         if show_ctl_win:
             gaze_drawer = eyetracking.GazeDrawer(ctl_win)

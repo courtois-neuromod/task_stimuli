@@ -94,12 +94,6 @@ Des marqueurs apparaitront à l'écran, veuillez les fixer."""
             self._pupils_list.append(pupil)
 
     def _run(self, exp_win, ctl_win):
-        # Bypass calibration on windows 7.
-        # cf. https://github.com/pupil-labs/pupil/issues/2098
-        if os.name == 'nt':
-            yield True
-            return
-
         calibration_success = False
         self.task_stop = np.inf
         task_first_attempt_start = time.monotonic()
@@ -208,12 +202,6 @@ Des marqueurs apparaitront à l'écran, veuillez les fixer."""
             print('REGISTER_CALIB:SUCCESS :)')
 
     def stop(self, exp_win, ctl_win):
-        # Bypass calibration on windows 7.
-        # cf. https://github.com/pupil-labs/pupil/issues/2098
-        if os.name == 'nt':
-            yield
-            return
-
         self.eyetracker.unset_pupil_cb()
         yield
 
