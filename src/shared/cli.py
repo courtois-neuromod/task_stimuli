@@ -14,7 +14,7 @@ globalClock = core.MonotonicClock(0)
 logging.setDefaultClock(globalClock)
 
 from . import config  # import first separately
-from . import fmri, eyetracking, utils, meg, config
+from . import fmri, eyetracking, utils, meg, eeg, config
 from ..tasks import task_base, video
 
 
@@ -68,6 +68,9 @@ def run_task(
     if task.use_meg and not shortcut_evt:
         meg.send_signal(meg.MEG_settings["TASK_START_CODE"])
 
+    if task.use_eeg and not shortcut_evt:
+        eeg.send_spike()
+
     if not shortcut_evt:
         shortcut_evt = run_task_loop(
             task.run(exp_win, ctl_win),
@@ -79,6 +82,9 @@ def run_task(
     # send stop trigger/marker to MEG + Biopac (or anything else on parallel port)
     if task.use_meg and not shortcut_evt:
         meg.send_signal(meg.MEG_settings["TASK_STOP_CODE"])
+
+    if task.use_eeg and not shortcut_evt:
+        eeg.send_spike()
 
     if eyetracker:
         eyetracker.stop_recording()
@@ -104,6 +110,7 @@ def main_loop(
     enable_eyetracker=False,
     use_fmri=False,
     use_meg=False,
+    use_eeg=False,
     show_ctl_win=False,
     allow_run_on_battery=False,
     enable_ptt=False,
@@ -241,6 +248,7 @@ Thanks for your participation!"""
                 use_fmri=use_fmri,
                 use_eyetracking=use_eyetracking,
                 use_meg=use_meg,
+                use_eeg=use_eeg,
             )
             print("READY")
 

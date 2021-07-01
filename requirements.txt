@@ -1,5 +1,6 @@
+git+https://github.com/pyserial/pyparallel
+colorama
 PsychoPy>=2020.2.4.post1
-gym-retro>=0.8.0
 pandas>=1.1.1
 python-dotenv
 tqdm>=4.60.0
