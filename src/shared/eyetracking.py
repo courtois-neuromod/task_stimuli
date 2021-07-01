@@ -270,10 +270,10 @@ class EyeTrackerClient(threading.Thread):
                 stdout=PIPE,
                 stderr=PIPE
             )
-            self._pupil_process_err_thread = Thread(target=print_process_stderr, args=(self._pupil_process.stderr))
+            self._pupil_process_err_thread = threading.Thread(target=print_process_stderr, args=(self._pupil_process.stderr))
             self._pupil_process_err_thread.daemon = True # thread gets killed when the main thread finishes
             self._pupil_process_err_thread.start()
-            self._pupil_process_out_thread = Thread(target=print_process_stdout, args=(self._pupil_process.stdout))
+            self._pupil_process_out_thread = threading.Thread(target=print_process_stdout, args=(self._pupil_process.stdout))
             self._pupil_process_out_thread.daemon = True # thread gets killed when the main thread finishes
             self._pupil_process_out_thread.start()
 
