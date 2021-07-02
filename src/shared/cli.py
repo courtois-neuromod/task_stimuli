@@ -176,18 +176,6 @@ def main_loop(
         print("starting et client")
         eyetracker_client.start()
         print("done")
-<<<<<<< HEAD
-        def interleave_calibration(tasks):
-            calibration_index=0
-            for task in tasks:
-                calibration_index+=1
-                yield eyetracking.EyetrackerCalibration(
-                    eyetracker_client,
-                    name=f"eyeTrackercalibration-{calibration_index}"
-                )
-                yield task
-        all_tasks = interleave_calibration(all_tasks)
-=======
 
         # Setup calibration.
         # @note bypass calibration on windows 7.
@@ -199,7 +187,6 @@ def main_loop(
             all_tasks.insert(0, eyetracking.EyetrackerCalibration(
                 eyetracker_client, name="EyeTracker-Calibration"
             ))
->>>>>>> prisme
 
         if show_ctl_win:
             gaze_drawer = eyetracking.GazeDrawer(ctl_win)

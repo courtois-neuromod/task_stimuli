@@ -11,24 +11,6 @@ IMAGE_PATH = os.path.join(THINGS_DATA_PATH, "images")
 # pos = test image user is expected to recognize, as he's seen it.
 # neg = test image user is expected to not recognize, as it wasn't shown.
 
-<<<<<<< HEAD
-def get_tasks(parsed):
-    from ..tasks.prisme import Prisme
-
-    session_design_filename = os.path.join(
-        PRISME_DATA_PATH,
-        "designs",
-        f"sub-{parsed.subject}_ses-{parsed.session}_design.tsv",
-    )
-    tasks = [
-
-        Prisme(session_design_filename, IMAGE_PATH, run, name=f"task-prisme_run-{run}",use_eyetracking=True)
-        for run in range(1, fmri_runs + 1)
-    ]
-    return tasks
-
-=======
->>>>>>> prisme
 
 # experiment
 
@@ -98,15 +80,7 @@ def generate_design_file(subject, session):
     images_list = pandas.read_csv(
         os.path.join(THINGS_DATA_PATH, "images/image_paths_fmri.csv")
     )
-<<<<<<< HEAD
-
-
-    # exemplar_nr.eq keeps one cat per session.
-
-    images_exp = images_list[
-=======
     images = images_list[
->>>>>>> prisme
         images_list.condition.eq("exp") & images_list.exemplar_nr.eq(int(session))
     ].sample(frac=1)
 

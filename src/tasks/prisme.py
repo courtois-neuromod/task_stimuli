@@ -14,13 +14,8 @@ FINAL_WAIT = 9
 
 class Prisme(Task):
 
-<<<<<<< HEAD
-    # @nuks
-    DEFAULT_INSTRUCTION = """Regardez les images à l'écran."""
-=======
     DEFAULT_INSTRUCTION = """Veuillez regardez les images durant les 5 prochaines
 minutes en essayant de ne pas bouger la tête."""
->>>>>>> prisme
 
     def __init__(self, design, images_path, run, *args, **kwargs):
         super().__init__(**kwargs)
