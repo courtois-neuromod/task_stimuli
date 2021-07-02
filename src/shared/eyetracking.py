@@ -273,15 +273,15 @@ class EyeTrackerClient(threading.Thread):
                     str(PUPIL_REMOTE_PORT),
                 ]
                 + dev_opts,
-                stdout=PIPE,
-                stderr=PIPE
+                # stdout=PIPE,
+                # stderr=PIPE
             )
-            self._pupil_process_err_thread = threading.Thread(target=print_process_stderr, args=(self._pupil_process.stderr))
-            self._pupil_process_err_thread.daemon = True # thread gets killed when the main thread finishes
-            self._pupil_process_err_thread.start()
-            self._pupil_process_out_thread = threading.Thread(target=print_process_stdout, args=(self._pupil_process.stdout))
-            self._pupil_process_out_thread.daemon = True # thread gets killed when the main thread finishes
-            self._pupil_process_out_thread.start()
+            # self._pupil_process_err_thread = threading.Thread(target=print_process_stderr, args=(self._pupil_process.stderr))
+            # self._pupil_process_err_thread.daemon = True # thread gets killed when the main thread finishes
+            # self._pupil_process_err_thread.start()
+            # self._pupil_process_out_thread = threading.Thread(target=print_process_stdout, args=(self._pupil_process.stdout))
+            # self._pupil_process_out_thread.daemon = True # thread gets killed when the main thread finishes
+            # self._pupil_process_out_thread.start()
 
 
         self._ctx = zmq.Context()
@@ -390,8 +390,8 @@ class EyeTrackerClient(threading.Thread):
         if os.name != 'nt':
             self._pupil_process.wait(timeout)
             self._pupil_process.terminate()
-            self._pupil_process_out_thread.terminate()
-            self._pupil_process_err_thread.terminate()
+            # self._pupil_process_out_thread.terminate()
+            # self._pupil_process_err_thread.terminate()
         time.sleep(1 / 60.0)
         super(EyeTrackerClient, self).join(timeout)
 
