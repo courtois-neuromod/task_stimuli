@@ -1,4 +1,5 @@
 import os
+import math
 
 THINGS_DATA_PATH = os.path.join("data", "things")
 PRISME_DATA_PATH = os.path.join("data", "prisme")
@@ -10,6 +11,7 @@ IMAGE_PATH = os.path.join(THINGS_DATA_PATH, "images")
 # pos = test image user is expected to recognize, as he's seen it.
 # neg = test image user is expected to not recognize, as it wasn't shown.
 
+<<<<<<< HEAD
 def get_tasks(parsed):
     from ..tasks.prisme import Prisme
 
@@ -25,6 +27,8 @@ def get_tasks(parsed):
     ]
     return tasks
 
+=======
+>>>>>>> prisme
 
 # experiment
 
@@ -69,24 +73,129 @@ max_rt = 1.49*3
 # max_catch_spacing = 20
 
 
+def get_tasks(parsed):
+    from ..tasks.prisme import Prisme
+
+    session_design_filename = os.path.join(
+        PRISME_DATA_PATH,
+        "designs",
+        f"sub-{parsed.subject}_ses-{parsed.session}_design.tsv",
+    )
+    tasks = [
+        Prisme(session_design_filename, IMAGE_PATH, run, name=f"task-prisme_run-{run}")
+        for run in range(1, fmri_runs + 1)
+    ]
+    return tasks
+
+
 def generate_design_file(subject, session):
-    import pandas
-    import numpy as np
     import random
     import hashlib
 
+    # Retrieve image list for session
+    # exemplar_nr.eq keeps one cat per session.
+    import pandas
     images_list = pandas.read_csv(
         os.path.join(THINGS_DATA_PATH, "images/image_paths_fmri.csv")
     )
+<<<<<<< HEAD
 
 
     # exemplar_nr.eq keeps one cat per session.
 
     images_exp = images_list[
+=======
+    images = images_list[
+>>>>>>> prisme
         images_list.condition.eq("exp") & images_list.exemplar_nr.eq(int(session))
     ].sample(frac=1)
+
     # images_catch = images_list[images_list.condition.eq("catch")].sample(frac=1)
-    images_test = images_list[images_list.condition.eq("test")].sample(frac=1)
+    # images_test = images_list[images_list.condition.eq("test")].sample(frac=1)
+
+    # 1. trier par ordre sémantique
+
+    # à part
+    ## stats pour un run donné - 58 + 5 images selectionnées -- caract sur plan sémantique
+    # -- métrique distance moyenne entre image + variance + minimal
+    # -- parmis image vue, non vue -- dist. sem, temp. 
+
+    # set plotting env variable for itermplot (platform specific)
+    # @warning will break matplotlib if itermplot is not installed (most likely)
+    os.environ['ITERMPLOT_LINES']=str(12)
+    os.environ['MPLBACKEND']="module://itermplot"
+
+    # Calculate pearson coef. cf. https://stackoverflow.com/questions/33703361/efficiently-calculate-and-store-similarity-matrix
+    import scipy.io
+    import numpy as np
+    mat = scipy.io.loadmat('/Volumes/1ToApfsNVME/things/Semantic Embedding/sensevec_augmented_with_wordvec.mat')
+    pearson_similarity_matrix = np.corrcoef(mat['sensevec_augmented'])
+
+    # Inject image path as matrix rows and columns label.
+    things_cats = pandas.read_csv('/Volumes/1ToApfsNVME/things/Variables/unique_id.csv', header=None)
+    pearson_labeled_similarity_matrix = pandas.DataFrame(data=pearson_similarity_matrix, index=things_cats.values.flatten(), columns=things_cats.values.flatten())
+
+    # Only use the cneuromod/things subset dataset instead of the whole one.
+    import re
+    path_to_cat_regex = re.compile('[^/]+/([^/]+)/.+')
+    image_cats = images['image_path']
+    image_cats = image_cats.apply(lambda path: path_to_cat_regex.match(path).group(1))
+    image_cats = image_cats.unique()
+    filtered_pearson_labeled_similarity_matrix = pearson_labeled_similarity_matrix.loc[image_cats, image_cats]
+    # filtered_pearson_labeled_similarity_matrix = pearson_labeled_similarity_matrix.filter(items=image_cats, axis='index') # @warning like != regex -- biais!
+    # filtered_pearson_labeled_similarity_matrix = filtered_pearson_labeled_similarity_matrix.filter(items=image_cats, axis='columns')
+
+    # Draw matrix.
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    f, ax = plt.subplots(figsize=(11, 9))
+    sns.heatmap(filtered_pearson_labeled_similarity_matrix, square=True)
+    plt.show()
+
+    # Change matrix to upper triangle only (in order to be able to change to
+    # unidimensional later on).
+    # pearson_similarity_matrix = np.triu(pearson_similarity_matrix)
+    filtered_pearson_labeled_similarity_vector = filtered_pearson_labeled_similarity_matrix.iloc[np.triu_indices(len(filtered_pearson_labeled_similarity_matrix))]
+
+    # Generate unidimensional distance vector from bidimensional distance
+    # matrix with metadata about related image path pair.
+    # @warning items will be present twice if this is taken from the square
+    # matrix and not the triangle.
+    filtered_pearson_labeled_similarity_vector = filtered_pearson_labeled_similarity_vector.unstack()
+    filtered_pearson_labeled_similarity_vector.plot()
+    plt.show()
+
+    # Sort by similarity.
+    sorted_filtered_pearson_labeled_similarity_vector = filtered_pearson_labeled_similarity_vector.sort_values()
+
+    # Draw vector
+
+    # # Sort by pearson coef
+    # import re
+    # path_to_cat_regex = re.compile('[^/]+/([^/]+)/.+') # @warning
+    # def compare(image_a_obj, image_b_obj):
+    #     a_path = image_a_obj['image_path']
+    #     a_cat = path_to_cat_regex.match(a_path).group(1)
+    #     a_cat_id = things_image_paths.index[things_image_paths[0] == a_path]
+    #     b_path = image_b_obj['image_path']
+    #     b_cat = path_to_cat_regex.match(b_path).group(1)
+    #     b_cat_id = things_image_paths.index[things_image_paths[0] == b_path]
+    #     pearson_coeff = psim[a_cat_id][b_cat_id]
+    #     return pearson_coeff
+    # images.sort_values()
+
+
+    # @note fixed test size would be better than ratio, as len(images) is
+    # already a prepicked subset of image specific to the session.
+    split_index = math.floor(len(images) * (1-(n_trials_neg / n_trials_shown)))
+    images_exp = images.iloc[0 : split_index]
+    images_test = images.iloc[split_index: len(images)]
+    print ("images: %s" % len(images))
+    print ("ratio: %s" % (n_trials_neg / n_trials_shown))
+    print ("shown: %s" % len(images_exp))
+    print ("test: %s" % len(images_test))
+    assert n_trials_shown <= len(images_exp)
+    assert n_trials_neg <= len(images_test)
 
     design = pandas.DataFrame()
 

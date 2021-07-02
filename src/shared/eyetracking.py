@@ -97,22 +97,6 @@ Des marqueurs apparaitront à l'écran, veuillez les fixer."""
             self._pupils_list.append(pupil)
 
     def _run(self, exp_win, ctl_win):
-
-        roll_eyes_text = "Please roll your eyes ~2-3 times in clockwise and counterclockwise directions"
-
-        text_roll = visual.TextStim(
-            exp_win,
-            text=roll_eyes_text,
-            alignText="center",
-            color="white",
-            wrapWidth=config.WRAP_WIDTH,
-            )
-        # Bypass calibration on windows 7.
-        # cf. https://github.com/pupil-labs/pupil/issues/2098
-        if os.name == 'nt':
-            yield True
-            return
-
         calibration_success = False
         self.task_stop = np.inf
         task_first_attempt_start = time.monotonic()
@@ -222,12 +206,6 @@ Des marqueurs apparaitront à l'écran, veuillez les fixer."""
             print('REGISTER_CALIB:SUCCESS :)')
 
     def stop(self, exp_win, ctl_win):
-        # Bypass calibration on windows 7.
-        # cf. https://github.com/pupil-labs/pupil/issues/2098
-        if os.name == 'nt':
-            yield
-            return
-
         self.eyetracker.unset_pupil_cb()
         yield
 
@@ -237,7 +215,7 @@ Des marqueurs apparaitront à l'écran, veuillez les fixer."""
             np.savez(fname, pupils=self._pupils_list, markers=self.all_refs_per_flip)
 
 
-from subprocess import Popen
+from subprocess import Popen, PIPE
 
 from contextlib import contextmanager
 
@@ -251,6 +229,13 @@ def nonblocking(lock):
         if locked:
             lock.release()
 
+
+# Write eyetracker log without breaking tqdm's progress bar while ensuring
+# proper logging storage.
+def print_process_stderr(output):
+    logging.exp(msg="eyetracker stderr: " + output)
+def print_process_stdout(output):
+    logging.exp(msg="eyetracker stdout: " + output)
 
 class EyeTrackerClient(threading.Thread):
 
@@ -281,14 +266,21 @@ class EyeTrackerClient(threading.Thread):
         if os.name != 'nt':
             self._pupil_process = Popen(
                 [
-                    "python3",
-                    os.path.join(os.environ["PUPIL_PATH"], "pupil_src", "main.py"),
-                    "capture",
+                    os.path.join(os.environ["PUPIL_PATH"]),
                     "--port",
                     str(PUPIL_REMOTE_PORT),
                 ]
-                + dev_opts
+                + dev_opts,
+                stdout=PIPE,
+                stderr=PIPE
             )
+            self._pupil_process_err_thread = threading.Thread(target=print_process_stderr, args=(self._pupil_process.stderr))
+            self._pupil_process_err_thread.daemon = True # thread gets killed when the main thread finishes
+            self._pupil_process_err_thread.start()
+            self._pupil_process_out_thread = threading.Thread(target=print_process_stdout, args=(self._pupil_process.stdout))
+            self._pupil_process_out_thread.daemon = True # thread gets killed when the main thread finishes
+            self._pupil_process_out_thread.start()
+
 
         self._ctx = zmq.Context()
         self._req_socket = self._ctx.socket(zmq.REQ)
@@ -396,6 +388,8 @@ class EyeTrackerClient(threading.Thread):
         if os.name != 'nt':
             self._pupil_process.wait(timeout)
             self._pupil_process.terminate()
+            self._pupil_process_out_thread.terminate()
+            self._pupil_process_err_thread.terminate()
         time.sleep(1 / 60.0)
         super(EyeTrackerClient, self).join(timeout)
 

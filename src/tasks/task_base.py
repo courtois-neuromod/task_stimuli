@@ -4,7 +4,7 @@ import time
 import pandas
 from psychopy import logging, visual, core, event
 
-from ..shared import fmri, meg, config
+from ..shared import fmri, meg, eeg, config
 
 
 class Task(object):
@@ -28,11 +28,14 @@ class Task(object):
         output_fname_base,
         use_fmri=False,
         use_meg=False,
+        use_eeg=False,
     ):
         self.output_path = output_path
         self.output_fname_base = output_fname_base
         self.use_fmri = use_fmri
         self.use_meg = use_meg
+        self.use_eeg = use_eeg
+        self.use_eyetracking = use_eyetracking
         self._events = []
 
         self._exp_win_first_flip_time = None

@@ -14,7 +14,7 @@ globalClock = core.MonotonicClock(0)
 logging.setDefaultClock(globalClock)
 
 from . import config  # import first separately
-from . import fmri, eyetracking, utils, meg, config
+from . import fmri, eyetracking, utils, meg, eeg, config
 from ..tasks import task_base, video
 
 
@@ -68,6 +68,9 @@ def run_task(
     if task.use_meg and not shortcut_evt:
         meg.send_signal(meg.MEG_settings["TASK_START_CODE"])
 
+    if task.use_eeg and not shortcut_evt:
+        eeg.send_spike()
+
     if not shortcut_evt:
         shortcut_evt = run_task_loop(
             task.run(exp_win, ctl_win),
@@ -79,6 +82,9 @@ def run_task(
     # send stop trigger/marker to MEG + Biopac (or anything else on parallel port)
     if task.use_meg and not shortcut_evt:
         meg.send_signal(meg.MEG_settings["TASK_STOP_CODE"])
+
+    if task.use_eeg and not shortcut_evt:
+        eeg.send_spike()
 
     if eyetracker:
         eyetracker.stop_recording()
@@ -105,6 +111,7 @@ def main_loop(
     enable_eyetracker=False,
     use_fmri=False,
     use_meg=False,
+    use_eeg=False,
     show_ctl_win=False,
     allow_run_on_battery=False,
     enable_ptt=False,
@@ -137,6 +144,10 @@ def main_loop(
     logfile_path = os.path.join(log_path, log_name_prefix + ".log")
     log_file = logging.LogFile(logfile_path, level=logging.INFO, filemode="w")
 
+    # Reset parallel port if relevant.
+    if use_eeg:
+        eeg.reset()
+
     exp_win = visual.Window(**config.EXP_WINDOW, monitor=config.EXP_MONITOR)
     exp_win.mouseVisible = False
 
@@ -165,6 +176,7 @@ def main_loop(
         print("starting et client")
         eyetracker_client.start()
         print("done")
+<<<<<<< HEAD
         def interleave_calibration(tasks):
             calibration_index=0
             for task in tasks:
@@ -175,6 +187,19 @@ def main_loop(
                 )
                 yield task
         all_tasks = interleave_calibration(all_tasks)
+=======
+
+        # Setup calibration.
+        # @note bypass calibration on windows 7.
+        # cf. https://github.com/pupil-labs/pupil/issues/2098
+        if os.name != 'nt':
+            all_tasks.insert(5, eyetracking.EyetrackerCalibration(
+                eyetracker_client, name="EyeTracker-Calibration"
+            ))
+            all_tasks.insert(0, eyetracking.EyetrackerCalibration(
+                eyetracker_client, name="EyeTracker-Calibration"
+            ))
+>>>>>>> prisme
 
         if show_ctl_win:
             gaze_drawer = eyetracking.GazeDrawer(ctl_win)
@@ -246,6 +271,7 @@ Thanks for your participation!"""
                 log_name_prefix,
                 use_fmri=use_fmri,
                 use_meg=use_meg,
+                use_eeg=use_eeg,
             )
             print("READY")
 
