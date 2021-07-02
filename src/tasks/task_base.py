@@ -29,6 +29,7 @@ class Task(object):
         use_fmri=False,
         use_meg=False,
         use_eeg=False,
+        use_eyetracking=False,
     ):
         self.output_path = output_path
         self.output_fname_base = output_fname_base
