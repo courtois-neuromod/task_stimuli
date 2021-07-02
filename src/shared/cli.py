@@ -142,6 +142,10 @@ def main_loop(
     logfile_path = os.path.join(log_path, log_name_prefix + ".log")
     log_file = logging.LogFile(logfile_path, level=logging.INFO, filemode="w")
 
+    # Reset parallel port if relevant.
+    if use_eeg:
+        eeg.reset()
+
     exp_win = visual.Window(**config.EXP_WINDOW, monitor=config.EXP_MONITOR)
     exp_win.mouseVisible = False
 
