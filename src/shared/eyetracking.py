@@ -232,10 +232,10 @@ def nonblocking(lock):
 
 # Write eyetracker log without breaking tqdm's progress bar while ensuring
 # proper logging storage.
-def print_process_stderr(output):
-    logging.exp(msg="eyetracker stderr: " + output)
-def print_process_stdout(output):
-    logging.exp(msg="eyetracker stdout: " + output)
+# def print_process_stderr(output):
+#     logging.exp(msg="eyetracker stderr: " + output)
+# def print_process_stdout(output):
+#     logging.exp(msg="eyetracker stdout: " + output)
 
 class EyeTrackerClient(threading.Thread):
 
