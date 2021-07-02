@@ -266,7 +266,9 @@ class EyeTrackerClient(threading.Thread):
         if os.name != 'nt':
             self._pupil_process = Popen(
                 [
-                    os.path.join(os.environ["PUPIL_PATH"]),
+                    "python3",
+                    os.path.join(os.environ["PUPIL_PATH"], "pupil_src", "main.py"),
+                    "capture",
                     "--port",
                     str(PUPIL_REMOTE_PORT),
                 ]
