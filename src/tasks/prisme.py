@@ -2,12 +2,11 @@ import time
 import textwrap
 import os
 import pandas
-from typing import List, Dict
 from psychopy import visual, data, core, event
 from .task_base import Task
 from ..shared import config, utils
 
-def displayText(windows: list[visual.Window], textContent: str):
+def displayText(windows, textContent):
     wrapWidth = config.WRAP_WIDTH
 
     # Deindent text content.
@@ -36,7 +35,7 @@ def displayText(windows: list[visual.Window], textContent: str):
         window.flip(clearBuffer=True)
 
 # @warning backbuffer isn't flipped, image wont be displayed until it is.
-def drawImage(windows: list[visual.Window], image: visual.ImageStim):
+def drawImage(windows, image):
     # For every window.
     for window in windows:
         # Ignore None.
@@ -46,7 +45,7 @@ def drawImage(windows: list[visual.Window], image: visual.ImageStim):
         # Draw image.
         image.draw(window)
 
-def flipBackBuffer(windows: list[visual.Window]):
+def flipBackBuffer(windows):
     # For every window.
     for window in windows:
         # Ignore None.
@@ -56,7 +55,7 @@ def flipBackBuffer(windows: list[visual.Window]):
         # Display backbuffer and clear it.
         window.flip(clearBuffer=True)
 
-def clearScreen(windows: list[visual.Window]):
+def clearScreen(windows):
     # Clear screen
     # For every window.
     for window in windows:
@@ -69,7 +68,7 @@ def clearScreen(windows: list[visual.Window]):
 
 # Like utils.wait_until, but giving back control to the main loop event.
 # @params float deadline in seconds
-def waitUntil(clock: core.Clock, deadline: float):
+def waitUntil(clock, deadline):
     hogCPUperiod = 0.1
     keyboard_accuracy = .0005
 
@@ -97,18 +96,18 @@ def waitUntil(clock: core.Clock, deadline: float):
 # other word Task is not meant to be used in a hierarchical fashion, even
 # though it is possible.
 class PrismeDisplayTask():
-    _fixationCross: visual.ImageStim
-    _imageDir: str = None
-    _runImageSetup: List[any] = None
-    _preloadedImages: Dict[str, visual.ImageStim] = {}
+    _fixationCross
+    _imageDir = None
+    _runImageSetup = None
+    _preloadedImages = {}
 
-    def __init__(self, imageDir: str, runImageSetup: List[any]):
+    def __init__(self, imageDir, runImageSetup):
         self._imageDir = imageDir
         self._runImageSetup = runImageSetup
 
     # Prefetch large files early on for accurate start with other recordings
     # (scanner, biopac...).
-    def prefetch(self, exp_win: visual.Window):
+    def prefetch(self, exp_win):
         # Load fixation cross.
         fixationCrossPath = os.path.join('data', 'prisme', 'pngs',
             'fixation_cross.png')
@@ -125,7 +124,7 @@ class PrismeDisplayTask():
 
     # Run task.
     # @warning must be indempotent due to root task's #restart implementation.
-    def run(self, exp_win: visual.Window, ctl_win: visual.Window):
+    def run(self, exp_win, ctl_win):
         # Start clock.
         clock = core.Clock()
 
@@ -160,20 +159,20 @@ class PrismeDisplayTask():
 
 
 class PrismeMemoryTask():
-    _imageDir: str = None
-    _runImageSetup: List[any] = None
-    _preloadedImages: Dict[str, visual.ImageStim] = {}
-    _events: pandas.DataFrame = pandas.DataFrame()
-    _trial: data.TrialHandler = None
+    _imageDir = None
+    _runImageSetup = None
+    _preloadedImages = {}
+    _events = pandas.DataFrame()
+    _trial = None
 
-    def __init__(self, imageDir: str, runImageSetup: List[any], trial: data.TrialHandler):
+    def __init__(self, imageDir, runImageSetup, trial):
         self._imageDir = imageDir
         self._runImageSetup = runImageSetup
         self._trial = trial
     
     # Prefetch large files early on for accurate start with other recordings
     # (scanner, biopac...).
-    def prefetch(self, exp_win: visual.Window):
+    def prefetch(self, exp_win):
         # Preload images.
         for currImageObj in self._runImageSetup:
             shallowImagePath = currImageObj['image_path']
@@ -184,7 +183,7 @@ class PrismeMemoryTask():
 
     # Display instructions (without any pause, in order to control for memory
     # effect induced by delay).
-    def instructions(self, exp_win: visual.Window, ctl_win: visual.Window):
+    def instructions(self, exp_win, ctl_win):
         duration = config.INSTRUCTION_DURATION
 
         # Start clock.
@@ -208,7 +207,7 @@ class PrismeMemoryTask():
 
     # Run task.
     # @warning must be indempotent due to root task's #restart implementation.
-    def run(self, exp_win: visual.Window, ctl_win: visual.Window):
+    def run(self, exp_win, ctl_win):
         RESPONSE_KEYS = ['a','b','c','d']
         
         # Start clock.
@@ -242,7 +241,7 @@ class PrismeMemoryTask():
         # Give back control to main loop for event handling (optional).
         yield
 
-    def restart(self, trial: data.TrialHandler):
+    def restart(self, trial):
         self._trial = trial
 
     def save(self):
@@ -255,16 +254,16 @@ class PrismeMemoryTask():
 # will lead to multiple fmri TTL awaiting in case of --fmri flag.
 class PrismeTask(Task):
     # - Setup
-    _displayTask: PrismeDisplayTask = None
-    _memoryTask: PrismeMemoryTask = None
-    _doRestart: bool = False
-    _imageDir: str = None
-    _runImageSetup: List[any] = None
-    _trial: data.TrialHandler = None
+    _displayTask = None
+    _memoryTask = None
+    _doRestart = False
+    _imageDir = None
+    _runImageSetup = None
+    _trial = None
     
     # Class constructor.
-    def __init__(self, patientImageSetupPath: str, imageDir: str,
-                 runIdx: int, *args, **kwargs):
+    def __init__(self, patientImageSetupPath, imageDir,
+                 runIdx, *args, **kwargs):
         super().__init__(**kwargs)
 
         # Import run's image list.
@@ -303,7 +302,7 @@ class PrismeTask(Task):
 
     # Prefetch large files early on for accurate start with other recordings
     # (scanner, biopac...).
-    def _setup(self, exp_win: visual.Window):
+    def _setup(self, exp_win):
         self._displayTask.prefetch(exp_win)
         self._memoryTask.prefetch(exp_win)
 
@@ -333,7 +332,7 @@ class PrismeTask(Task):
     # (base_task) use it in order to know if it has to clear the buffer
     # after (when True) displaying the frame (by flipping the backbuffer), but
     # only when using #_instructions instead of #instructions.
-    def instructions(self, exp_win: visual.Window, ctl_win: visual.Window):
+    def instructions(self, exp_win, ctl_win):
         duration = config.INSTRUCTION_DURATION
 
         # Start clock.
@@ -363,7 +362,7 @@ class PrismeTask(Task):
     # eyetracker, fmri, etc).
     # @warning
     # self._doRestart within loops might be checked with a slight delay.
-    def run(self, exp_win: visual.Window, ctl_win: visual.Window):
+    def run(self, exp_win, ctl_win):
         # First run the display task, yielding back control to the main loop
         # for a bit at every step.
         displayTaskLoop = self._displayTask.run(exp_win, ctl_win)
@@ -413,7 +412,7 @@ class PrismeTask(Task):
     # 3rd task loop
     # `Ending` task loop, to be displayed after everything has been recorded
     # (but before events are stored, which is when the #_save method is called).
-    def _stop(self, exp_win: visual.Window, ctl_win: visual.Window):
+    def _stop(self, exp_win, ctl_win):
         yield
 
     # - Tear down
