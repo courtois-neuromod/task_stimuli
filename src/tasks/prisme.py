@@ -90,7 +90,10 @@ def waitUntil(clock, deadline):
         # Give back control to main event loop.
         yield
 
-# @note these sub-tasks don't inherit from Task (task_base), as it would
+def waitFor(duration):
+    clock = core.Clock()
+    yield from waitUntil(clock, duration)
+
 # otherwise involve the root task to override Task's base methods instead of
 # overriding the `protected` (underscored) method, which are meant to be. In
 # other word Task is not meant to be used in a hierarchical fashion, even
@@ -135,15 +138,23 @@ class PrismeDisplayTask():
             image = self._preloadedImages[shallowImagePath]
             drawImage([exp_win, ctl_win], image)
 
-            # Draw fixation cross. 
-            drawImage([exp_win, ctl_win], self._fixationCross)
+            # Wait until onset!
+            # @warning @todo check why -1 in onset ? (I have since removed it)
+            yield from waitUntil(clock, currImageObj['onset'])
 
-            # Display and give back control to main event loop.
+            # Display drawn images and clear backbuffer.
             flipBackBuffer([exp_win, ctl_win])
 
-            # Wait!
-            # @warning @todo check why -1 in onset ? (I have since removed it)
-            yield from waitUntil(clock, currImageObj["onset"])
+            # Wait for duration.
+            yield from waitFor(currImageObj['duration'])
+
+            # Display fixation cross only and clear backbuffer.
+            drawImage([exp_win, ctl_win], self._fixationCross)
+            flipBackBuffer([exp_win, ctl_win])
+
+            # Give back control to main loop for event handling (optional).
+            yield
+
 
         # Clear screen.
         clearScreen([exp_win, ctl_win])
@@ -227,19 +238,23 @@ class PrismeMemoryTask():
             image = self._preloadedImages[shallowImagePath]
             drawImage([exp_win, ctl_win], image)
 
-            # Display and give back control to main event loop.
-            flipBackBuffer([exp_win, ctl_win])
+            # Wait until onset!
+            # @warning @todo check why -1 in onset ? (I have since removed it).
+            yield from waitUntil(clock, currImageObj['onset'])
 
-            # Wait!
-            # @warning @todo check why -1 in onset ? (I have since removed it)
-            print('onset:')
-            print(currImageObj['onset'])
-            yield from waitUntil(clock, currImageObj["onset"])
+            # Display drawn images and clear backbuffer.
+            flipBackBuffer([exp_win, ctl_win])
             
-            # Retrieve events
+            # Wait for duration.
+            yield from waitFor(currImageObj['duration'])
+
+            # Retrieve events.
             keypresses = event.getKeys(RESPONSE_KEYS, timeStamped=clock)
             trial['keypresses'] = keypresses
-            
+
+            # Give back control to main loop for event handling (optional).
+            yield
+
         # Clear screen.
         clearScreen([exp_win, ctl_win])
 
@@ -409,7 +424,6 @@ class PrismeTask(Task):
             self._doRestart = False
             return self._run(exp_win, ctl_win)
 
-
     # @note eeg spike will be sent here if --eeg flag is enabled.
 
     # 3rd task loop
@@ -426,8 +440,8 @@ class PrismeTask(Task):
         eventsTsvPath = self._generate_unique_filename('events', 'tsv')
         self._displayTask.save()
         self._memoryTask.save(eventsTsvPath)
-        return False  # we save events ourselves, without relying on underlying
-                      # framework.
+        return False  # we save events ourselves, without relying on the
+                      # underlying framework.
 
     # Restart the current task, when <ctrl>-n is hit (the main loop take care
     # of listening to the event and then call this method, but doesn't do

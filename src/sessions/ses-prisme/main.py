@@ -6,6 +6,8 @@ import pandas
 from word_similarity_matrix import generate_similarity_matrix
 from fixed_size_clustering import generate_fixed_size_clusters
 
+# @warning equal value might induce a very slight ns additional delay
+# (due to waiting twice for the same timestamp).
 exp_image_step_duration = 1.49 * 3  # 3 * TR
 exp_image_display_duration = 1.49 * 2  # 2 * TR
 test_image_step_duration = 5  # 5s
