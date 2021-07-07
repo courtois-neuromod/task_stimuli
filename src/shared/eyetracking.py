@@ -100,10 +100,8 @@ Des marqueurs apparaitront à l'écran, veuillez les fixer."""
         calibration_success = False
         self.task_stop = np.inf
         task_first_attempt_start = time.monotonic()
-        print("A")
         while not calibration_success:# and self.task_stop - task_first_attempt_start < 60.:
-            print("CALIB LOOP")
-            print("KEY LOOP")
+            logging.info("waiting for c key")
             while True:
                 allKeys = event.getKeys([CALIBRATE_HOTKEY])
                 start_calibration = False
@@ -113,9 +111,7 @@ Des marqueurs apparaitront à l'écran, veuillez les fixer."""
                 if start_calibration:
                     break
                 yield False
-            print("KEY LOOP END")
             logging.info("calibration started")
-            print("calibration started")
 
             window_size_frame = exp_win.size - MARKER_SIZE * 2
             circle_marker = visual.Circle(
@@ -144,12 +140,11 @@ Des marqueurs apparaitront à l'écran, veuillez les fixer."""
             self.task_start = time.monotonic()
             self.task_stop = np.inf
             self.eyetracker.set_pupil_cb(self._pupil_cb)
-            print("WAIT_PUPIL")
+            logging.info("waiting for pupil")
 
             while not len(self._pupils_list):  # wait until we get at least a pupil
                 yield False
 
-            print("START_CALIB")
             exp_win.logOnFlip(
                 level=logging.EXP,
                 msg="eyetracker_calibration: starting at %f" % time.time(),
@@ -158,7 +153,6 @@ Des marqueurs apparaitront à l'écran, veuillez les fixer."""
                 marker_pos = self.markers[site_id]
                 pos = (marker_pos - 0.5) * window_size_frame
                 circle_marker.pos = pos
-                print("DISPLAY_MARKER")
                 exp_win.logOnFlip(
                     level=logging.EXP,
                     msg="calibrate_position,%d,%d,%d,%d"
@@ -187,22 +181,18 @@ Des marqueurs apparaitront à l'écran, veuillez les fixer."""
                     yield True
             yield True
             self.task_stop = time.monotonic()
-            print("REGISTER_CALIB")
             logging.info(
                 f"calibrating on {len(self._pupils_list)} pupils and {len(self.all_refs_per_flip)} markers"
             )
             self.eyetracker.calibrate(self._pupils_list, self.all_refs_per_flip)
-            print("REGISTER_CALIB")
             while True:
                 notes = getattr(self.eyetracker, '_last_calibration_notification',None)
                 time.sleep(5*1e-3)
                 if notes:
                     calibration_success = notes['topic'].startswith("notify.calibration.successful")
-                    print('REGISTER_CALIB:SUCCESS')
                     if not calibration_success:
                         print('#### CALIBRATION FAILED: restart with <c> ####')
                     break
-            print('REGISTER_CALIB:SUCCESS :)')
 
     def stop(self, exp_win, ctl_win):
         self.eyetracker.unset_pupil_cb()
