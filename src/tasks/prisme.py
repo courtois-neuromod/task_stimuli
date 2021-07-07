@@ -96,7 +96,7 @@ def waitUntil(clock, deadline):
 # other word Task is not meant to be used in a hierarchical fashion, even
 # though it is possible.
 class PrismeDisplayTask():
-    _fixationCross
+    _fixationCross = None
     _imageDir = None
     _runImageSetup = None
     _preloadedImages = {}
