@@ -112,7 +112,6 @@ Des marqueurs apparaitront à l'écran, veuillez les fixer."""
                         start_calibration = True
                 if start_calibration:
                     break
-                text_roll.draw(exp_win)
                 yield False
             print("KEY LOOP END")
             logging.info("calibration started")
