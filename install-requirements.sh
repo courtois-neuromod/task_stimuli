@@ -54,5 +54,5 @@ conda install --yes -c conda-forge python-dotenv
 conda install --yes tqdm>=4.60.0
 conda install --yes textdistance
 
-pip install git+https://github.com/pyserial/pyparallel
+python3.6 -m pip install git+https://github.com/pyserial/pyparallel
 
