@@ -165,11 +165,13 @@ class PrismeMemoryTask():
     _events = pandas.DataFrame()
     _trial = None
 
-    def __init__(self, imageDir, runImageSetup, trial):
+    def __init__(self, imageDir, runImageSetup):
         self._imageDir = imageDir
         self._runImageSetup = runImageSetup
-        self._trial = trial
-    
+
+        # Generate trial, used to store events.
+        self._trial = data.TrialHandler(self._runImageSetup, 1, method="sequential")
+
     # Prefetch large files early on for accurate start with other recordings
     # (scanner, biopac...).
     def prefetch(self, exp_win):
@@ -217,7 +219,9 @@ class PrismeMemoryTask():
         event.clearEvents()
 
         # For each images
-        for currImageObj in self._runImageSetup:
+        for trial in self._trial:
+            currImageObj = trial
+
             # Draw image.
             shallowImagePath = currImageObj['image_path']
             image = self._preloadedImages[shallowImagePath]
@@ -234,6 +238,7 @@ class PrismeMemoryTask():
             
             # Retrieve events
             keypresses = event.getKeys(RESPONSE_KEYS, timeStamped=clock)
+            trial['keypresses'] = keypresses
             
         # Clear screen.
         clearScreen([exp_win, ctl_win])
@@ -241,10 +246,12 @@ class PrismeMemoryTask():
         # Give back control to main loop for event handling (optional).
         yield
 
-    def restart(self, trial):
-        self._trial = trial
+    def restart(self):
+        # Generate trial, used to store events.
+        self._trial = data.TrialHandler(self._runImageSetup, 1, method="sequential")
 
-    def save(self):
+    def save(self, outputTsvPath):
+        self._trial.saveAsWideText(outputTsvPath)
         pass
 
     def teardown(self):
@@ -259,7 +266,6 @@ class PrismeTask(Task):
     _doRestart = False
     _imageDir = None
     _runImageSetup = None
-    _trial = None
     
     # Class constructor.
     def __init__(self, patientImageSetupPath, imageDir,
@@ -283,9 +289,6 @@ class PrismeTask(Task):
                 raise ValueError('Cannot find the listed image %s ' %
                                  fullImagePath)
         
-        # Generate trial, used to store events.
-        self._trial = data.TrialHandler(self._runImageSetup, 1, method="sequential")
-        
         # Store setup.
         self._imageDir = imageDir
         self._runImageSetup = runImageSetup
@@ -298,7 +301,7 @@ class PrismeTask(Task):
         self._memoryTask = PrismeMemoryTask(self._imageDir, [
             currImageObj for currImageObj in self._runImageSetup
             if currImageObj['condition'] in ['neg', 'pos']
-        ], self._trial)
+        ])
 
     # Prefetch large files early on for accurate start with other recordings
     # (scanner, biopac...).
@@ -420,10 +423,11 @@ class PrismeTask(Task):
     # Override events saving if transformation are needed.
     # @returns False if events need not be saved
     def _save(self):
+        eventsTsvPath = self._generate_unique_filename('events', 'tsv')
         self._displayTask.save()
-        self._memoryTask.save()
-        # @todo return True/False
-        return True
+        self._memoryTask.save(eventsTsvPath)
+        return False  # we save events ourselves, without relying on underlying
+                      # framework.
 
     # Restart the current task, when <ctrl>-n is hit (the main loop take care
     # of listening to the event and then call this method, but doesn't do
@@ -432,8 +436,7 @@ class PrismeTask(Task):
         self._doRestart = True
 
         # Regenerate trial, used to store events.
-        self._trial = data.TrialHandler(self._runImageSetup, 1, method="sequential")
-        self._memoryTask.restart(self._trial)
+        self._memoryTask.restart()
 
     # Called after everything from the task has run (including #_save).
     def unload(self):
