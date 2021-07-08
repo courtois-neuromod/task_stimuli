@@ -181,7 +181,7 @@ def main_loop(
         # @note bypass calibration on windows 7.
         # cf. https://github.com/pupil-labs/pupil/issues/2098
         if os.name != 'nt':
-            all_tasks.insert(5, eyetracking.EyetrackerCalibration(
+            all_tasks.insert(4, eyetracking.EyetrackerCalibration(
                 eyetracker_client, name="EyeTracker-Calibration"
             ))
             all_tasks.insert(0, eyetracking.EyetrackerCalibration(
