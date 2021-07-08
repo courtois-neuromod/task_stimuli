@@ -79,6 +79,8 @@ def waitUntil(clock, deadline):
 
         # Not so sure ? Dispatch event ? Seems not relevant in our case (cf.
         # not sure pyglet is used internally).
+        # Might bring the focus back to the windows in order to be sure TTL /
+        # keyboard event is received by the window.
         utils.poll_windows()
 
         # Update time.
