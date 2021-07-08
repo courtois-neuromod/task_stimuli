@@ -98,7 +98,8 @@ orbites jusqu'à ce que des marqueurs apparaissent
 
     def _run(self, exp_win, ctl_win):
 
-        roll_eyes_text = "Please roll your eyes ~2-3 times in clockwise and counterclockwise directions"
+        roll_eyes_text = """Veuillez tournez vos yeux autour de leurs orbites dans
+un sens puis dans l'autre 2~3 fois."""
 
         text_roll = visual.TextStim(
             exp_win,
