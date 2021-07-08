@@ -128,11 +128,6 @@ class PrismeTask(Task):
             else:
                 yield _
 
-        # Restart the Task/Run if requested by main loop.
-        if self._doRestart:
-            self._doRestart = False
-            return self._run(exp_win, ctl_win)
-
         # Then display memory task instruction and start it without a pause to
         # control for a stable delay in order to avoid the difference in delay
         # to impact person's memory and thus final result.
@@ -142,12 +137,7 @@ class PrismeTask(Task):
                 break
             else:
                 yield _
-        
-        # Restart the Task/Run if requested by main loop.
-        if self._doRestart:
-            self._doRestart = False
-            return self._run(exp_win, ctl_win)
-    
+
         # Then run the memory task, yielding back control to the main loop
         # for a bit at every step.
         memoryTaskLoop = self._memoryTask.run(exp_win, ctl_win)
@@ -156,11 +146,6 @@ class PrismeTask(Task):
                 break
             else:
                 yield _
-
-        # Restart the Task/Run if requested by main loop.
-        if self._doRestart:
-            self._doRestart = False
-            return self._run(exp_win, ctl_win)
 
     # @note eeg spike will be sent here if --eeg flag is enabled.
 
@@ -186,11 +171,7 @@ class PrismeTask(Task):
     # of listening to the event and then call this method, but doesn't do
     # anything else, such as reinstantiating the class).
     def _restart(self):
-        self._doRestart = True
-
-        # Regenerate trial, used to store events.
-        self._displayTask.restart()
-        self._memoryTask.restart()
+        pass
 
     # Called after everything from the task has run (including #_save).
     def unload(self):

@@ -26,11 +26,6 @@ class PrismeDisplayTask():
         self._imageDir = imageDir
         self._runImageSetup = runImageSetup
 
-        # Generate trial, used to store events (mainly onset/offset backbuffer
-        # flip to get precise display timing).
-        # @note bids spec: https://bids-specification.readthedocs.io/en/stable/04-modality-specific-files/05-task-events.html
-        self._trial = data.TrialHandler(self._runImageSetup, 1, method='sequential')
-
     # Prefetch large files early on for accurate start with other recordings
     # (scanner, biopac...).
     def prefetch(self, exp_win):
@@ -51,6 +46,11 @@ class PrismeDisplayTask():
     # Run task.
     # @warning must be indempotent due to root task's #restart implementation.
     def run(self, exp_win, ctl_win):
+        # Generate trial, used to store events (mainly onset/offset backbuffer
+        # flip to get precise display timing).
+        # @note bids spec: https://bids-specification.readthedocs.io/en/stable/04-modality-specific-files/05-task-events.html
+        self._trial = data.TrialHandler(self._runImageSetup, 1, method='sequential')
+
         # Log start.
         level=logging.EXP
         msg='Prisme: display task starting at %f' % time.time()
@@ -118,12 +118,9 @@ class PrismeDisplayTask():
         # Give back control to main loop for event handling (optional).
         yield
 
-    def restart(self):
-        # Generate trial, used to store events.
-        self._trial = data.TrialHandler(self._runImageSetup, 1, method='sequential')
-
     def save(self, outputTsvPath):
-        self._trial.saveAsWideText(outputTsvPath)
+        if self._trial:  # only created after instruction have been displayed.
+            self._trial.saveAsWideText(outputTsvPath)
 
     def teardown(self):
         pass
