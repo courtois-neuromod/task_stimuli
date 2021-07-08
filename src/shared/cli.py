@@ -210,6 +210,15 @@ Please remain still.
 We are coming to get you out of the scanner shortly."""
             )],
         )
+
+        if not skip_soundcheck:
+            setup_video_path = utils.get_subject_soundcheck_video(subject)
+            all_tasks = itertools.chain([
+                video.VideoAudioCheckLoop(setup_video_path, name="setup_soundcheck_video",)],
+                all_tasks,
+            )
+
+
     else:
         all_tasks = itertools.chain(
             all_tasks,
