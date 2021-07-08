@@ -106,8 +106,11 @@ def generate_fixed_size_clusters(sensevec_augmented_pd: pandas.DataFrame, simila
     sorted_sensevec_augmented_pd = sensevec_augmented_pd.loc[flattened_clusters]
 
     # Add distance between each word.
-    # @todo make this circular, grouped by cluster, as mean / avg stats will have
-    # window effect otherwise.
+    # @WARNING @WARNING @WARNING @WARNING @WARNING @WARNING @WARNING @WARNING
+    # @warning                      not for analysis
+    # @warning     /!\ these cluster metrics have windows effects /!\
+    # @todo make these metrics out of circular list / grouped by cluster instead.
+    # @WARNING @WARNING @WARNING @WARNING @WARNING @WARNING @WARNING @WARNING
     sorted_sensevec_augmented_pd.loc[sorted_sensevec_augmented_pd.index[0], 'dist'] = None
     for i in range(1, len(sorted_sensevec_augmented_pd)):
         sorted_sensevec_augmented_pd.loc[sorted_sensevec_augmented_pd.index[i], 'dist'] = similarity_matrix.loc[sorted_sensevec_augmented_pd.iloc[i-1].name, sorted_sensevec_augmented_pd.iloc[i].name]
