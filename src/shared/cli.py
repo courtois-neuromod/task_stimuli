@@ -54,7 +54,7 @@ def run_task(
         gaze_drawer,
         record_movie=exp_win if record_movie else False,
     )
-    if task.stop_scanner:
+    if task.start_scanner:
         fmri.trigger_scanner('start')
 
     if task.use_fmri and not shortcut_evt:
@@ -182,23 +182,6 @@ def main_loop(
         if show_ctl_win:
             gaze_drawer = eyetracking.GazeDrawer(ctl_win)
     if use_fmri:
-        if not skip_soundcheck:
-            setup_video_path = glob.glob(
-                os.path.join("data", "videos", "subject_setup_videos", "sub-%s_*" % subject)
-                )
-            if not len(setup_video_path):
-                setup_video_path = [
-                    os.path.join(
-                        "data",
-                        "videos",
-                        "subject_setup_videos",
-                        "sub-default_setup_video.mp4",
-                    )
-                ]
-                all_tasks = itertools.chain([
-                    video.VideoAudioCheckLoop(setup_video_path[0], name="setup_soundcheck_video",)],
-                    all_tasks,
-                )
 
         all_tasks = itertools.chain(
             [task_base.Pause(

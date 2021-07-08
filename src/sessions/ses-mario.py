@@ -59,6 +59,8 @@ def get_tasks(parsed):
             instruction="playing Super Mario Bros {state_name} \n\n Let's-a go!",
             post_run_ratings = [(k, q, 7) for k, q in enumerate(flow_ratings)],
             use_eyetracking=True,
+            start_scanner=True,
+            stop_scanner=True,
         )
         yield task
 

@@ -12,9 +12,18 @@ class Task(object):
     DEFAULT_INSTRUCTION = ""
     PROGRESS_BAR_FORMAT = '{l_bar}{bar}{r_bar}'
 
-    def __init__(self, name, instruction=None, use_eyetracking=False):
+    def __init__(
+        self,
+        name,
+        instruction=None,
+        use_eyetracking=False,
+        start_scanner=False,
+        stop_scanner=False,
+        ):
         self.name = name
         self.use_eyetracking = use_eyetracking
+        self.start_scanner = start_scanner
+        self.stop_scanner = stop_scanner
         if instruction is None:
             self.instruction = self.__class__.DEFAULT_INSTRUCTION
         else:
