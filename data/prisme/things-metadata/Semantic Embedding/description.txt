@@ -1,0 +1,21 @@
+DESCRIPTION
+
+We provide word vectors for each concept. Word vectors can be converted to
+distance matrices using e.g. the cosine distance or the correlation distance.
+Missing entries for which no word vectors exist contain NaNs in both the mat-files and the csv-files.
+
+For word vectors, we provide the implementation of word2vec trained on the
+Google News corpus:
+https://code.google.com/archive/p/word2vec/
+
+Since word vectors do not distinguish between different meanings of words,
+sense vectors have been developed, which make use of synsets provided in
+WordNet. In that sense, they provide a better fit for our concepts. We use a
+word2vec implementation that can be found here and which is based on the above
+version of word2vec:
+https://pilehvar.github.io/deconf/
+
+Both word vector models may have missing entries. We augmented the sense vectors
+by finding corresponding word vectors as a proxy for missing entries. Since
+their length is not the same, we computed a simple linear transform that makes
+them more comparable.

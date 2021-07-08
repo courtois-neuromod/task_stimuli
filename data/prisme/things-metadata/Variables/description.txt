@@ -1,0 +1,13 @@
+DESCRIPTION
+
+These are variables for each of the 26107 images or for each of the 1854
+concepts. All variables are provided as .mat and as .csv files. All variables
+for the 1854 concepts are also found in things_concepts.tsv
+
+image_concept_index.csv   An index denoting which of the 1854 concepts an image belongs to
+image_paths.csv           Relative paths for each image, including all image names
+unique_id.csv             All unique identifiers for images. These are often the same
+                            as the words, but have _ for bigrams and end with a number
+                            if a word has several meanings
+wordnet_id.csv            WordNet ID (for all WordNet IDs, see things_concepts.tsv)
+words.csv                 The actual words themselves
