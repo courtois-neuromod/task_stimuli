@@ -151,6 +151,8 @@ class Task(object):
             df = pandas.DataFrame(self._events)
             df.to_csv(fname, sep="\t", index=False)
 
+    def _run(self, exp_win, ctl_win):
+        pass
 
 class Pause(Task):
     def __init__(self, text="Taking a short break, relax...", **kwargs):
