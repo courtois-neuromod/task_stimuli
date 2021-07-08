@@ -38,6 +38,7 @@ def run(parsed):
             parsed.run_on_battery,
             parsed.ptt,
             parsed.record_movie,
+            parsed.skip_soundcheck,
             )
     finally:
         if not parsed.no_force_resolution:
