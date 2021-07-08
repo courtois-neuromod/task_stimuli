@@ -211,24 +211,24 @@ def main_loop(
 
         all_tasks = itertools.chain(
             [task_base.Pause(
-                """We are completing the setup and initializing the scanner.
-We will start the tasks in a few minutes.
-Please remain still."""
+                """Nous terminons la mise en place du scanner.
+La tâche va commencer d'ici quelques minutes.
+Veuillez rester immobile."""
             )],
             all_tasks,
             [task_base.Pause(
-                """We are done for today.
-The scanner might run for a few seconds to acquire reference images.
-Please remain still.
-We are coming to get you out of the scanner shortly."""
+                """C'est fini pour aujourd'hui.
+Le scanner pourrait continuer d'acquérir des images de références.
+Veuillez rester immobile.
+Nous allons vous faire sortir du scanner très bientôt."""
             )],
         )
     else:
         all_tasks = itertools.chain(
             all_tasks,
             [task_base.Pause(
-                """We are done with the tasks for today.
-Thanks for your participation!"""
+                """C'est fini pour aujourd'hui.
+Merci pour votre participation!"""
             )],
         )
 
