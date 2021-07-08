@@ -32,6 +32,7 @@ levels_scenario = [
 
 scenario = "scenario"
 
+exclude_list = [(2,2),(7,2)] # all levels 4 are excluded below
 
 # code adaptive design for learning phase
 
@@ -46,17 +47,18 @@ def get_tasks(parsed):
     else:
         savestate = {"world": 1, "level":1} #TODO: determine format
 
-    for run in range(5):
+    for run in range(10):
         current_level = f"Level{savestate['world']}-{savestate['level']}"
         task = videogame.VideoGameMultiLevel(
             game_name='SuperMarioBros-Nes',
             state_names=[current_level],
             scenarii=[scenario],
             repeat_scenario=True,
-            max_duration=10 * 60,  # if when level completed or dead we exceed that time in secs, stop the task
+            max_duration=1 * 60,  # if when level completed or dead we exceed that time in secs, stop the task
             name=f"task-mario_run-{run+1:02d}",
             instruction="playing Super Mario Bros {state_name} \n\n Let's-a go!",
-            post_level_ratings = [(k, q, 7) for k, q in enumerate(flow_ratings)]
+            post_run_ratings = [(k, q, 7) for k, q in enumerate(flow_ratings)],
+            use_eyetracking=True,
         )
         yield task
 
@@ -66,35 +68,14 @@ def get_tasks(parsed):
             if savestate['level'] > 3:
                 savestate['world'] +=1
                 savestate['level'] = 1
+            while (savestate['world'], savestate['level']) in exclude_list:
+                savestate['level'] += 1
+                if savestate['level'] > 3:
+                    savestate['world'] +=1
+                    savestate['level'] = 1
             with open(savestate_path, 'w') as f:
                 json.dump(savestate, f)
         else:
             logging.exp(f"{current_level} not completed.")
 
-        #yield task_base.Pause()
-
-
-    return tasks
-
-"""
-TASKS = sum(
-    [
-        [
-            videogame.VideoGameMultiLevel(
-                game_name='SuperMarioBros-Nes',
-                state_names=[l for l,s in levels_scenario],
-                scenarii=[s for l,s in levels_scenario]
-                ,  # this scenario repeats the same level
-                repeat_scenario=True,
-                max_duration=10
-                * 60,  # if when level completed or dead we exceed that time in secs, stop the task
-                name=f"task-mario_run-{run+1:02d}",
-                instruction="playing Super Mario Bros {state_name} \n\n Let's-a go!",
-                # post_level_ratings = [(q, 7) for q in flow_ratings],
-            ),
-            task_base.Pause(),
-        ]
-        for run in range(5)
-    ],
-    [],
-)"""
+        yield task_base.Pause()
