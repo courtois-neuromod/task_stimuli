@@ -157,8 +157,9 @@ class Retinotopy(Task):
                     self.fixation_dot.draw(ctl_win)
                 previous_flip_time = self._exp_win_last_flip_time
                 yield True
-                #print(self._exp_win_last_flip_time, previous_flip_time)
-                self.progress_bar.update(self._exp_win_last_flip_time - previous_flip_time)
+                elapsed = self._exp_win_last_flip_time - previous_flip_time
+                if elapsed < self.duration:
+                    self.progress_bar.update(elapsed)
         yield True
 
     def _run_condition(self, exp_win, ctl_win):
