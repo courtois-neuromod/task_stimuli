@@ -69,10 +69,9 @@ class EyetrackerCalibration(Task):
         self.eyetracker = eyetracker
 
     def _instructions(self, exp_win, ctl_win):
-        instruction_text = """We're going to calibrate the eyetracker.
-Please look at the markers that appear on the screen.
-
-While awaiting for the calibration to start you will be asked to roll your eyes."""
+        instruction_text = """Veuillez tournez vos yeux autour de leurs
+orbites jusqu'à ce que des marqueurs apparaissent
+à l'écran. Veuillez ensuite fixer les marqueurs."""
         screen_text = visual.TextStim(
             exp_win,
             text=instruction_text,
