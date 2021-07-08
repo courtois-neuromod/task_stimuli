@@ -162,11 +162,17 @@ def generate_design_file(subject: str, session: str):
 
         # Setup image duration and onset.
         run_design['duration'] = exp_image_display_duration
+        run_design['pause'] = exp_image_step_duration - exp_image_display_duration
         run_design['onset'] = np.arange(len(run_design)) * exp_image_step_duration
-        # run_design['onset'] = run_design['onset'].map(lambda x: round(x, 2))  # 2 decimal round
+        # @note 2 decimal round.
+        # @warning round sometimes returns NaN, perhaps due to floating point precision?
+        # run_design['onset'] = run_design['onset'].map(lambda x: round(x, 2))
         test_images['duration'] = test_image_display_duration
+        test_images['pause'] = test_image_step_duration - test_image_display_duration
         test_images['onset'] = np.arange(len(test_images)) * test_image_step_duration
-        # test_images['onset'] = run_design['onset'].map(lambda x: round(x, 2))  # 2 decimal round
+        # @note 2 decimal round.
+        # @warning round sometimes returns NaN, perhaps due to floating point precision?
+        # test_images['onset'] = run_design['onset'].map(lambda x: round(x, 2))
         
         # Setup run idx.
         run_design['run'] = run_idx + 1

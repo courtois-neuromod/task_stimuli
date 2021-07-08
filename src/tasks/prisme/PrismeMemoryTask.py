@@ -113,6 +113,9 @@ class PrismeMemoryTask():
             exp_win.timeOnFlip(expWinFlipTimings, 'last_onset')
             flipBackBuffer([exp_win, ctl_win])
             
+            # Drop latest events from previous image (just in case).
+            event.clearEvents()
+
             # Wait for duration.
             yield from waitFor(currImageObj['duration'])
 
@@ -131,7 +134,11 @@ class PrismeMemoryTask():
             trial['onset_delay'] = trial['onset_flip'] - trial['onset']
             trial['duration_flip'] = trial['offset_flip'] - trial['onset_flip']
 
-            # Retrieve events.
+            # Wait a little further, even if the image is not longer displayed,
+            # in order to avoid already sending events to the next image.
+            yield from waitFor(max(0, currImageObj['pause'] - 0.05))
+
+            # Retrieve key events.
             keypresses = event.getKeys(RESPONSE_KEYS, timeStamped=clock)
             trial['keypresses'] = keypresses
             trial['value'] = trial['keypresses']  # additional bids compatibility.
