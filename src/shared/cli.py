@@ -173,7 +173,17 @@ def main_loop(
                     name=f"eyeTrackercalibration-{calibration_index}"
                 )
                 yield task
-        all_tasks = interleave_calibration(all_tasks)
+        def calibration_before_task(tasks, indexes):
+            calibration_index=0
+            for i, task in enumerate(tasks):
+                if i in indexes:
+                    calibration_index+=1
+                    yield eyetracking.EyetrackerCalibration(
+                        eyetracker_client,
+                        name=f"eyeTrackercalibration-{calibration_index}"
+                    )
+                yield task
+        all_tasks = calibration_before_task(all_tasks, [0, 4])
 
         if show_ctl_win:
             gaze_drawer = eyetracking.GazeDrawer(ctl_win)
