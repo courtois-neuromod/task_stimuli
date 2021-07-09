@@ -165,7 +165,7 @@ def main_loop(
         eyetracker_client.start()
         print("done")
 
-        all_tasks = interleave_calibration(all_tasks)
+        all_tasks = eyetracker_client.interleave_calibration(all_tasks)
 
         if show_ctl_win:
             gaze_drawer = eyetracking.GazeDrawer(ctl_win)
