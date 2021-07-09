@@ -11,6 +11,7 @@ def get_tasks(parsed):
             ncycles=4,
             name=f"task-{condition[3:].lower()}",
             use_eyetracking=True,
-            images_file = 'data/retinotopy/scenes.npz' if parsed.subject==6 else 'data/retinotopy/images.npz',
+            images_file = 'data/retinotopy/scenes.npz' if parsed.subject=='06' else 'data/retinotopy/images.npz',
+            images_fps = 3 if parsed.subject=='06' else 15,
         ) for condition in conditions
     ]
