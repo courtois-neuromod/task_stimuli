@@ -149,7 +149,7 @@ class PrismeMemoryTask():
             # Wait a little further for the last image, in order not to finish
             # the task before the last fixation cross has ended up being
             # displayed.
-            isLatest = self._trial.index(trial) == len(self._trial) - 1
+            isLatest = self._runImageSetup.index(currImageObj) == len(self._runImageSetup) - 1
             if isLatest:
                 yield from waitFor(currImageObj['pause'])
 
