@@ -18,7 +18,6 @@ from .PrismeMemoryTask import PrismeMemoryTask
 class PrismeTask(Task):
     _displayTask = None
     _memoryTask = None
-    _doRestart = False
     _imageDir = None
     _runImageSetup = None
     
@@ -116,36 +115,29 @@ class PrismeTask(Task):
     # 2nd task loop
     # `Running` task loop, to be displayed while everything is recording (eeg,
     # eyetracker, fmri, etc).
-    # @warning
-    # self._doRestart within loops might be checked with a slight delay.
     def run(self, exp_win, ctl_win):
         # First run the display task, yielding back control to the main loop
         # for a bit at every step.
         displayTaskLoop = self._displayTask.run(exp_win, ctl_win)
         for idx, _ in enumerate(displayTaskLoop):
-            if self._doRestart:
-                break
-            else:
-                yield _
+            yield _
+
+        # Add a 1 * TR padding before showing memory task' instructions in
+        # order to prevent fmri from stopping within instructions start.
+        yield from waitFor(1 * config.TR)
 
         # Then display memory task instruction and start it without a pause to
         # control for a stable delay in order to avoid the difference in delay
         # to impact person's memory and thus final result.
         memoryInstructionLoop = self._memoryTask.instructions(exp_win, ctl_win)
         for idx, _ in enumerate(memoryInstructionLoop):
-            if self._doRestart:
-                break
-            else:
-                yield _
+            yield _
 
         # Then run the memory task, yielding back control to the main loop
         # for a bit at every step.
         memoryTaskLoop = self._memoryTask.run(exp_win, ctl_win)
         for idx, _ in enumerate(memoryTaskLoop):
-            if self._doRestart:
-                break
-            else:
-                yield _
+            yield _
 
     # @note eeg spike will be sent here if --eeg flag is enabled.
 
