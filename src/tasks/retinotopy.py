@@ -27,6 +27,7 @@ class Retinotopy(Task):
         condition,
         ncycles=8,
         images_file = 'data/retinotopy/images.npz',
+        images_fps = 15,
         *args,
         **kwargs
     ):
@@ -36,6 +37,7 @@ class Retinotopy(Task):
         self.condition = condition
         self.ncycles = ncycles
         self._images_file = images_file
+        self._images_fps = images_fps
 
 
 
@@ -84,10 +86,10 @@ class Retinotopy(Task):
             + self.middle_blank)
 
         # draw random order with different successive stimuli
-        self._images_random = np.random.randint(0, 99, size=(8*32*15)) #max nframe in CW conditions
+        self._images_random = np.random.randint(0, self._images.shape[-1], size=(8*32*self._images_fps)) #max nframe in CW conditions
         while any(np.ediff1d(self._images_random, to_begin=[-1])==0):
             self._images_random[np.ediff1d(self._images_random, to_begin=[-1])==0] += 1
-            self._images_random[self._images_random==100] = 0
+            self._images_random[self._images_random==self._images.shape[-1]] = 0
 
         self._progress_bar_refresh_rate = False
 
@@ -196,8 +198,9 @@ class Retinotopy(Task):
 
                     #flipVert = 1 - 2*(ci in [3,6,7])
                     #flipHoriz = 1 - 2*(ci in [2])
-                    image_idx = self._images_random[ci*32*15+fi]
-                    self.img.image = self._images[..., image_idx]
+                    if fi%(15//self._images_fps) == 0:
+                        image_idx = self._images_random[ci*32*self._images_fps+fi//(15//self._images_fps)]
+                        self.img.image = self._images[..., image_idx]
                     self.img.mask = self._apertures[..., start_idx+frame]
 
                     yield from utils.wait_until_yield(
@@ -239,21 +242,22 @@ class Retinotopy(Task):
                     flip_time = (self.initial_wait +
                         (ci*self.cycle_length*15+fi) * frame_duration +
                         (ci>=self.ncycles) * self.middle_blank - 1/config.FRAME_RATE)
-                    image_idx = self._images_random[ci*32*15+fi]
-                    self.img.image = self._images[..., image_idx]
+
+                    if fi%(15//self._images_fps) == 0:
+                        image_idx = self._images_random[ci*32*self._images_fps+fi//(15//self._images_fps)]
+                        self.img.image = self._images[..., image_idx]
+
                     self.img.mask = self._apertures[..., frame]
 
-
+                    self.img.draw(exp_win)
+                    if ctl_win:
+                        self.img.draw(ctl_win)
 
                     yield from utils.wait_until_yield(
                         self.task_timer,
                         flip_time,
                         keyboard_accuracy=.001,
                         hogCPUperiod=2/config.FRAME_RATE)
-
-                    self.img.draw(exp_win)
-                    if ctl_win:
-                        self.img.draw(ctl_win)
 
                     exp_win.callOnFlip(
                         self._log_event,
