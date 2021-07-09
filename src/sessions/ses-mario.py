@@ -78,4 +78,7 @@ def get_tasks(parsed):
         else:
             logging.exp(f"{current_level} not completed.")
 
-        yield task_base.Pause()
+        yield task_base.Pause(
+            text="You can take a short break.\n Press A when ready to continue",
+            wait_key='a',
+        )
