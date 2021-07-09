@@ -2,6 +2,9 @@ import os
 
 # @warning equal value might induce a very slight ns additional delay
 # (due to waiting twice for the same timestamp).
+# @note initial_padding: 2 * TR - add a time padding in order to reduce signal
+# artefact induced by start of mri scanner's noise.
+exp_initial_padding = 1.49 * 2
 exp_image_step_duration = 1.49 * 3  # 3 * TR
 exp_image_display_duration = 1.49 * 2  # 2 * TR
 test_image_step_duration = 5  # 5s
@@ -179,7 +182,7 @@ def generate_design_file(subject: str, session: str):
         # Setup image duration and onset.
         run_design['duration'] = exp_image_display_duration
         run_design['pause'] = exp_image_step_duration - exp_image_display_duration
-        run_design['onset'] = np.arange(len(run_design)) * exp_image_step_duration
+        run_design['onset'] = exp_initial_padding + np.arange(len(run_design)) * exp_image_step_duration
         # @note 2 decimal round.
         # @warning round sometimes returns NaN, perhaps due to floating point precision?
         # run_design['onset'] = run_design['onset'].map(lambda x: round(x, 2))
