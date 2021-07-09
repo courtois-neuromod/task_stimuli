@@ -113,7 +113,8 @@ class PrismeMemoryTask():
             exp_win.timeOnFlip(expWinFlipTimings, 'last_onset')
             flipBackBuffer([exp_win, ctl_win])
             
-            # Drop latest events from previous image (just in case).
+            # Drop latest events from previous image (within the last 0.05s,
+            # just in case).
             event.clearEvents()
 
             # Wait for duration.
@@ -145,8 +146,12 @@ class PrismeMemoryTask():
             trial['response_time'] = (keypresses[0][1] - (trial['onset'] +
                 trial['onset_delay'])) if len(keypresses)>0 else None
 
-            # Give back control to main loop for event handling (optional).
-            yield
+            # Wait a little further for the last image, in order not to finish
+            # the task before the last fixation cross has ended up being
+            # displayed.
+            isLatest = self._trial.index(trial) == len(self._trial) - 1
+            if isLatest:
+                yield from waitFor(currImageObj['pause'])
 
         # Clear screen.
         clearScreen([exp_win, ctl_win])

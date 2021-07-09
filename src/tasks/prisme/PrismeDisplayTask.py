@@ -109,8 +109,12 @@ class PrismeDisplayTask():
             trial['onset_delay'] = trial['onset_flip'] - trial['onset']
             trial['duration_flip'] = trial['offset_flip'] - trial['onset_flip']
 
-            # Give back control to main loop for event handling (optional).
-            yield
+            # Wait a little further for the last image, in order not to finish
+            # the task before the last fixation cross has ended up being
+            # displayed.
+            isLatest = self._trial.index(trial) == len(self._trial) - 1
+            if isLatest:
+                yield from waitFor(currImageObj['pause'])
 
         # Clear screen.
         clearScreen([exp_win, ctl_win])
