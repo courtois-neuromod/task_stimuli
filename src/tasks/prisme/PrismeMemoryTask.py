@@ -39,7 +39,7 @@ class PrismeMemoryTask():
     # Display instructions (without any pause, in order to control for memory
     # effect induced by delay).
     def instructions(self, exp_win, ctl_win):
-        duration = config.INSTRUCTION_DURATION * 2
+        duration = config.TR * 6
 
         # Clear screen (optional).
         clearScreen([exp_win, ctl_win])
