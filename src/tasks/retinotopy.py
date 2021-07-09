@@ -23,12 +23,19 @@ class Retinotopy(Task):
     RESPONSE_KEY = 'a'
     PROGRESS_BAR_FORMAT = "{l_bar}{bar}| {n:.02f}/{total:.02f} [{elapsed}<{remaining}, {rate_fmt}{postfix}]"
 
-    def __init__(self, condition, ncycles=8, *args, **kwargs):
+    def __init__(self,
+        condition,
+        ncycles=8,
+        images_file = 'data/retinotopy/images.npz',
+        *args,
+        **kwargs
+    ):
         super().__init__(**kwargs)
         if condition not in ['RETCCW', 'RETCW', 'RETWEDGES', 'RETRINGS', 'RETEXP', 'RETCON', 'RETBAR']:
             raise ValueError("Condition {condition} does not exists")
         self.condition = condition
         self.ncycles = ncycles
+        self._images_file = images_file
 
 
 
@@ -57,7 +64,7 @@ class Retinotopy(Task):
             units='deg',
             flipVert=True)
 
-        self._images = np.load('data/retinotopy/images.npz')['images'].astype(np.float32)/255.
+        self._images = np.load(self._images_file)['images'].astype(np.float32)/255.
 
         if self.condition in ['RETCW', 'RETCCW', 'RETWEDGES']:
             aperture_file = 'apertures_wedge_newtr.npz'
