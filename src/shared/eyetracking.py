@@ -213,6 +213,7 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
             np.savez(fname, pupils=self._pupils_list, markers=self.all_refs_per_flip)
 
 
+
 from subprocess import Popen
 
 from contextlib import contextmanager
@@ -413,6 +414,18 @@ class EyeTrackerClient(threading.Thread):
         with nonblocking(self.lock) as locked:
             if locked:
                 return self.gaze
+
+
+    def interleave_calibration(self, tasks):
+        calibration_index=0
+        for task in tasks:
+            calibration_index+=1
+            if task.use_eyetracking:
+                yield EyetrackerCalibration(
+                    self,
+                    name=f"eyeTrackercalibration-{calibration_index}"
+                    )
+            yield task
 
     def calibrate(self, pupil_list, ref_list):
         if len(pupil_list) < 100:
