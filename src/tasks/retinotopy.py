@@ -23,28 +23,37 @@ class Retinotopy(Task):
     RESPONSE_KEY = 'a'
     PROGRESS_BAR_FORMAT = "{l_bar}{bar}| {n:.02f}/{total:.02f} [{elapsed}<{remaining}, {rate_fmt}{postfix}]"
 
-    def __init__(self, condition, ncycles=8, *args, **kwargs):
+    def __init__(self,
+        condition,
+        ncycles=8,
+        images_file = 'data/retinotopy/images.npz',
+        images_fps = 15,
+        *args,
+        **kwargs
+    ):
         super().__init__(**kwargs)
         if condition not in ['RETCCW', 'RETCW', 'RETWEDGES', 'RETRINGS', 'RETEXP', 'RETCON', 'RETBAR']:
             raise ValueError("Condition {condition} does not exists")
         self.condition = condition
         self.ncycles = ncycles
+        self._images_file = images_file
+        self._images_fps = images_fps
 
 
 
     def _setup(self, exp_win):
         self.fixation_dot = visual.Circle(
             exp_win,
+            name='fixation_dot',
             size=.15,
             units='deg',
-            color=self.DOT_COLORS[0],
-            colorSpace='rgb255'
         )
 
 
         grid = np.load("data/retinotopy/grid.npz")['grid']
         self.grid = visual.ImageStim(
             exp_win,
+            name='grid',
             image=np.ones((1,1,3)),
             mask=grid/128.-1,
             size=10,
@@ -53,11 +62,12 @@ class Retinotopy(Task):
 
         self.img = visual.ImageStim(
             exp_win,
+            name='texture',
             size=10,
             units='deg',
             flipVert=True)
 
-        self._images = np.load('data/retinotopy/images.npz')['images'].astype(np.float32)/255.
+        self._images = np.load(self._images_file)['images'].astype(np.float32)/255.
 
         if self.condition in ['RETCW', 'RETCCW', 'RETWEDGES']:
             aperture_file = 'apertures_wedge_newtr.npz'
@@ -77,10 +87,10 @@ class Retinotopy(Task):
             + self.middle_blank)
 
         # draw random order with different successive stimuli
-        self._images_random = np.random.randint(0, 99, size=(8*32*15)) #max nframe in CW conditions
+        self._images_random = np.random.randint(0, self._images.shape[-1], size=(8*32*self._images_fps)) #max nframe in CW conditions
         while any(np.ediff1d(self._images_random, to_begin=[-1])==0):
             self._images_random[np.ediff1d(self._images_random, to_begin=[-1])==0] += 1
-            self._images_random[self._images_random==100] = 0
+            self._images_random[self._images_random==self._images.shape[-1]] = 0
 
         self._progress_bar_refresh_rate = False
 
@@ -112,8 +122,45 @@ class Retinotopy(Task):
         dot_change_idx = 0
         rt_sum = 0
         n_keypresses = 0
+        dot_changed = False
         for do_yield in self._run_condition(exp_win, ctl_win):
-            #TODO: log responses
+
+            if self.task_timer.getTime() > dot_next_change:
+                responded = False
+                color_state = (color_state+1)%2
+                self.fixation_dot.setColor(
+                    self.DOT_COLORS[color_state],
+                    colorSpace='rgb255')
+                dot_last_change = dot_next_change
+                dot_next_change += self.DOT_MIN_DURATION + random.random()*5
+
+                exp_win.callOnFlip(
+                    self._log_event,
+                    {'trial_type':'dot_color',
+                    'trial_number': dot_change_idx,
+                    'color': color_state},
+                    clock='flip'
+                )
+                dot_change_idx += 1
+                dot_changed = True
+
+            if do_yield or dot_changed:
+
+                self.draw_img(exp_win, ctl_win)
+                self.grid.draw(exp_win)
+                self.fixation_dot.draw(exp_win)
+                if ctl_win:
+                    self.grid.draw(ctl_win)
+                    self.fixation_dot.draw(ctl_win)
+                previous_flip_time = self._exp_win_last_flip_time
+
+                yield True
+                elapsed = self._exp_win_last_flip_time - previous_flip_time
+                if elapsed < self.duration:
+                    self.progress_bar.update(elapsed)
+                dot_changed = False
+
+            # log responses
             keypresses = event.getKeys(self.RESPONSE_KEY, timeStamped=self.task_timer)
             for k in keypresses:
                 rt = k[1] - dot_last_change
@@ -131,41 +178,28 @@ class Retinotopy(Task):
                     )
                 responded = True
 
-            if self.task_timer.getTime() > dot_next_change:
-                responded = False
-                color_state = (color_state+1)%2
-                self.fixation_dot.setColor(
-                    self.DOT_COLORS[color_state],
-                    colorSpace='rgb255')
-                dot_last_change = dot_next_change
-                dot_next_change += self.DOT_MIN_DURATION + random.random()*5
-                exp_win.callOnFlip(
-                    self._log_event,
-                    {'trial_type':'dot_color',
-                    'trial_number': dot_change_idx,
-                    'color': color_state},
-                    clock='flip'
-                )
-                dot_change_idx += 1
-                do_yield = True
-
-            if do_yield:
-                self.grid.draw(exp_win)
-                self.fixation_dot.draw(exp_win)
-                if ctl_win:
-                    self.grid.draw(ctl_win)
-                    self.fixation_dot.draw(ctl_win)
-                previous_flip_time = self._exp_win_last_flip_time
-                yield True
-                #print(self._exp_win_last_flip_time, previous_flip_time)
-                self.progress_bar.update(self._exp_win_last_flip_time - previous_flip_time)
         yield True
+
+    def update_fixation(self):
+        pass
+
+
+    def draw_img(self, exp_win, ctl_win):
+        if self.img.image is None:
+            return
+        self.img.draw(exp_win)
+        if ctl_win:
+            self.img.draw(ctl_win)
+
+    def reset_img(self):
+        self.img.image = None
 
     def _run_condition(self, exp_win, ctl_win):
 
         frame_duration = 1/15.
 
         self._cycle_start = None
+        self.reset_img()
 
         yield True
         # wait until it's almost time to render first frame
@@ -185,28 +219,25 @@ class Retinotopy(Task):
                         (ci*self.cycle_length*15+fi) * frame_duration
                         - 1/config.FRAME_RATE)
 
-
-                    #flipVert = 1 - 2*(ci in [3,6,7])
-                    #flipHoriz = 1 - 2*(ci in [2])
-                    image_idx = self._images_random[ci*32*15+fi]
-                    self.img.image = self._images[..., image_idx]
-                    self.img.mask = self._apertures[..., start_idx+frame]
-
                     yield from utils.wait_until_yield(
                         self.task_timer,
                         flip_time,
                         keyboard_accuracy=.001,
                         hogCPUperiod=2/config.FRAME_RATE)
 
-                    self.img.draw(exp_win)
-                    if ctl_win:
-                        self.img.draw(ctl_win)
+                    #flipVert = 1 - 2*(ci in [3,6,7])
+                    #flipHoriz = 1 - 2*(ci in [2])
+                    if fi%(15//self._images_fps) == 0:
+                        image_idx = self._images_random[ci*32*self._images_fps+fi//(15//self._images_fps)]
+                        self.img.image = self._images[..., image_idx]
+                    self.img.mask = self._apertures[..., start_idx+frame]
 
                     exp_win.callOnFlip(
                         self._log_event,
                         {'condition': self.condition, 'image_idx': image_idx, 'aperture': frame},
                         clock='flip'
                     )
+
                     yield True
                 self._events.append({
                     'condition': self.condition,
@@ -215,7 +246,7 @@ class Retinotopy(Task):
                     'onset': self._cycle_start - self._exp_win_first_flip_time,
                     'duration': self._exp_win_last_flip_time - self._cycle_start
                     })
-
+                self.reset_img()
                 yield True
         else:
             orders = [-1 if self.condition in ['RETCW', 'RETCON'] else 1] * self.ncycles
@@ -231,11 +262,6 @@ class Retinotopy(Task):
                     flip_time = (self.initial_wait +
                         (ci*self.cycle_length*15+fi) * frame_duration +
                         (ci>=self.ncycles) * self.middle_blank - 1/config.FRAME_RATE)
-                    image_idx = self._images_random[ci*32*15+fi]
-                    self.img.image = self._images[..., image_idx]
-                    self.img.mask = self._apertures[..., frame]
-
-
 
                     yield from utils.wait_until_yield(
                         self.task_timer,
@@ -243,15 +269,18 @@ class Retinotopy(Task):
                         keyboard_accuracy=.001,
                         hogCPUperiod=2/config.FRAME_RATE)
 
-                    self.img.draw(exp_win)
-                    if ctl_win:
-                        self.img.draw(ctl_win)
+                    if fi%(15//self._images_fps) == 0:
+                        image_idx = self._images_random[ci*32*self._images_fps+fi//(15//self._images_fps)]
+                        self.img.image = self._images[..., image_idx]
+
+                    self.img.mask = self._apertures[..., frame]
 
                     exp_win.callOnFlip(
                         self._log_event,
                         {'trial_type': 'flip','condition': self.condition, 'image_idx': image_idx, 'aperture': frame},
                         clock='flip'
                     )
+
                     yield True
                 self._events.append({
                     'condition': self.condition,
@@ -260,7 +289,10 @@ class Retinotopy(Task):
                     'onset': self._cycle_start - self._exp_win_first_flip_time,
                     'duration': self._exp_win_last_flip_time - self._cycle_start
                     })
-                if 'CW' not in self.condition:
+                if self.condition not in ['RETCW', 'RETCCW', 'RETWEDGES'] \
+                    or ci==self.ncycles-1 \
+                    or ci==2*self.ncycles-1:
+                    self.reset_img()
                     yield True # blank
         yield True
 
