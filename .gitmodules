@@ -10,3 +10,7 @@
 	path = data/videogames/mario
 	url = git@github.com:courtois-neuromod/mario.stimuli.git
 	datalad-id = 23782599-795f-46e5-aefe-5ecd578e968d
+[submodule "data/retinotopy"]
+	path = data/retinotopy
+	url = ./data/retinotopy
+	datalad-id = 52140b46-63c8-45a7-a03f-2f2cab0db23f
