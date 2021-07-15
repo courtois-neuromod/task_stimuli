@@ -35,6 +35,7 @@ def generate_design_file(subject: str, session: str):
     import numpy as np
     import pandas
     import hashlib
+    import git
     from word_similarity_matrix import generate_similarity_matrix
     from fixed_size_clustering import generate_fixed_size_clusters
 
@@ -234,6 +235,16 @@ def generate_design_file(subject: str, session: str):
     )
     with open(seed_outpath, 'w') as seed_file:
         seed_file.write(str(seed))
+    
+    # Store commit id.
+    repo = git.Repo(search_parent_directories=True)
+    commit_sha = repo.head.object.hexsha
+    commit_outpath = os.path.join(
+        os.path.join('data', 'prisme', 'designs'),
+        f'sub-{parsed.subject}_ses-{parsed.session}_design-commit.txt',
+    )
+    with open(commit_outpath, 'w') as commit_file:
+        commit_file.write(str(commit_sha))
 
     # Store design within file.
     full_design_outpath = os.path.join(
