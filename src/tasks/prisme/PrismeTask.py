@@ -122,9 +122,9 @@ class PrismeTask(Task):
         for idx, _ in enumerate(displayTaskLoop):
             yield _
 
-        # Add a 1 * TR padding before showing memory task' instructions in
-        # order to prevent fmri from stopping within instructions start.
-        yield from waitFor(1 * config.TR)
+        # Add a 6 * TR padding before showing memory task' instructions in
+        # order to capture late hemodynamic response.
+        yield from waitFor(6 * config.TR)
 
         # Then display memory task instruction and start it without a pause to
         # control for a stable delay in order to avoid the difference in delay
