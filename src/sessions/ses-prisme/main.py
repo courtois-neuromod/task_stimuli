@@ -95,9 +95,9 @@ def generate_design_file(subject: str, session: str):
     print('test_clusters:')
     print(test_clusters['cluster'])
 
-    # For each run:
+    # Generate memory task images for each run:
     run_count = fmri_run_count + eeg_run_count # 8 mri runs, 3 eeg runs
-    full_design = pandas.DataFrame()
+    full_test_images = pandas.DataFrame()
     for run_idx in range(run_count):
         # Pickup one image out of each test cluster.
         test_images = test_clusters\
@@ -107,22 +107,9 @@ def generate_design_file(subject: str, session: str):
         print('test_images:')
         print(test_images)
 
-        # Remove these images from the clusters to prevent them from appearing in
-        # the next runs.
+        # Remove these images from the clusters to prevent them from appearing
+        # in the next runs.
         test_clusters = test_clusters.drop(test_images.index.get_level_values(1), axis=0)
-
-        # Drop the test images from exp sample and similarity matrix.
-        neuromod_sensevec_augmented_pd = neuromod_sensevec_augmented_pd.copy(deep=True)
-        neuromod_sensevec_augmented_pd = neuromod_sensevec_augmented_pd.drop(test_images.index.get_level_values(1), axis=0)
-        similarity_matrix = similarity_matrix.drop(test_images.index.get_level_values(1), axis=0)
-        similarity_matrix = similarity_matrix.drop(test_images.index.get_level_values(1), axis=1)
-
-        # Generate 53 clusters for the experiment. # 58 shown - 5 shown already
-        # within test!
-        cluster_count = display_count - test_pos_count
-        exp_clusters = generate_fixed_size_clusters(neuromod_sensevec_augmented_pd, similarity_matrix, cluster_count)
-        print('exp_clusters:')
-        print(exp_clusters['cluster'])
 
         # Pickup shown / unshown images to be tested out of it.
         # @warning in case len(test_clusters) > cluster count, some cluster will
@@ -139,6 +126,51 @@ def generate_design_file(subject: str, session: str):
         print('unshown test images:')
         print(unshown_images)
 
+        # Flag exp and test (pos / neg shown) images.
+        shown_test_images = shown_images.copy(deep=True)
+        shown_test_images['condition'] = 'pos'
+        unshown_test_images = unshown_images.copy(deep=True)
+        unshown_test_images['condition'] = 'neg'
+
+        # Shuffle test images.
+        test_images = pandas.concat([shown_test_images, unshown_test_images])
+        test_images = test_images.sample(frac=1)
+
+        # @note 2 decimal round.
+        # @warning round sometimes returns NaN, perhaps due to floating point precision?
+        # run_design['onset'] = run_design['onset'].map(lambda x: round(x, 2))
+        test_images['duration'] = test_image_display_duration
+        test_images['pause'] = test_image_step_duration - test_image_display_duration
+        test_images['onset'] = np.arange(len(test_images)) * test_image_step_duration
+        # @note 2 decimal round.
+        # @warning round sometimes returns NaN, perhaps due to floating point precision?
+        # test_images['onset'] = run_design['onset'].map(lambda x: round(x, 2))
+
+        # Setup run idx.
+        test_images['run'] = run_idx + 1
+
+        # Setup run type.
+        test_images['type'] = 'fmri' if run_idx < fmri_run_count else 'eeg'
+
+        # Store test images togethers.
+        full_test_images = pandas.concat([full_test_images, test_images])
+
+    # Drop the test images from global image pack / similarity matrix.
+    full_test_images_indexes = full_test_images.index
+    neuromod_sensevec_augmented_pd = neuromod_sensevec_augmented_pd.drop(full_test_images_indexes, axis=0)
+    similarity_matrix = similarity_matrix.drop(full_test_images_indexes, axis=0)
+    similarity_matrix = similarity_matrix.drop(full_test_images_indexes, axis=1)
+
+    # Generate 53 clusters for the experiment. # 58 shown - 5 shown already
+    # within test!
+    cluster_count = display_count - test_pos_count
+    exp_clusters = generate_fixed_size_clusters(neuromod_sensevec_augmented_pd, similarity_matrix, cluster_count)
+    print('exp_clusters:')
+    print(exp_clusters['cluster'])
+
+    # Generate display task images for each run:
+    full_design = pandas.DataFrame()
+    for run_idx in range(run_count):
         # Pickup one image out of each cluster.
         exp_images = exp_clusters\
             .groupby('cluster')\
@@ -158,8 +190,9 @@ def generate_design_file(subject: str, session: str):
         print('images:')
         print(exp_images)
 
-        # Inject the 5 test/shown images at +- eq. distance.
+        # Inject the previously picked 5 test/shown images at +- eq. distance.
         # @todo ensure no out of bound indexes are possible
+        shown_images = full_test_images[(full_test_images['run'] == run_idx+1) & (full_test_images['condition'] == 'pos')]
         for i in range(test_pos_count):
             # @warning imperfect insertion boundaries due to float flooring
             #          even though not dramatic.
@@ -171,14 +204,6 @@ def generate_design_file(subject: str, session: str):
         # Flag exp and test (pos / neg shown) images.
         run_design = exp_images.copy(deep=True)
         run_design['condition'] = 'shown'
-        shown_test_images = shown_images.copy(deep=True)
-        shown_test_images['condition'] = 'pos'
-        unshown_test_images = unshown_images.copy(deep=True)
-        unshown_test_images['condition'] = 'neg'
-
-        # Shuffle test images.
-        test_images = pandas.concat([shown_test_images, unshown_test_images])
-        test_images = test_images.sample(frac=1)
 
         # Setup image duration and onset.
         run_design['duration'] = exp_image_display_duration
@@ -187,29 +212,37 @@ def generate_design_file(subject: str, session: str):
         # @note 2 decimal round.
         # @warning round sometimes returns NaN, perhaps due to floating point precision?
         # run_design['onset'] = run_design['onset'].map(lambda x: round(x, 2))
-        test_images['duration'] = test_image_display_duration
-        test_images['pause'] = test_image_step_duration - test_image_display_duration
-        test_images['onset'] = np.arange(len(test_images)) * test_image_step_duration
-        # @note 2 decimal round.
-        # @warning round sometimes returns NaN, perhaps due to floating point precision?
-        # test_images['onset'] = run_design['onset'].map(lambda x: round(x, 2))
         
         # Setup run idx.
         run_design['run'] = run_idx + 1
-        test_images['run'] = run_idx + 1
 
         # Setup run type.
         run_design['type'] = 'fmri' if run_idx < fmri_run_count else 'eeg'
-        test_images['type'] = 'fmri' if run_idx < fmri_run_count else 'eeg'
 
         # Concat exp and test images.
+        test_images = full_test_images[(full_test_images['run'] == run_idx+1)]
         run_design = pandas.concat([run_design, test_images])
 
         # Inject back image paths data and other attributes.
         get_index = lambda image_obj: neuromod_image_cats.loc[neuromod_image_cats == image_obj.name].index[0]
         columns = ['image_path', 'category_nr', 'exemplar_nr', 'things_category_nr', 'things_image_nr', 'things_exemplar_nr']
         for column in columns:
-            image_paths = run_design.apply(lambda image_obj: 
+            image_paths = run_design.apply(lambda image_obj:
+                neuromod_session_image_list.loc[get_index(image_obj), [column]]
+            , axis=1)
+            run_design[column] = image_paths[column].values
+
+        # Ensure images are shown only once per run.
+        exp_image_paths = run_design[run_design['condition'] == 'shown'].loc[: ,'image_path']
+        test_image_paths = run_design[run_design['condition'].isin(['pos', 'neg'])].loc[: ,'image_path']
+        assert exp_image_paths.nunique() == len(exp_image_paths), 'duplicate images within display task design\'s run'
+        assert test_image_paths.nunique() == len(test_image_paths), 'duplicate images within memory task design\'s run'
+
+        # Inject back image paths data and other attributes.
+        get_index = lambda image_obj: neuromod_image_cats.loc[neuromod_image_cats == image_obj.name].index[0]
+        columns = ['image_path', 'category_nr', 'exemplar_nr', 'things_category_nr', 'things_image_nr', 'things_exemplar_nr']
+        for column in columns:
+            image_paths = run_design.apply(lambda image_obj:
                 neuromod_session_image_list.loc[get_index(image_obj), [column]]
             , axis=1)
             run_design[column] = image_paths[column].values
@@ -223,6 +256,18 @@ def generate_design_file(subject: str, session: str):
         print("run %d:" % (run_idx + 1))
         print(run_design)
 
+        # Ensure images are shown only once per run.
+        exp_image_paths = run_design[run_design['condition'] == 'shown'].loc[: ,'image_path']
+        test_image_paths = run_design[(run_design['condition'] == 'pos') | (run_design['condition'] == 'neg')].loc[: ,'image_path']
+        assert exp_image_paths.nunique() == len(exp_image_paths), 'duplicate images within display task design\'s run'
+        assert test_image_paths.nunique() == len(test_image_paths), 'duplicate images within memory task design\'s run'
+
+    # Ensure images are shown only once accross run.
+    exp_image_paths = full_design[full_design['condition'] == 'shown'].loc[: ,'image_path']
+    test_image_paths = full_design[(full_design['condition'] == 'pos') | (full_design['condition'] == 'neg')].loc[: ,'image_path']
+    assert exp_image_paths.nunique() == len(exp_image_paths), 'duplicate images within display task design across runs'
+    assert test_image_paths.nunique() == len(test_image_paths), 'duplicate images within memory task design across runs'
+
     # Remove label indexes (create duplicates which breaks psychopy
     # importConditions, indexes should be unique).
     full_design['category_name'] = full_design.index
@@ -235,7 +280,7 @@ def generate_design_file(subject: str, session: str):
     )
     with open(seed_outpath, 'w') as seed_file:
         seed_file.write(str(seed))
-    
+
     # Store commit id.
     repo = git.Repo(search_parent_directories=True)
     commit_sha = repo.head.object.hexsha
