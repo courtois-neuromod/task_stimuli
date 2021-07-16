@@ -319,7 +319,7 @@ class EyeTrackerClient(threading.Thread):
         )
 
         # stop a bunch of eye plugins for performance
-        for plugin in ["NDSI_Manager"]:
+        for plugin in ["NDSI_Manager", "Pye3DPlugin"]:
             self.send_recv_notification(
                 {
                     "subject": "stop_eye_plugin",
