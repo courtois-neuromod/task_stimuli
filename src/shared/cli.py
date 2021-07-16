@@ -164,20 +164,13 @@ def main_loop(
         print("starting et client")
         eyetracker_client.start()
         print("done")
-        def interleave_calibration(tasks):
-            calibration_index=0
-            for task in tasks:
-                calibration_index+=1
-                yield eyetracking.EyetrackerCalibration(
-                    eyetracker_client,
-                    name=f"eyeTrackercalibration-{calibration_index}"
-                )
-                yield task
-        all_tasks = interleave_calibration(all_tasks)
+
+        all_tasks = eyetracker_client.interleave_calibration(all_tasks)
 
         if show_ctl_win:
             gaze_drawer = eyetracking.GazeDrawer(ctl_win)
     if use_fmri:
+
         all_tasks = itertools.chain(
             [task_base.Pause(
                 """We are completing the setup and initializing the scanner.
