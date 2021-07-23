@@ -232,12 +232,6 @@ def generate_design_file(subject: str, session: str):
             , axis=1)
             run_design[column] = image_paths[column].values
 
-        # Ensure images are shown only once per run.
-        exp_image_paths = run_design[run_design['condition'] == 'shown'].loc[: ,'image_path']
-        test_image_paths = run_design[run_design['condition'].isin(['pos', 'neg'])].loc[: ,'image_path']
-        assert exp_image_paths.nunique() == len(exp_image_paths), 'duplicate images within display task design\'s run'
-        assert test_image_paths.nunique() == len(test_image_paths), 'duplicate images within memory task design\'s run'
-
         # Inject back image paths data and other attributes.
         get_index = lambda image_obj: neuromod_image_cats.loc[neuromod_image_cats == image_obj.name].index[0]
         columns = ['image_path', 'category_nr', 'exemplar_nr', 'things_category_nr', 'things_image_nr', 'things_exemplar_nr']
@@ -258,13 +252,19 @@ def generate_design_file(subject: str, session: str):
 
         # Ensure images are shown only once per run.
         exp_image_paths = run_design[run_design['condition'] == 'shown'].loc[: ,'image_path']
-        test_image_paths = run_design[(run_design['condition'] == 'pos') | (run_design['condition'] == 'neg')].loc[: ,'image_path']
+        test_image_paths = run_design[run_design['condition'].isin(['pos', 'neg'])].loc[: ,'image_path']
         assert exp_image_paths.nunique() == len(exp_image_paths), 'duplicate images within display task design\'s run'
         assert test_image_paths.nunique() == len(test_image_paths), 'duplicate images within memory task design\'s run'
 
+        # Ensure the run has the right number of images of each type.
+        assert len(run_design[run_design['condition'] == 'shown']) == display_count, 'run has wrong number of image'
+        assert len(run_design[run_design['condition'] == 'pos']) == test_pos_count, 'run has wrong number of image'
+        assert len(run_design[run_design['condition'] == 'neg']) == test_neg_count, 'run has wrong number of image'
+        assert len(run_design) == display_count + test_pos_count + test_neg_count, 'run has wrong number of image'
+
     # Ensure images are shown only once accross run.
     exp_image_paths = full_design[full_design['condition'] == 'shown'].loc[: ,'image_path']
-    test_image_paths = full_design[(full_design['condition'] == 'pos') | (full_design['condition'] == 'neg')].loc[: ,'image_path']
+    test_image_paths = full_design[full_design['condition'].isin(['pos', 'neg'])].loc[: ,'image_path']
     assert exp_image_paths.nunique() == len(exp_image_paths), 'duplicate images within display task design across runs'
     assert test_image_paths.nunique() == len(test_image_paths), 'duplicate images within memory task design across runs'
 
@@ -276,7 +276,7 @@ def generate_design_file(subject: str, session: str):
     # Store seed.
     seed_outpath = os.path.join(
         os.path.join('data', 'prisme', 'designs'),
-        f'sub-{parsed.subject}_ses-{parsed.session}_design-seed.txt',
+        f'sub-{subject}_ses-{session}_design-seed.txt',
     )
     with open(seed_outpath, 'w') as seed_file:
         seed_file.write(str(seed))
@@ -286,7 +286,7 @@ def generate_design_file(subject: str, session: str):
     commit_sha = repo.head.object.hexsha
     commit_outpath = os.path.join(
         os.path.join('data', 'prisme', 'designs'),
-        f'sub-{parsed.subject}_ses-{parsed.session}_design-commit.txt',
+        f'sub-{subject}_ses-{session}_design-commit.txt',
     )
     with open(commit_outpath, 'w') as commit_file:
         commit_file.write(str(commit_sha))
@@ -294,21 +294,69 @@ def generate_design_file(subject: str, session: str):
     # Store design within file.
     full_design_outpath = os.path.join(
         os.path.join('data', 'prisme', 'designs'),
-        f'sub-{parsed.subject}_ses-{parsed.session}_design.tsv',
+        f'sub-{subject}_ses-{session}_design.tsv',
     )
     full_design.to_csv(full_design_outpath, sep="\t")
 
+def generate_subject_design_files(subject_id):
+    from config import session_count
+
+    # For all sessions.
+    for session_id in range(1, session_count+1):
+        # Skip if session has already been generated.
+        path = os.path.join(
+            os.path.join('data', 'prisme', 'designs'),
+            f'sub-{subject_id}_ses-{session_id}_design.tsv',
+        )
+        if os.path.exists(path):
+            continue
+
+        # Generate session.
+        generate_design_file(subject_id, session_id)
+
+        # Log separator.
+        print('==============================================================')
+
+def generate_all_design_files():
+    from config import subject_ids
+
+    # For all subjects.
+    for subject_id in subject_ids:
+        # Generate all sessions.
+        generate_subject_design_files(subject_id)
+
+        # Log separator.
+        print('##############################################################')
 
 # Main function.
 if __name__ == "__main__":
     import argparse
     import sys
+    import git
+    from config import session_count, subject_ids
 
+    # Ensure repo is not in dirty state, for reproducibility.
+    repo = git.Repo(search_parent_directories=True)
+    assert not repo.is_dirty(), 'git repository should not be in dirty state'
+
+    # Retrieve arguments.
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawTextHelpFormatter,
         description="generate design files for participant / session",
     )
-    parser.add_argument("subject", type=str, help="participant id")
-    parser.add_argument("session", type=str, help="session id")
+    parser.add_argument('subject_id', type=str, help='participant id')
+    parser.add_argument('session_id', type=str, help='session id')
     parsed = parser.parse_args()
-    generate_design_file(parsed.subject, parsed.session)
+
+    subject_id = parsed.subject_id
+    session_id = parsed.session_id
+
+    # Generate design file(s).
+    if subject_id == '*' and session_id != '*':
+        raise 'session_id should be \'*\' when subject_id is \'*\''
+    elif subject_id == '*':
+        generate_all_design_files()
+    elif session_id == '*':
+        generate_subject_design_files(subject_id)
+    elif subject_id != '*' and session_id != '*':
+        generate_design_file(subject_id, session_id)
