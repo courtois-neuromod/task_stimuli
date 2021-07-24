@@ -42,10 +42,15 @@ def generate_design_file(subject: str, session: str):
     session_index = int(session)
 
     # Define random seed for reproducibility (will be stored).
-    seed = int(
+    seed_base = int(
         hashlib.sha1(("%s-%s" % (subject, session)).encode("utf-8")).hexdigest(), 16
     ) % (2 ** 32 - 1)
-    print('seed', seed)
+    global seed_level
+    seed_level = 0
+    def generate_seed():
+        global seed_level
+        return seed_base*(++seed_level)  # pyright: reportUndefinedVariable=false
+    print('seed_base', seed_base)
 
     # Load neuromod/prisme subset of things image dataset
     neuromod_image_list = pandas.read_csv(neuromod_image_list_csv_path)
@@ -100,9 +105,13 @@ def generate_design_file(subject: str, session: str):
     full_test_images = pandas.DataFrame()
     for run_idx in range(run_count):
         # Pickup one image out of each test cluster.
+        # @warning the same seed will be used for every cluster, this might get
+        # the same index being picked within each cluster not an issue though,
+        # as this should actually create more equidistant results, which we aim
+        # for.
         test_images = test_clusters\
             .groupby('cluster')\
-            .apply(lambda x: x.sample(1))\
+            .apply(lambda x: x.sample(1, random_state=generate_seed()))\
             .drop('dist', axis=1) # should be reprocessed.
         print('test_images:')
         print(test_images)
@@ -115,7 +124,7 @@ def generate_design_file(subject: str, session: str):
         # @warning in case len(test_clusters) > cluster count, some cluster will
         # be ignored.
         cluster_count = test_pos_count + test_neg_count
-        shown_idx = np.random.default_rng(seed+(1+run_idx)*1).choice(range(cluster_count), size=int(cluster_count/2), replace=False)
+        shown_idx = np.random.default_rng(generate_seed()).choice(range(cluster_count), size=int(cluster_count/2), replace=False)
         unshown_idx = np.delete(range(cluster_count), shown_idx)
         shown_images = test_images.iloc[shown_idx]
         unshown_images = test_images.iloc[unshown_idx]
@@ -134,7 +143,7 @@ def generate_design_file(subject: str, session: str):
 
         # Shuffle test images.
         test_images = pandas.concat([shown_test_images, unshown_test_images])
-        test_images = test_images.sample(frac=1)
+        test_images = test_images.sample(frac=1, random_state=generate_seed())
 
         # @note 2 decimal round.
         # @warning round sometimes returns NaN, perhaps due to floating point precision?
@@ -172,9 +181,13 @@ def generate_design_file(subject: str, session: str):
     full_design = pandas.DataFrame()
     for run_idx in range(run_count):
         # Pickup one image out of each cluster.
+        # @warning the same seed will be used for every cluster, this might get
+        # the same index being picked within each cluster not an issue though,
+        # as this should actually create more equidistant results, which we aim
+        # for.
         exp_images = exp_clusters\
             .groupby('cluster')\
-            .apply(lambda x: x.sample(1))\
+            .apply(lambda x: x.sample(1, random_state=generate_seed()))\
             .drop('dist', axis=1) # should be reprocessed.
 
         # Remove these images from the clusters to prevent them from appearing in
@@ -184,7 +197,7 @@ def generate_design_file(subject: str, session: str):
         # Randomize order + ensure we have 53 clusters (output might be a little
         # more, since we aim for perfect fixed-size clusters).
         cluster_count = display_count - test_pos_count
-        base_idx = np.random.default_rng(seed+(1+run_idx)*2).choice(range(len(exp_images)), size=cluster_count, replace=False)
+        base_idx = np.random.default_rng(generate_seed()).choice(range(len(exp_images)), size=cluster_count, replace=False)
         exp_images = exp_images.iloc[base_idx]
         exp_images = exp_images.droplevel('cluster', axis=0)
         print('images:')
@@ -196,7 +209,7 @@ def generate_design_file(subject: str, session: str):
         for i in range(test_pos_count):
             # @warning imperfect insertion boundaries due to float flooring
             #          even though not dramatic.
-            index = np.random.default_rng(seed+(1+run_idx)*3).choice(range(i*int(display_count/test_pos_count), (i+1)*int(display_count/test_pos_count)), size=1, replace=False)
+            index = np.random.default_rng(generate_seed()).choice(range(i*int(display_count/test_pos_count), (i+1)*int(display_count/test_pos_count)), size=1, replace=False)
             index = index[0]
             shown_image = shown_images.iloc[i].to_frame().transpose()  # ensuring it stays a dataframe, not a series.
             exp_images = pandas.concat([exp_images.iloc[:index], shown_image, exp_images.iloc[index:]])
@@ -279,7 +292,7 @@ def generate_design_file(subject: str, session: str):
         f'sub-{subject}_ses-{session}_design-seed.txt',
     )
     with open(seed_outpath, 'w') as seed_file:
-        seed_file.write(str(seed))
+        seed_file.write(str(seed_base))
 
     # Store commit id.
     repo = git.Repo(search_parent_directories=True)
