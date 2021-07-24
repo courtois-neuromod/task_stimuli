@@ -180,7 +180,7 @@ def generate_design_file(subject: str, session: str):
 
     # Generate display task images for each run:
     full_design = pandas.DataFrame()
-    for run_idx in tqdm(range(run_count), unit='run'):
+    for run_idx in tqdm(range(run_count), unit='run', leave=False):
         # Pickup one image out of each cluster.
         # @warning the same seed will be used for every cluster, this might get
         # the same index being picked within each cluster not an issue though,
@@ -312,19 +312,44 @@ def generate_design_file(subject: str, session: str):
     )
     full_design.to_csv(full_design_outpath, sep="\t")
 
-def generate_subject_design_files(subject_id):
+def list_generated_session_ids(subject_id):
     from config import session_count
 
-    # For all sessions.
-    for session_id in tqdm(range(1, session_count+1), unit='session'):
-        # Skip if session has already been generated.
+    generated_session_ids = []
+    for session_id in range(1, session_count+1):
         path = os.path.join(
             os.path.join('data', 'prisme', 'designs'),
             f'sub-{subject_id}_ses-{session_id}_design.tsv',
         )
         if os.path.exists(path):
-            continue
+            generated_session_ids.append(session_id)
 
+    return generated_session_ids
+
+def list_generated_subject_ids():
+    from config import subject_ids, session_count
+
+    generated_subject_ids = []
+    for subject_id in subject_ids:
+        if len(list_generated_session_ids(subject_id)) == session_count:
+            generated_subject_ids.append(subject_id)
+
+    return generated_subject_ids
+
+def generate_subject_design_files(subject_id):
+    from config import session_count
+
+    # For all sessions that have not yet been generated.
+    all_session_ids = range(1, session_count+1)
+    skipped_session_ids = list_generated_session_ids(subject_id)
+    session_ids = [
+        session_id
+        for session_id in all_session_ids
+        if session_id not in skipped_session_ids
+    ]
+    progress_bar = tqdm(session_ids, initial=len(skipped_session_ids),
+        total=len(all_session_ids), unit='session', leave=False)
+    for session_id in progress_bar:
         # Generate session.
         generate_design_file(subject_id, session_id)
 
@@ -334,8 +359,17 @@ def generate_subject_design_files(subject_id):
 def generate_all_design_files():
     from config import subject_ids
 
-    # For all subjects.
-    for subject_id in tqdm(subject_ids, unit='subject'):
+    # For all subjects that have not yet been generated.
+    all_subject_ids = subject_ids
+    skipped_subject_ids = list_generated_subject_ids()
+    subject_ids = [
+        subject_id
+        for subject_id in all_subject_ids
+        if subject_id not in skipped_subject_ids
+    ]
+    progress_bar = tqdm(subject_ids, initial=len(skipped_subject_ids),
+        total=len(all_subject_ids), unit='session', leave=True)
+    for subject_id in progress_bar:
         # Generate all sessions.
         generate_subject_design_files(subject_id)
 
