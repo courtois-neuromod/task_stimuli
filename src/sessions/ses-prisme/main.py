@@ -30,6 +30,7 @@ test_pos_count = 5
 test_neg_count = 5
 
 
+# @warning not thread safe due to global usage within seed generation.
 def generate_design_file(subject: str, session: str):
     import re
     import scipy.io
