@@ -201,8 +201,8 @@ def generate_design_file(subject: str, session: str):
         base_idx = np.random.default_rng(generate_seed()).choice(range(len(exp_images)), size=cluster_count, replace=False)
         exp_images = exp_images.iloc[base_idx]
         exp_images = exp_images.droplevel('cluster', axis=0)
-        tqdm.write('images:')
-        tqdm.write(str(exp_images))
+        # tqdm.write('images:')
+        # tqdm.write(str(exp_images))
 
         # Inject the previously picked 5 test/shown images at +- eq. distance.
         # @todo ensure no out of bound indexes are possible
@@ -261,8 +261,8 @@ def generate_design_file(subject: str, session: str):
         # Store run within design.
         full_design = pandas.concat([full_design, run_design])
 
-        tqdm.write("run %d:" % (run_idx + 1))
-        tqdm.write(str(run_design))
+        # tqdm.write("run %d:" % (run_idx + 1))
+        # tqdm.write(str(run_design))
 
         # Ensure images are shown only once per run.
         exp_image_paths = run_design[run_design['condition'] == 'shown'].loc[: ,'image_path']
