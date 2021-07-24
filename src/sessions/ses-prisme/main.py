@@ -1,4 +1,5 @@
 import os
+from tqdm import tqdm
 
 # @warning equal value might induce a very slight ns additional delay
 # (due to waiting twice for the same timestamp).
@@ -50,7 +51,7 @@ def generate_design_file(subject: str, session: str):
     def generate_seed():
         global seed_level
         return seed_base*(++seed_level)  # pyright: reportUndefinedVariable=false
-    print('seed_base', seed_base)
+    tqdm.write('seed_base %d' % seed_base)
 
     # Load neuromod/prisme subset of things image dataset
     neuromod_image_list = pandas.read_csv(neuromod_image_list_csv_path)
@@ -83,22 +84,22 @@ def generate_design_file(subject: str, session: str):
     clean = neuromod_sensevec_augmented_pd.dropna()
     dropped = neuromod_sensevec_augmented_pd[~neuromod_sensevec_augmented_pd.index.isin(clean.index)]
     neuromod_sensevec_augmented_pd = clean
-    print('dropped sensevec fields due to lack of synsets value (n/a cells):')
-    print(dropped)
-    print('neuromod sensevec augmented:')
-    print(neuromod_sensevec_augmented_pd)
+    tqdm.write('dropped sensevec fields due to lack of synsets value (n/a cells):')
+    tqdm.write(str(dropped))
+    tqdm.write('neuromod sensevec augmented:')
+    tqdm.write(str(neuromod_sensevec_augmented_pd))
 
     # Generate pearson similarity matrix out of the synsets.
     similarity_matrix = generate_similarity_matrix(neuromod_sensevec_augmented_pd)
-    print('similarity matrix:')
-    print(similarity_matrix)
+    tqdm.write('similarity matrix:')
+    tqdm.write(str(similarity_matrix))
 
     # Generate 10 clusters out of the similarity matrix, 5 for shown images to
     # be tested, 5 for unshown images to be tested.
     cluster_count = test_pos_count + test_neg_count
     test_clusters = generate_fixed_size_clusters(neuromod_sensevec_augmented_pd, similarity_matrix, cluster_count)
-    print('test_clusters:')
-    print(test_clusters['cluster'])
+    tqdm.write('test_clusters:')
+    tqdm.write(str(test_clusters['cluster']))
 
     # Generate memory task images for each run:
     run_count = fmri_run_count + eeg_run_count # 8 mri runs, 3 eeg runs
@@ -113,8 +114,8 @@ def generate_design_file(subject: str, session: str):
             .groupby('cluster')\
             .apply(lambda x: x.sample(1, random_state=generate_seed()))\
             .drop('dist', axis=1) # should be reprocessed.
-        print('test_images:')
-        print(test_images)
+        tqdm.write('test_images:')
+        tqdm.write(str(test_images))
 
         # Remove these images from the clusters to prevent them from appearing
         # in the next runs.
@@ -130,10 +131,10 @@ def generate_design_file(subject: str, session: str):
         unshown_images = test_images.iloc[unshown_idx]
         shown_images = shown_images.droplevel('cluster', axis=0)
         unshown_images = unshown_images.droplevel('cluster', axis=0)
-        print('shown test images:')
-        print(shown_images)
-        print('unshown test images:')
-        print(unshown_images)
+        tqdm.write('shown test images:')
+        tqdm.write(str(shown_images))
+        tqdm.write('unshown test images:')
+        tqdm.write(str(unshown_images))
 
         # Flag exp and test (pos / neg shown) images.
         shown_test_images = shown_images.copy(deep=True)
@@ -174,12 +175,12 @@ def generate_design_file(subject: str, session: str):
     # within test!
     cluster_count = display_count - test_pos_count
     exp_clusters = generate_fixed_size_clusters(neuromod_sensevec_augmented_pd, similarity_matrix, cluster_count)
-    print('exp_clusters:')
-    print(exp_clusters['cluster'])
+    tqdm.write('exp_clusters:')
+    tqdm.write(str(exp_clusters['cluster']))
 
     # Generate display task images for each run:
     full_design = pandas.DataFrame()
-    for run_idx in range(run_count):
+    for run_idx in tqdm(range(run_count), unit='run'):
         # Pickup one image out of each cluster.
         # @warning the same seed will be used for every cluster, this might get
         # the same index being picked within each cluster not an issue though,
@@ -200,8 +201,8 @@ def generate_design_file(subject: str, session: str):
         base_idx = np.random.default_rng(generate_seed()).choice(range(len(exp_images)), size=cluster_count, replace=False)
         exp_images = exp_images.iloc[base_idx]
         exp_images = exp_images.droplevel('cluster', axis=0)
-        print('images:')
-        print(exp_images)
+        tqdm.write('images:')
+        tqdm.write(str(exp_images))
 
         # Inject the previously picked 5 test/shown images at +- eq. distance.
         # @todo ensure no out of bound indexes are possible
@@ -260,8 +261,8 @@ def generate_design_file(subject: str, session: str):
         # Store run within design.
         full_design = pandas.concat([full_design, run_design])
 
-        print("run %d:" % (run_idx + 1))
-        print(run_design)
+        tqdm.write("run %d:" % (run_idx + 1))
+        tqdm.write(str(run_design))
 
         # Ensure images are shown only once per run.
         exp_image_paths = run_design[run_design['condition'] == 'shown'].loc[: ,'image_path']
@@ -315,7 +316,7 @@ def generate_subject_design_files(subject_id):
     from config import session_count
 
     # For all sessions.
-    for session_id in range(1, session_count+1):
+    for session_id in tqdm(range(1, session_count+1), unit='session'):
         # Skip if session has already been generated.
         path = os.path.join(
             os.path.join('data', 'prisme', 'designs'),
@@ -328,18 +329,18 @@ def generate_subject_design_files(subject_id):
         generate_design_file(subject_id, session_id)
 
         # Log separator.
-        print('==============================================================')
+        tqdm.write('==============================================================')
 
 def generate_all_design_files():
     from config import subject_ids
 
     # For all subjects.
-    for subject_id in subject_ids:
+    for subject_id in tqdm(subject_ids, unit='subject'):
         # Generate all sessions.
         generate_subject_design_files(subject_id)
 
         # Log separator.
-        print('##############################################################')
+        tqdm.write('##############################################################')
 
 # Main function.
 if __name__ == "__main__":
