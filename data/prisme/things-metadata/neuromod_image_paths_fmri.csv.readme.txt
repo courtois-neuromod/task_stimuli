@@ -1,0 +1,2 @@
+same file as data/things/images/image_paths_fmri.csv
+except it is imported within git rather than datalad.

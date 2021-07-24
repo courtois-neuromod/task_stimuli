@@ -15,12 +15,12 @@ test_image_display_duration = 4  # 4s
 session = '01'
 subject = '01'
 run_idx = 1
-neuromod_image_list_csv_path = os.path.join('..', '..', '..', 'data', 'things', 'images', 'image_paths_fmri.csv')
+neuromod_image_list_csv_path = os.path.join('..', '..', '..', 'data', 'prisme', 'things-metadata', 'neuromod_image_paths_fmri.csv')
 sensevec_augmented_file_path = os.path.join('..', '..', '..', 'data', 'prisme', 'things-metadata', 'Semantic Embedding', 'sensevec_augmented_with_wordvec.mat')
 things_cats_file_path = os.path.join('..', '..', '..', 'data', 'prisme', 'things-metadata', 'Variables', 'unique_id.csv')
 
 # True vars.
-neuromod_image_list_csv_path = os.path.join('data', 'things', 'images', 'image_paths_fmri.csv')
+neuromod_image_list_csv_path = os.path.join('data', 'prisme', 'things-metadata', 'neuromod_image_paths_fmri.csv')
 sensevec_augmented_file_path = os.path.join('data', 'prisme', 'things-metadata', 'Semantic Embedding', 'sensevec_augmented_with_wordvec.mat')
 things_cats_file_path = os.path.join('data', 'prisme', 'things-metadata', 'Variables', 'unique_id.csv')
 fmri_run_count = 8
