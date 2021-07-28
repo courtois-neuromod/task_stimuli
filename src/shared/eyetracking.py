@@ -255,6 +255,10 @@ class EyeTrackerClient(threading.Thread):
         if profile:
             dev_opts.append("--profile")
 
+        pupil_logfile = open(os.path.join(self.record_dir, "pupil.log"), "wb")
+        pupil_env = os.environ.copy()
+        pupil_env.update({'ARV_DEBUG':'all:2'})
+
         self._pupil_process = Popen(
             [
                 "python3",
@@ -263,7 +267,10 @@ class EyeTrackerClient(threading.Thread):
                 "--port",
                 str(PUPIL_REMOTE_PORT),
             ]
-            + dev_opts
+            + dev_opts,
+            env=pupil_env,
+            stdout=pupil_logfile,
+            stderr=pupil_logfile,
         )
 
         self._ctx = zmq.Context()
