@@ -38,6 +38,7 @@ class Task(object):
         self._exp_win_first_flip_time = None
         self._exp_win_last_flip_time = None
         self._ctl_win_last_flip_time = None
+        self._task_completed = False
 
         self._setup(exp_win)
         # initialize a progress bar if we know the duration of the task
@@ -108,6 +109,7 @@ class Task(object):
                 if self._progress_bar_refresh_rate and flip_idx % self._progress_bar_refresh_rate == 0:
                     self.progress_bar.update(1)
             flip_idx += 1
+        self._task_completed = True
 
     def stop(self, exp_win, ctl_win):
         if hasattr(self, "_stop"):
