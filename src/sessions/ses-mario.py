@@ -31,6 +31,8 @@ def get_tasks(parsed):
         savestate = {"world": 1, "level":1}
 
     for run in range(10):
+        if savestate['world'] == 9:
+            break
         current_level = f"Level{savestate['world']}-{savestate['level']}"
         task = videogame.VideoGameMultiLevel(
             game_name='SuperMarioBros-Nes',
@@ -65,3 +67,9 @@ def get_tasks(parsed):
             text="You can take a short break.\n Press A when ready to continue",
             wait_key='a',
         )
+
+    #move into phase2
+    print("WARNING: the player has completed PHASE1, moving into PHASE2")
+    import importlib
+    phase2 = importlib.import_module('src.sessions.ses-mario-phase2')
+    yield from phase2.get_tasks(parsed)
