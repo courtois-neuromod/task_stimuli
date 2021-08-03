@@ -3,8 +3,6 @@ import numpy as np
 import random
 import hashlib
 import pandas
-from ..tasks import videogame, task_base
-from .game_questionnaires import flow_ratings, other_ratings
 
 
 worlds = 8
@@ -49,6 +47,8 @@ if __name__ == "__main__":
 
 def get_tasks(parsed):
 
+    from ..tasks import videogame, task_base
+    from .game_questionnaires import flow_ratings, other_ratings
     import json
     import retro
     # point to a copy of the whole gym-retro with custom states and scenarii
