@@ -14,7 +14,7 @@ all_levels = [(world, level)
     for world in range(1,worlds+1)
     for level in range(1,levels+1)
     if (world,level) not in exclude_list]
-n_repetitions = 50 # very high level, will never reach that point
+n_repetitions = 50 # very high number, will never reach that point
 
 def generate_design_file(subject):
 
@@ -83,7 +83,6 @@ def get_tasks(parsed):
         if len(next_levels) == 0:
             print('Stable phase completed, no more levels to play')
             return []
-        print(next_levels)
 
         task = videogame.VideoGameMultiLevel(
             game_name='SuperMarioBros-Nes',
