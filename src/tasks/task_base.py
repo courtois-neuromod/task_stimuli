@@ -92,8 +92,9 @@ class Task(object):
     def run(self, exp_win, ctl_win):
         # needs to be the 1rst callbacks
         exp_win.timeOnFlip(self, '_exp_win_first_flip_time')
-
-        self.task_timer = core.Clock()
+        self._flip_all_windows(exp_win, ctl_win, True)
+        #sync to first screen flip
+        self.task_timer = core.MonotonicClock(self._exp_win_first_flip_time)
 
         if self.progress_bar:
             self.progress_bar.reset()
