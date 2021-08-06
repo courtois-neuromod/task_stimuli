@@ -11,24 +11,7 @@ retro.data.Integrations.add_custom_path(
 from psychopy import logging
 from ..tasks import images, videogame, memory, task_base
 
-flow_ratings = [
-    "I feel just the right amount of challenge.",
-    "My thoughts/activities run fluidly and smoothly.",
-    "I don’t notice time passing.",
-    "I have no difficulty concentrating.",
-    "My mind is completely clear.",
-    "I am totally absorbed in what I am doing.",
-    "The right thoughts/movements occur of their own accord.",
-    "I know what I have to do each step of the way.",
-    "I feel that I have everything under control.",
-    "I am completely lost in thought.",
-]
-
-levels_scenario = [
-    ("Level1-1", "scenario"),
-    ("Level1-2", "scenario"),
-    ("Level1-3", "scenario")]
-#random.shuffle(levels_scenario)  # randomize order
+from .game_questionnaires import flow_ratings
 
 scenario = "scenario"
 
@@ -45,9 +28,11 @@ def get_tasks(parsed):
         with open(savestate_path) as f:
             savestate = json.load(f)
     else:
-        savestate = {"world": 1, "level":1} #TODO: determine format
+        savestate = {"world": 1, "level":1}
 
     for run in range(10):
+        if savestate['world'] == 9:
+            break
         current_level = f"Level{savestate['world']}-{savestate['level']}"
         task = videogame.VideoGameMultiLevel(
             game_name='SuperMarioBros-Nes',
@@ -82,3 +67,9 @@ def get_tasks(parsed):
             text="You can take a short break.\n Press A when ready to continue",
             wait_key='a',
         )
+
+    #move into phase2
+    print("WARNING: the player has completed PHASE1, moving into PHASE2")
+    import importlib
+    phase2 = importlib.import_module('src.sessions.ses-mario-phase2')
+    yield from phase2.get_tasks(parsed)
