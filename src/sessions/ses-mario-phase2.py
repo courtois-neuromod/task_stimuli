@@ -89,7 +89,7 @@ def get_tasks(parsed):
             state_names=next_levels,
             scenarii=[scenario]*len(next_levels),
             repeat_scenario=True,
-            max_duration=2 * 60,  # if when level completed or dead we exceed that time in secs, stop the task
+            max_duration=10 * 60,  # if when level completed or dead we exceed that time in secs, stop the task
             name=f"task-mario_run-{run+1:02d}",
             instruction="playing Super Mario Bros {state_name} \n\n Let's-a go!",
             post_run_ratings = [(k, q, 7) for k, q in enumerate(other_ratings+flow_ratings)],
