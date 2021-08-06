@@ -188,8 +188,13 @@ You have to press and release immediately the button that light-up."""
 
             utils.wait_until(self.task_timer, trial["offset_flip"] + 1 )
             key_pressed, key_released = self._handle_controller_presses(exp_win)
-            for k in ['key_press_time', 'key_press_rt', 'key_release_time', 'key_release_rt', 'key_duration', 'all_keypresses', 'all_key_releases']:
-                trial[k] = None
+            if trial_n == 0:
+                for k in [
+                    'key_press_time', 'key_press_rt',
+                    'key_release_time', 'key_release_rt',
+                    'key_duration',
+                    'all_keypresses', 'all_keyreleases']:
+                    trial[k] = None
 
             kp_matches = [(k,t) for k,t in key_pressed if k==trial['key']]
             kr_matches = [(k,t) for k,t in key_released if k==trial['key']]
