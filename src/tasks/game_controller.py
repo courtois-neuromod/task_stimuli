@@ -10,8 +10,8 @@ class ButtonPressTask(Task):
     BUTTONS = {
         'l': [(132,176),(175,176),(196,200),(175,222),(132,222)],
         'r': [(250,176),(290,176),(290,222),(250,222),(230,200)],
-        'u': [(190,162),(190,120),(232,120),(232,162),(211,184)],
-        'd': [(190,235),(190,276),(232,276),(232,235),(211,215)],
+        'u': [(189,162),(189,120),(233,120),(233,162),(211,184)],
+        'd': [(189,235),(189,276),(232,276),(232,235),(211,215)],
         'a': [(648, 200), 25],
         'b': [(592, 253), 25],
         'x': [(592, 144), 25],
@@ -30,7 +30,6 @@ class ButtonPressTask(Task):
         self._progress_bar_refresh_rate = 3 # 3 flips per trial
 
     def _instructions(self, exp_win, ctl_win):
-        return
         screen_text = visual.TextStim(
             exp_win,
             text=self.instruction,
@@ -94,23 +93,27 @@ You have to press and release immediately the button that light-up."""
                 fillColor=(40,220,120), colorSpace='rgb255',),
             }
 
+        buttons_aspect = {
+            'fillColor':(255,160,110),
+            'colorSpace':'rgb255',
+            'opacity':.6,
+            'lineWidth':0
+            }
+
         self._buttons = {
             key: (
                 visual.ShapeStim(
                     exp_win,
                     vertices=[(s - self._controller_img.size/2) * (1,-1) for s in shape],
-                    lineWidth=4,
                     units="pixels",
-                    lineColor=(1,1,1),fillColor=(1,1,1), opacity=.4,)
+                    **buttons_aspect)
                 if len(shape)>2
                 else visual.Circle(
                     exp_win,
                     radius=shape[1],
                     pos=(shape[0] - self._controller_img.size/2) * (1,-1),
-                    lineWidth=4,
                     units="pixels",
-                    lineColor=(1,1,1),
-                    fillColor=(1,1,1), opacity=.4,))
+                    **buttons_aspect))
                 for key, shape in self.BUTTONS.items()
                 }
 
@@ -125,24 +128,19 @@ You have to press and release immediately the button that light-up."""
         exp_win.winHandle.on_key_press = event._onPygletKey
         # del exp_win.winHandle.on_key_release
 
-    def _handle_controller_presses(self, exp_win, keys):
+    def _handle_controller_presses(self, exp_win):
         exp_win.winHandle.dispatch_events()
         global _keyPressBuffer, _keyReleaseBuffer
 
-        key_pressed, key_released, other_keys = None, None, []
-        for k in _keyReleaseBuffer:
-            if k[0] in keys:
-                key_released = k
-            self.pressed_keys.discard(k[0])
-            logging.data(f"Keyrelease: {k[0]}", t=k[1])
+        time_offset = core.getTime() - self.task_timer.getTime()
+
+        key_presses = [(k, t-time_offset) for (k,t) in _keyPressBuffer]
+        key_releases = [(k, t-time_offset) for (k,t) in _keyReleaseBuffer]
+
         _keyReleaseBuffer.clear()
-        for k in _keyPressBuffer:
-            if k[0] in keys:
-                key_pressed = k
-            self.pressed_keys.add(k[0])
-        self._new_key_pressed = _keyPressBuffer[:] #copy
         _keyPressBuffer.clear()
-        return key_pressed, key_released, other_keys
+
+        return key_presses, key_releases
 
     def _run(self, exp_win, ctl_win):
 
@@ -189,23 +187,28 @@ You have to press and release immediately the button that light-up."""
             )
 
             utils.wait_until(self.task_timer, trial["offset_flip"] + 1 )
-            key_pressed, key_released, other_keys = self._handle_controller_presses(exp_win, [trial['key']])
-            for k in ['key_press_time', 'key_press_rt', 'key_release_time', 'key_release_rt', 'key_duration']:
+            key_pressed, key_released = self._handle_controller_presses(exp_win)
+            for k in ['key_press_time', 'key_press_rt', 'key_release_time', 'key_release_rt', 'key_duration', 'all_keypresses', 'all_key_releases']:
                 trial[k] = None
-            if key_pressed is not None:
-                trial['key_press_time'] = key_pressed[1] - time_offset
+
+            kp_matches = [(k,t) for k,t in key_pressed if k==trial['key']]
+            kr_matches = [(k,t) for k,t in key_released if k==trial['key']]
+
+            if len(kp_matches):
+                trial['key_press_time'] = kp_matches[0][1]
                 trial['key_press_rt'] = trial['key_press_time']  - trial['onset_flip']
-            if key_released is not None:
-                trial['key_release_time'] = key_released[1] - time_offset
-                if key_pressed is not None:
+            if len(kr_matches):
+                trial['key_release_time'] = kr_matches[0][1]
+                if len(kp_matches):
                     trial['key_duration'] = trial['key_release_time'] - trial['key_press_time']
-                if trial['condition'] == 'long':
-                    trial['key_release_rt'] = trial['key_release_time']  - trial['offset_flip']
-            trial['other_keys'] = other_keys # log to exclude trial with confounded keys
+                # only pertinent for long keypresses, but still computing it for short ones
+                trial['key_release_rt'] = trial['key_release_time']  - trial['offset_flip']
+            trial['all_keypresses'] = key_pressed # log to exclude trial with confounded keys
+            trial['all_keyreleases'] = key_released
             self.progress_bar.set_description(
                 f"Trial {trial_n}:: {trial['condition']} {trial['key']} rt={trial.get('key_press_rt')}"
             )
-        utils.wait_until(self.task_timer, trial["onset"] + trial['duration'] + FINAL_WAIT)
+        utils.wait_until(self.task_timer, trial["onset"] + trial['duration'] + self.FINAL_WAIT)
         self._unset_key_handler(exp_win)
 
     def _stop(self, exp_win, ctl_win):
