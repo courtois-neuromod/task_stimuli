@@ -215,10 +215,11 @@ You have to press and release immediately the button that light-up."""
             )
         utils.wait_until(self.task_timer, trial["onset"] + trial['duration'] + self.FINAL_WAIT)
         self._unset_key_handler(exp_win)
+        yield True
 
     def _stop(self, exp_win, ctl_win):
         self._unset_key_handler(exp_win)
-        yield
+        yield True
 
     def _restart(self):
         self.trials = data.TrialHandler(self.design, 1, method="sequential")
