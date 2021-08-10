@@ -18,7 +18,7 @@ long_duration_range = [1,3]
 isi_range = [tr, tr*2]
 blocks_isi = 2*tr
 
-def generate_design_file(subject):
+def generate_design_file(subject, lr=False):
     import pandas
     import random
     import hashlib
@@ -52,6 +52,13 @@ def generate_design_file(subject):
                 for block_idx, block in enumerate(blocks)
                 for key in random.sample(keys, len(keys))
                 ])
+
+            if lr:
+                lr_conditions = [random.sample(['l','r'],2) for _ in range(2 * n_blocks_per_cond)]
+                design['lr_condition'] = np.repeat(lr_conditions,4)
+                design['key'] = sum([random.sample((keys[:4] if lr=='l' else keys[4:]),4)
+                    for lr in lr_conditions],[])
+
             design['duration'] = short_press_duration
             design.loc[design.condition=='long','duration'] = durations
             design.loc[0, 'onset'] = initial_wait
@@ -80,8 +87,12 @@ if __name__ == "__main__":
         description="generate design files for participant / session",
     )
     parser.add_argument("subject", type=str, help="participant id")
+
+    parser.add_argument(
+        "--lr", help="create design with separate left/right buttons blocks", action="store_true"
+    )
     parsed = parser.parse_args()
-    generate_design_file(parsed.subject)
+    generate_design_file(parsed.subject, lr=parsed.lr)
 
 
 def get_tasks(parsed):
