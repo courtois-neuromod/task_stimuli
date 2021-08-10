@@ -1,4 +1,5 @@
 import os, sys, time
+import numpy as np
 from psychopy import visual, core, data, logging, event
 
 from .task_base import Task
@@ -83,6 +84,8 @@ You have to press and release immediately the button that light-up."""
             size=(800, 481),
             units="pixels"
         )
+        if 'lr_condition' in self.design[0]:
+            self._controller_img.mask = np.ones((1,2))
 
         self._cue = {
             'short': visual.Circle(
@@ -150,6 +153,10 @@ You have to press and release immediately the button that light-up."""
 
         for trial_n, trial in enumerate(self.trials):
 
+            if 'lr_condition' in trial:
+                self._controller_img.mask.fill(1)
+                self._controller_img.mask[:,(slice(0,1) if trial['lr_condition'] == 'r' else slice(1,None))] = -.5
+                self._controller_img.mask = self._controller_img.mask
             # draw cue, flip
             self._controller_img.draw(exp_win)
             self._cue[trial['condition']].draw(exp_win)
