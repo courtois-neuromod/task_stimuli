@@ -165,6 +165,10 @@ def main_loop(
         eyetracker_client.start()
         print("done")
 
+        all_tasks = itertools.chain(
+            [eyetracking.EyetrackerSetup(eyetracker=eyetracker_client, name='eyetracker_setup'),],
+            all_tasks
+        )
         all_tasks = eyetracker_client.interleave_calibration(all_tasks)
 
         if show_ctl_win:
@@ -189,6 +193,9 @@ We are coming to get you out of the scanner shortly."""
         if not skip_soundcheck:
             setup_video_path = utils.get_subject_soundcheck_video(subject)
             all_tasks = itertools.chain([
+                task_base.Pause(
+                    """Setup: we will soon run a soundcheck to check that the sensimetrics is adequately setup."""
+                ),
                 video.VideoAudioCheckLoop(setup_video_path, name="setup_soundcheck_video",)],
                 all_tasks,
             )
