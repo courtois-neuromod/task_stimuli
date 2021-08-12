@@ -26,7 +26,7 @@ def start_eyetracker(args):
                 "fullscreen": True,
                 "marker_scale": 1.0,
                 "sample_duration": 60,
-                "monitor_name": "eDP-1 [1]",
+                "monitor_name": "DP-2",
                 "fixed_screen": True,
             },
         }
