@@ -54,7 +54,7 @@ def generate_design_file(subject, lr=False):
                 ])
 
             if lr:
-                lr_conditions = [random.sample(['l','r'],2) for _ in range(2 * n_blocks_per_cond)]
+                lr_conditions = sum([random.sample(['l','r'], 2) for _ in range(2 * n_blocks_per_cond)],[])
                 design['lr_condition'] = np.repeat(lr_conditions,4)
                 design['key'] = sum([random.sample((keys[:4] if lr=='l' else keys[4:]),4)
                     for lr in lr_conditions],[])
