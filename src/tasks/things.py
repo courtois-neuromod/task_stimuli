@@ -204,6 +204,7 @@ The button mapping will change from trial to trial as indicated at the center of
                 level=logging.EXP,
                 msg=f"image: {trial['condition']}:{trial['image_path']}",
             )
+            exp_win.winHandle.activate()
 
             # draw to backbuffer
             stimuli.draw(exp_win)
