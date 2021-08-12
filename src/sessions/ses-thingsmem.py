@@ -19,9 +19,7 @@ def get_tasks(parsed):
             IMAGE_PATH,
             run,
             name=f"task-thingsmemory_run-{run}",
-            use_eyetracking=True,
-#            use_fmri=parsed.fmri,
-#            use_meg=parsed.meg,
+            use_eyetracking=True
             )
         for run in range(1, n_runs_session + 1)
     ]
