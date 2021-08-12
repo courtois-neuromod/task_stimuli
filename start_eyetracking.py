@@ -21,12 +21,27 @@ def start_eyetracker(args):
     eyetracker_client.send_recv_notification(
         {
             "subject": "start_plugin",
+            "name": "ScreenMarkerChoreographyPlugin",
+            "args": {
+                "fullscreen": True,
+                "marker_scale": 1.0,
+                "sample_duration": 60,
+                "monitor_name": "eDP-1 [1]",
+                "fixed_screen": True,
+            },
+        }
+    )
+
+    eyetracker_client.send_recv_notification(
+        {
+            "subject": "start_plugin",
             "name": "Annotation_Capture",
             "args": {
                 "annotation_definitions": [['Trigger','T']],
             },
         }
     )
+
 
     #print("starting et client")
     #eyetracker_client.start()
