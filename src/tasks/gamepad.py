@@ -21,7 +21,7 @@ class ButtonPressTask(Task):
 
     FINAL_WAIT = 9
 
-    DEFAULT_INSTRUCTION = """You will be instructed to press the buttons of the controller for short or long durations."""
+    DEFAULT_INSTRUCTION = """You will be asked to press the left and right hand buttons of the controller for short or long durations."""
 
     def __init__(self, design, run, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -38,12 +38,10 @@ class ButtonPressTask(Task):
             color="white",
             wrapWidth=config.WRAP_WIDTH,
         )
+        screen_text.draw(exp_win)
+        yield True
+        core.wait(config.INSTRUCTION_DURATION)
 
-        for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
-            screen_text.draw(exp_win)
-            if ctl_win:
-                screen_text.draw(ctl_win)
-            yield ()
         if self.run_id == 1:
             yield True
             yield from self._long_instructions(exp_win, ctl_win)

@@ -70,7 +70,7 @@ def generate_design_file(subject, lr=False):
 
             out_fname = os.path.join(
                 "data",
-                "game_ctrlr",
+                "gamepad",
                 "designs",
                 f"sub-{parsed.subject}_ses-{session+1:03d}_run-{run+1:02d}_design.tsv",
             )
