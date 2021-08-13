@@ -3,7 +3,7 @@ import numpy as np
 
 
 keys = "rludabxy"
-n_sessions = 6
+n_sessions = 8
 n_runs = 2
 n_blocks_per_cond = 5
 conditions = ['short', 'long']
@@ -96,18 +96,18 @@ if __name__ == "__main__":
 
 
 def get_tasks(parsed):
-    from ..tasks.game_controller import ButtonPressTask
+    from ..tasks.gamepad import ButtonPressTask
 
     tasks = [
         ButtonPressTask(
             os.path.join(
                 "data",
-                "game_ctrlr",
+                "gamepad",
                 "designs",
                 f"sub-{parsed.subject}_ses-{parsed.session}_run-{run:02d}_design.tsv",
             ),
             run,
-            name=f"task-gamectrlr_run-{run}")
+            name=f"task-gamepad_run-{run}")
         for run in range(1, n_runs+1)
     ]
     return tasks
