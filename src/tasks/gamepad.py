@@ -80,7 +80,7 @@ You have to press and release immediately the button that light-up."""
 
         self._controller_img = visual.ImageStim(
             exp_win,
-            image="data/game_ctrlr/ctrlr.png",
+            image="data/gamepad/ctrlr.png",
             size=(800, 481),
             units="pixels"
         )
