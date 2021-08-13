@@ -3,7 +3,7 @@ import numpy as np
 
 
 keys = "rludabxy"
-n_sessions = 3
+n_sessions = 8
 n_runs = 2
 n_blocks_per_cond = 5
 conditions = ['short', 'long']
