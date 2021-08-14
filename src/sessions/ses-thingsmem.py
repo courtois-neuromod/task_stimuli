@@ -14,7 +14,15 @@ def get_tasks(parsed):
     )
     n_runs_session = n_runs if int(parsed.session) > 1 else n_runs//2
     tasks = [
-        ThingsMemory(session_design_filename, IMAGE_PATH, run, name=f"task-thingsmemory_run-{run}")
+        ThingsMemory(
+            session_design_filename,
+            IMAGE_PATH,
+            run,
+            name=f"task-thingsmemory_run-{run}",
+            use_eyetracking=True,
+            use_fmri=parsed.fmri,
+            use_meg=parsed.meg,
+            )
         for run in range(1, n_runs_session + 1)
     ]
     return tasks
