@@ -212,6 +212,45 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
             fname = self._generate_unique_filename("calib-data", "npz")
             np.savez(fname, pupils=self._pupils_list, markers=self.all_refs_per_flip)
 
+class EyetrackerSetup(Task):
+    def __init__(
+        self,
+        eyetracker,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.eyetracker = eyetracker
+
+    def _run(self, exp_win, ctl_win):
+
+        con_text_str = "Trying to establish connection to the eyetracker %s"
+
+        con_text = visual.TextStim(
+            exp_win,
+            text=con_text_str % ' ...',
+            alignText="center",
+            color="white",
+            wrapWidth=config.WRAP_WIDTH,
+            )
+        con_text.draw(exp_win)
+        yield True
+
+        while True:
+            notif = self.eyetracker._aravis_notification
+            print(notif)
+            if (
+                notif and
+                notif["subject"] == "aravis.start_capture.successful" and
+                notif["target"] == "eye0" and
+                notif["name"] == "Aravis_Source"):
+                break
+
+            self.eyetracker.start_source()
+            con_text.text = con_text_str % 'failed, retrying'
+            con_text.draw(exp_win)
+            yield True
+            time.sleep(3)
+
 
 
 from subprocess import Popen
@@ -255,6 +294,10 @@ class EyeTrackerClient(threading.Thread):
         if profile:
             dev_opts.append("--profile")
 
+        pupil_logfile = open(os.path.join(self.record_dir, "pupil.log"), "wb")
+        pupil_env = os.environ.copy()
+        pupil_env.update({'ARV_DEBUG':'all:2'})
+
         self._pupil_process = Popen(
             [
                 "python3",
@@ -263,7 +306,10 @@ class EyeTrackerClient(threading.Thread):
                 "--port",
                 str(PUPIL_REMOTE_PORT),
             ]
-            + dev_opts
+            + dev_opts,
+            env=pupil_env,
+            stdout=pupil_logfile,
+            stderr=pupil_logfile,
         )
 
         self._ctx = zmq.Context()
@@ -327,7 +373,9 @@ class EyeTrackerClient(threading.Thread):
                     "name": plugin,
                 }
             )
+        self.start_source()
 
+    def start_source(self):
         self.send_recv_notification(
             {
                 "subject": "start_eye_plugin",
@@ -376,12 +424,13 @@ class EyeTrackerClient(threading.Thread):
 
     def run(self):
 
+        self._aravis_notification = None
         self._req_socket.send_string("SUB_PORT")
         ipc_sub_port = int(self._req_socket.recv())
         logging.info(f"ipc_sub_port: {ipc_sub_port}")
         self.pupil_monitor = Msg_Receiver(
             self._ctx, f"tcp://localhost:{ipc_sub_port}",
-            topics=("gaze", "pupil", "notify.calibration.successful", "notify.calibration.failed")
+            topics=("gaze", "pupil", "notify.calibration.successful", "notify.calibration.failed", "notify.aravis")
         )
         while not self.stoprequest.isSet():
             msg = self.pupil_monitor.recv()
@@ -396,6 +445,8 @@ class EyeTrackerClient(threading.Thread):
                         self.gaze = tmp
                     elif topic.startswith("notify.calibration"):
                         self._last_calibration_notification = tmp
+                    elif topic.startswith("notify.aravis.start_capture"):
+                        self._aravis_notification = tmp
             time.sleep(1e-3)
         logging.info("eyetracker listener: stopping")
 
