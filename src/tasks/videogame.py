@@ -224,7 +224,7 @@ class VideoGame(VideoGameBase):
 
         for k in _keyReleaseBuffer:
             self.pressed_keys.discard(k[0])
-            logging.data(f"Keyrelease: {k[0]}")
+            logging.data(f"Keyrelease: {k[0]}", t=k[1])
         _keyReleaseBuffer.clear()
         for k in _keyPressBuffer:
             self.pressed_keys.add(k[0])
