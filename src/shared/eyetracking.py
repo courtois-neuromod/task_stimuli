@@ -470,8 +470,8 @@ class EyeTrackerClient(threading.Thread):
     def interleave_calibration(self, tasks):
         calibration_index=0
         for task in tasks:
-            calibration_index+=1
             if task.use_eyetracking:
+                calibration_index+=1
                 yield EyetrackerCalibration(
                     self,
                     name=f"eyeTrackercalibration-{calibration_index}"
