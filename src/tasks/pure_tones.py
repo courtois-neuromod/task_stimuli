@@ -1,7 +1,7 @@
-import os, time
+import os
+import time
 import pandas as pd
 import numpy as np
-import math
 from playsound import playsound
 
 # Time value when the experiment starts
@@ -19,29 +19,35 @@ stimuli_df = pd.read_csv(os.path.join(stimuli_path, "stimuli") + csv)
 ls_columns = stimuli_df.columns.tolist()
 ls_index = stimuli_df.index.tolist()
 
-# Initialization of a reference grid to keep track of the already presented stimuli
+# Initialization of a reference grid to keep track
+# of the already presented stimuli
 grid = np.full((len(ls_index), len(ls_columns)), True)
 
 
 def fetch_filename():
+
     """
-    This function returns a wave file name from the list of available files.
+    Returns a wave file name from the list of available files.
     It also makes sure that the file hasn't already been presented.
     """
 
     keep_going = True
 
     while keep_going:
-        coordinates = (np.random.randint(0, len(ls_columns)), np.random.randint(0, len(ls_index)))
+        v_value = np.random.randint(0, len(ls_columns))
+        h_value = np.random.randint(0, len(ls_index))
+
+        coordinates = (v_value, h_value)
+
         v_axis = ls_columns[coordinates[0]]
         h_axis = ls_index[coordinates[1]]
 
-        if grid[coordinates[1], coordinates[0]] == True:
+        if grid[coordinates[1], coordinates[0]] is True:
             filename = stimuli_df.at[h_axis, v_axis]
             grid[coordinates[1], coordinates[0]] = False
             keep_going = False
         else:
-            pass
+            continue
 
     return filename
 
@@ -63,7 +69,9 @@ def stimulus_presentation():
         print(f"Waiting for {ISI} second(s)")
         time.sleep(ISI)
 
+
 stimulus_presentation()
+
 
 # Calculation of the duration of the experiment
 t_final = time.perf_counter() - t_initial
