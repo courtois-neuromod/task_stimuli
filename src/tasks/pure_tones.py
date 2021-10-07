@@ -25,7 +25,6 @@ grid = np.full((len(ls_index), len(ls_columns)), True)
 
 
 def fetch_filename():
-
     """
     Returns a wave file name from the list of available files.
     It also makes sure that the file hasn't already been presented.
@@ -41,8 +40,9 @@ def fetch_filename():
 
         v_axis = ls_columns[coordinates[0]]
         h_axis = ls_index[coordinates[1]]
+        # print(type(grid[coordinates[1], coordinates[0]]))
 
-        if grid[coordinates[1], coordinates[0]] is True:
+        if grid[coordinates[1], coordinates[0]] == True:
             filename = stimuli_df.at[h_axis, v_axis]
             grid[coordinates[1], coordinates[0]] = False
             keep_going = False
