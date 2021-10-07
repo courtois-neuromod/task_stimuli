@@ -8,7 +8,7 @@ from playsound import playsound
 t_initial = time.perf_counter()
 
 # Waiting period between stimuli presentation (in sec.)
-ISI = 5
+ISI = 0
 
 np.random.RandomState(seed=1)
 csv = ".csv"
@@ -43,10 +43,12 @@ def fetch_filename():
         # print(type(grid[coordinates[1], coordinates[0]]))
 
         if grid[coordinates[1], coordinates[0]] == True:
+            print(True)
             filename = stimuli_df.at[h_axis, v_axis]
             grid[coordinates[1], coordinates[0]] = False
             keep_going = False
         else:
+            print(False)
             continue
 
     return filename
