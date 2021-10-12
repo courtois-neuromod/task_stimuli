@@ -25,7 +25,7 @@ def start_eyetracker(args):
             "args": {
                 "fullscreen": True,
                 "marker_scale": 1.0,
-                "sample_duration": 60,
+                "sample_duration": 180,
                 "monitor_name": "DP-2 [1]",
                 "fixed_screen": True,
                 "selected_gazer_class_name": "Gazer2D",
