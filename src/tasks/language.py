@@ -266,14 +266,9 @@ class Listening(Task):
 
     def _run(self, exp_win, ctl_win):
         recording = sound.Sound(self.filepath)
-
-        win = visual.Window()
-        
-        nextFlip = win.getFutureFlipTime(clock='ptb')
-        #recording.play()
+        nextFlip = exp_win.getFutureFlipTime(clock='ptb')
         recording.play(when=nextFlip)  # sync with screen refresh
-
-        win.flip()
+        exp_win.flip()
         event.waitKeys()
 
     def _save(self):
