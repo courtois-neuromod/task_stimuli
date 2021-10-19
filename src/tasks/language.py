@@ -10,7 +10,6 @@ BASELINE_END = 5
 TRIPLET_RIGHT_KEY = "l"
 TRIPLET_LEFT_KEY = "d"
 ISI = 2
-
 MOVE_ON = "d"
 
 class Triplet(Task):

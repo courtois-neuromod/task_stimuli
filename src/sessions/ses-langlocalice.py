@@ -94,7 +94,8 @@ def get_audios_alice(C_LIST):
     for trial, cond in enumerate(order):
 
         if cond == 'X':
-            STIM_LIST.append('X')
+            #STIM_LIST.append('X') ===== TMP to debu - should be 12s of silence!
+            STIM_LIST.append('/Users/valentinaborghesani/Documents/4_Projects/CNeuromod/All_Tasks/task_stimuli/data/language/localizer/alice/English/intact/1_intact.wav')
 
         if cond == 'I':
             if C_LIST == 1:
@@ -126,7 +127,7 @@ STIM_LIST = get_audios_alice(C_LIST)
 
 TASKS = []
 for run_N in range(1, 3):
-    for idx in np.arange(len(STIM_LIST_run1)):
+    for idx in np.arange(0,15):
         if run_N == 1:
             thisrun = STIM_LIST[0:15]
             if thisrun[idx]!=0:
@@ -145,4 +146,3 @@ for run_N in range(1, 3):
                 TASKS.append(
                     language.Listening(thisrun[idx], wait_key=True, name="test_English"),
                     )
-
