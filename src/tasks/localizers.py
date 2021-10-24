@@ -234,7 +234,7 @@ class FLoc(Task):
                         'block': j_miniblock,
                         'category': category,
                         'block_trial': k_stim,
-                        'image_duration': offset-onset,
+                        'duration': offset-onset,
                         'target': is_target,
                     })
                     if is_target:
