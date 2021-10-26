@@ -160,7 +160,7 @@ class FLoc(Task):
                 onset = self._exp_win_last_flip_time - self._exp_win_first_flip_time
 
                 self._events.append({
-                    'trial_type': 'rest'
+                    'trial_type': 'rest',
                     'onset': onset,
                     'block': j_miniblock,
                     'category': category,
