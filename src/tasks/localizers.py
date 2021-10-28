@@ -58,7 +58,9 @@ class FLoc(Task):
         with open(config_file, 'r') as fo:
             self.config = json.load(fo)
         self.constants = self.config['constants']
-        self.constants['TRIAL_DURATION'] = self.constants['IMAGE_DURATION'] + self.constants['TARGET_ISI']
+
+        #Note: now a list (len=12) for each image in a single 6s block -> 5.98s
+        self.constants['TRIAL_DURATION'] = (self.constants['IMAGE_DURATION'] + np.array(self.constants['TARGET_ISI'])).tolist()
 
         self.stim_image = visual.ImageStim(
             win=exp_win,
@@ -140,11 +142,15 @@ class FLoc(Task):
 
         run_responses, run_response_times = [], []
         nonbaseline_block_counter = 0
-        block_duration = self.constants['N_STIMULI_PER_BLOCK'] * self.constants['TRIAL_DURATION']
+        #block_duration = self.constants['N_STIMULI_PER_BLOCK'] * self.constants['TRIAL_DURATION']
+        block_duration = np.sum(self.constants['TRIAL_DURATION'])
 
 
         last_target_idx = -1
         last_target_event_onset = np.nan
+
+        # since made into a list, estimate average trial duration
+        mean_trial_duration = np.sum(self.constants['TRIAL_DURATION'])/self.constants['N_STIMULI_PER_BLOCK']
 
         for j_miniblock, category in enumerate(self.miniblock_categories):
             #miniblock_clock.reset()
@@ -173,11 +179,15 @@ class FLoc(Task):
                     # Check for last block's target to make sure that two targets don't
                     # occur within the same response exp_win
                     if (j_miniblock > 0) and (target_idx is not None):
+                        #last_target_onset = (((self.constants['N_STIMULI_PER_BLOCK'] + 1) - target_idx) *
+                        #                     self.constants['TRIAL_DURATION'] * -1)
+
                         last_target_onset = (((self.constants['N_STIMULI_PER_BLOCK'] + 1) - target_idx) *
-                                             self.constants['TRIAL_DURATION'] * -1)
+                                             mean_trial_duration * -1)
                         last_target_rw_offset = last_target_onset + self.constants['RESPONSE_WINDOW']
-                        first_viable_trial = int(np.ceil(last_target_rw_offset /
-                                                         self.constants['TRIAL_DURATION']))
+                        #first_viable_trial = int(np.ceil(last_target_rw_offset /
+                        #                                 self.constants['TRIAL_DURATION']))
+                        first_viable_trial = int(np.ceil(last_target_rw_offset / mean_trial_duration))
                         first_viable_trial = np.maximum(0, first_viable_trial)
                         first_viable_trial += 1  # just to give it a one-trial buffer
                     else:
@@ -211,7 +221,8 @@ class FLoc(Task):
                         self.task_timer,
                         self.constants['COUNTDOWN_DURATION'] + \
                         j_miniblock * block_duration + \
-                        k_stim * self.constants["TRIAL_DURATION"])
+                        #k_stim * self.constants["TRIAL_DURATION"])
+                        np.sum(self.constants["TRIAL_DURATION"][:k_stim + 1]))
                     yield True
 
                     is_target = target_idx == k_stim
@@ -222,7 +233,8 @@ class FLoc(Task):
                         self.task_timer,
                         self.constants['COUNTDOWN_DURATION'] + \
                         j_miniblock * block_duration + \
-                        k_stim * self.constants["TRIAL_DURATION"] + \
+                        #k_stim * self.constants["TRIAL_DURATION"] + \
+                        np.sum(self.constants["TRIAL_DURATION"][:k_stim + 1]) + \
                         self.constants["IMAGE_DURATION"])
                     yield True
 
