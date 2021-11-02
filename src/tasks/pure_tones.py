@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 from playsound import playsound
 
+from ..shared import utils
+
 # Time value when the experiment starts
 t_initial = time.perf_counter()
 
