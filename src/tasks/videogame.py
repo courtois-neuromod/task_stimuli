@@ -203,7 +203,6 @@ class VideoGame(VideoGameBase):
 
         super()._setup(exp_win)
         self._set_recording_file()
-        self._set_key_handler(exp_win)
 
     def _set_recording_file(self):
         nnn = 0
@@ -578,7 +577,7 @@ class VideoGameMultiLevel(VideoGame):
     def _run(self, exp_win, ctl_win):
 
         #exp_win.waitBlanking = False
-
+        self._set_key_handler(exp_win)
         self._nlevels = 0
         while True:
             for level, scenario in zip(self._state_names, self._scenarii):
