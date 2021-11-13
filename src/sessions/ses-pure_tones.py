@@ -26,3 +26,5 @@ def get_tasks(parsed):
         for run in range(1, n_runs_session + 1)
     ]
     return tasks
+
+get_tasks(tasks="pure_tones", session="test001")
