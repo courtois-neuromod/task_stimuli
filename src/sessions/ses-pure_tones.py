@@ -27,4 +27,4 @@ def get_tasks(parsed):
     ]
     return tasks
 
-get_tasks(tasks="pure_tones", session="test001")
+get_tasks({"--subjects": "test", "--session": "test001", "--tasks": "pure_tones", "-o": "../../data/audio/pure_tones"})
