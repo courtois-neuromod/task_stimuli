@@ -9,10 +9,12 @@ def get_tasks(parsed):
 
     session_design_filename = os.path.join(
         PURE_TONES_DATA_PATH,
-        "intensity_designs",
+        "auditory_designs",
         f"sub-{parsed.subject}_ses-{parsed.session}_design.tsv",
     )
+
     n_runs_session = n_runs if int(parsed.session) > 1 else n_runs//2
+
     tasks = [
         PureTones(
             session_design_filename,
@@ -27,4 +29,4 @@ def get_tasks(parsed):
     ]
     return tasks
 
-get_tasks({"--subjects": "test", "--session": "test001", "--tasks": "pure_tones", "-o": "../../data/audio/pure_tones"})
+#get_tasks({"--subjects": "test", "--session": "test001", "--tasks": "pure_tones", "-o": "../../data/audio/pure_tones"})
