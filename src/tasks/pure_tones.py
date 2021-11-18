@@ -4,7 +4,7 @@ import time
 import pandas as pd
 import numpy as np
 from playsound import playsound
-# from psychopy.sound.backend_sounddevice import SoundDeviceSound as sds
+from psychopy.sound.backend_sounddevice import SoundDeviceSound as sds
 
 from ..shared import utils
 
@@ -24,7 +24,7 @@ ISI = 0
 
 np.random.RandomState(seed=1)
 csv = ".csv"
-stimuli_path = os.path.join("..", "..", "data", "audio", "pure_tones")
+stimuli_path = os.path.join("data", "audio", "pure_tones")
 
 stimuli_df = pd.read_csv(os.path.join(stimuli_path, "stimuli") + csv)
 
