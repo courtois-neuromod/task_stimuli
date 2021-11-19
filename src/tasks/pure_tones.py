@@ -8,19 +8,9 @@ from psychopy.sound.backend_sounddevice import SoundDeviceSound as sds
 
 from ..shared import utils
 
-ls_freq = [250, 500, 1000, 2000,
-           3000, 4000, 6000, 8000]
-ls_intensities = []
-
-sds.secs = 3
-
-
 
 # Time value when the experiment starts
-t_initial = time.perf_counter()
-
-# Waiting period between stimuli presentation (in sec.)
-ISI = 0
+#t_initial = time.perf_counter()
 
 np.random.RandomState(seed=1)
 csv = ".csv"
@@ -77,7 +67,30 @@ class PureTones(Task):
         - the inter-stimuli waiting periods.
         """
 
+        # Waiting period between stimuli presentation (in sec.)
+        ISI = 0
+
         sub_parser = argparse.ArgumentParser(description="Subject ID")
+
+        sds.secs = 3
+
+        ls_freq = [250, 500, 1000, 2000,
+                   3000, 4000, 6000, 8000]
+
+        ls_intensities = []
+
+        np.random.RandomState(seed=1)
+        csv = ".csv"
+        stimuli_path = os.path.join("data", "audio", "pure_tones")
+
+        stimuli_df = pd.read_csv(os.path.join(stimuli_path, "stimuli") + csv)
+
+        ls_columns = stimuli_df.columns.tolist()
+        ls_index = stimuli_df.index.tolist()
+
+        # Initialization of a reference grid to keep track
+        # of the already presented stimuli
+        grid = np.full((len(ls_index), len(ls_columns)), True)
 
         i = 1
         while True in grid:
