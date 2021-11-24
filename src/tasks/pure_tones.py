@@ -10,7 +10,7 @@ from ..shared import utils
 
 
 # Time value when the experiment starts
-#t_initial = time.perf_counter()
+# t_initial = time.perf_counter()
 
 np.random.RandomState(seed=1)
 csv = ".csv"
@@ -27,6 +27,18 @@ grid = np.full((len(ls_index), len(ls_columns)), True)
 
 
 class PureTones(Task):
+
+    # Waiting period between stimuli presentation (in sec.)
+    ISI = 0
+
+    sub_parser = argparse.ArgumentParser(description="Subject ID")
+
+    sds.secs = 3
+
+    ls_freq = [250, 500, 1000, 2000,
+               3000, 4000, 6000, 8000]
+
+    ls_intensities = pd.read_csv(
 
 
     def fetch_filename():
@@ -67,18 +79,6 @@ class PureTones(Task):
         - the inter-stimuli waiting periods.
         """
 
-        # Waiting period between stimuli presentation (in sec.)
-        ISI = 0
-
-        sub_parser = argparse.ArgumentParser(description="Subject ID")
-
-        sds.secs = 3
-
-        ls_freq = [250, 500, 1000, 2000,
-                   3000, 4000, 6000, 8000]
-
-        ls_intensities = []
-
         np.random.RandomState(seed=1)
         csv = ".csv"
         stimuli_path = os.path.join("data", "audio", "pure_tones")
@@ -107,6 +107,6 @@ _run()
 
 
 # Calculation of the duration of the experiment
-t_final = time.perf_counter() - t_initial
+# t_final = time.perf_counter() - t_initial
 
-print(f"Sequence completed. The elapsed time is {t_final/60} minutes")
+# print(f"Sequence completed. The elapsed time is {t_final/60} minutes")
