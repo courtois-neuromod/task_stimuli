@@ -29,16 +29,18 @@ grid = np.full((len(ls_index), len(ls_columns)), True)
 class PureTones(Task):
 
     # Waiting period between stimuli presentation (in sec.)
-    ISI = 0
+    ISI = 1
 
-    sub_parser = argparse.ArgumentParser(description="Subject ID")
+    # sub_parser = argparse.ArgumentParser(description="subject")
+    sub_parser = parsed.get("subject")
 
+    # Stimuli duration (in sec.)
     sds.secs = 3
 
     ls_freq = [250, 500, 1000, 2000,
                3000, 4000, 6000, 8000]
 
-    ls_intensities = pd.read_csv(
+    ls_intensities = pd.read_csv(os.path.join(stimuli_path, 
 
 
     def fetch_filename():
@@ -79,6 +81,7 @@ class PureTones(Task):
         - the inter-stimuli waiting periods.
         """
 
+
         np.random.RandomState(seed=1)
         csv = ".csv"
         stimuli_path = os.path.join("data", "audio", "pure_tones")
@@ -94,16 +97,20 @@ class PureTones(Task):
 
         i = 1
         while True in grid:
+
+            # selection of the side of the presentation (0 = left, 1 = right)
+            ear_select = np.random.randint(0, 2)
+
             to_play = os.path.join(stimuli_path, fetch_filename())
             print(f"Presentation number {i}: {to_play}")
             playsound(to_play)
             i = i + 1
             print(f"Waiting for {ISI} second(s)")
             time.sleep(ISI)
-            # utils.wait_until("self.task_timer", "ISI")
+            utils.wait_until("self.task_timer", "ISI")
 
 
-_run()
+# _run()
 
 
 # Calculation of the duration of the experiment
