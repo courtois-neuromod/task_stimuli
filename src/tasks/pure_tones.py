@@ -14,40 +14,6 @@ from psychopy.sound.backend_sounddevice import SoundDeviceSound as sds
 
 class PureTones():
 
-    def fetch_filename(stimuli_df, ls_columns, ear):
-        """
-        Returns a wave file name from the list of available files.
-        It also makes sure that the file hasn't already been presented.
-        """
-
-        if ear == 0:
-            indices = ls_index_L
-        elif ear == 1:
-            indices = ls_index_R
-
-        keep_going = True
-
-        while keep_going:
-            v_value = ls_columns[np.random.randint(0, len(ls_columns))]
-            h_value = np.random.randint(indices[0], indices[-1] + 1)
-            # print(h_value)
-
-            coordinates = (v_value, h_value)
-            print(coordinates)
-            print(type(grid[coordinates[1], coordinates[0]]))
-
-            if grid[coordinates[1], coordinates[0]] == True:
-                # print(True)
-                filename = stimuli_df.at[h_axis, v_axis]
-                grid[coordinates[1], coordinates[0]] = False
-                keep_going = False
-            else:
-                print(False)
-                continue
-
-        return filename
-
-
     def _run():
         """
         This function fetches a wave file and pleays it.
@@ -59,7 +25,7 @@ class PureTones():
         np.random.RandomState(seed=1)
 
         # Waiting period between stimuli presentation (in sec.)
-        ISI = 1
+        ISI = 0
 
         # sub_parser = argparse.ArgumentParser(description="subject")
         sub_parser = "sub01" #parsed.get("subject")
@@ -73,45 +39,41 @@ class PureTones():
         # Stimuli duration (in sec.)
         sds.secs = 3
 
-        stimuli_path = os.path.join("..", "..", "data", "audio", "pure_tones")
+        stimuli_path = os.path.join("..", "..", "data", "audio")
 
-        intensities_L = pd.read_csv(os.path.join(stimuli_path, "sub-" + sub_number + "_desc-L.tsv"),
-                                    sep="\t")
-        intensities_R = pd.read_csv(os.path.join(stimuli_path, "sub-" + sub_number + "_desc-R.tsv"),
-                                    sep="\t")
+        stimuli_L = pd.read_csv(os.path.join(stimuli_path,
+                                             "sub-" + sub_number + "_desc-L.tsv"),
+                                sep="\t")
+        stimuli_R = pd.read_csv(os.path.join(stimuli_path,
+                                             "sub-" + sub_number + "_desc-R.tsv"),
+                                sep="\t")
 
-        stimuli_df = pd.concat([intensities_L, intensities_R], ignore_index=True)
+        stimuli_df = pd.concat([stimuli_L, stimuli_R], ignore_index=True)
 
-        # List of frequencies
-        ls_columns = stimuli_df.columns.tolist()
-
-        # Number of intensities/frequency
-        intensity_count = 3
-
-        ls_index_L = list(range(0, intensity_count))
-        ls_index_R = list(range(intensity_count, 2 * intensity_count))
-        ls_index_all = ls_index_L + ls_index_R
-
-        # Initialization of a reference grid to keep track
-        # of the already presented stimuli
-        grid = np.full((len(ls_index_all), len(ls_columns)), True)
+        stimuli_ls = stimuli_df.to_numpy().flatten().tolist()
+        
+        # Number of intensities/frequency/ear
+        intensity_count = len(stimuli_df) / 2
 
         i = 1
-        while True in grid:
+        while len(stimuli_ls) > 0:
 
-            # selection of the side of the presentation (0 = left, 1 = right)
-            ear_select = np.random.randint(0, 2)
-
-            to_play = os.path.join(stimuli_path,
-                                   fetch_filename(stimuli_df,
-                                                  ls_columns,
-                                                  ear_select))
+            position = np.random.randint(0, len(stimuli_ls))
+            filename = stimuli_ls[position]
+            
+            to_play = os.path.join(stimuli_path, filename)
+                                   
             print(f"Presentation number {i}: {to_play}")
             playsound(to_play)
+            
+            print("avant", len(stimuli_ls), stimuli_ls)
+            del stimuli_ls[position]
+            print("après", len(stimuli_ls), stimuli_ls)
+            
             i = i + 1
             print(f"Waiting for {ISI} second(s)")
             time.sleep(ISI)
-            utils.wait_until("self.task_timer", "ISI")
+            # utils.wait_until("self.task_timer", "ISI")
 
 
 PureTones._run()
