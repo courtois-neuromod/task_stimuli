@@ -1,18 +1,16 @@
 import os
-import argparse
 import time
 import pandas as pd
 import numpy as np
-import psychtoolbox as ptb
-
+# import psychtoolbox as ptb
 from psychopy import prefs
-prefs.hardware['audioLib'] = ['PTB']
-
-from psychopy import sound
-from playsound import playsound
+from psychopy.sound.backend_ptb import SoundPTB as sound
+# from playsound import playsound
 
 from .task_base import Task
 # from ..shared import utils
+
+prefs.hardware['audioLib'] = ['PTB']
 
 # Time value when the experiment starts
 # t_initial = time.perf_counter()
@@ -38,8 +36,6 @@ class PureTones(Task):
 
         self.stimuli_df = pd.read_csv(self.session_filename, sep="\t")
         self.stimuli_ls = self.stimuli_df["trial_type"]
-        #print(self.stimuli_ls)
-
 
     def _run(self, run_number):
         """
@@ -48,22 +44,21 @@ class PureTones(Task):
         the number of the stimuli presentation (from 1 to 48)
         """
 
-        #random_stimuli_ls = np.random.shuffle(self.stimuli_ls)
-        #print(random_stimuli_ls)
-        
         for i, sound_file in enumerate(self.stimuli_ls):
-            
-            print(sound_file)
-            to_play = os.path.join(self.stimuli_path, sound_file)
-            print(to_play)
-            
+
+            # to_play = os.path.join(self.stimuli_path, sound_file)
+            to_play = sound(value=os.path.join(self.stimuli_path, sound_file),
+                            stereo=True,
+                            sampleRate=44100,
+                            volume=0.5)
+
             print(f"Presentation number {i+1}: {sound_file}")
-            
-            # !!! Needs to be replaced by a psychopy functionality
-            playsound(to_play)
-            
+
+            # playsound(to_play)
+            to_play.play()
+
             print(f"Waiting for {self.ISI} second(s)")
-            
+
             # !!! Needs to be replaced by the utils wait function
             time.sleep(self.ISI)
             # utils.wait_until("self.task_timer", "ISI")
