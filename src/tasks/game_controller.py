@@ -214,7 +214,7 @@ You have to press and release immediately the button that light-up."""
                 if len(kp_matches):
                     trial['key_duration'] = trial['key_release_time'] - trial['key_press_time']
                 # only pertinent for long keypresses, but still computing it for short ones
-                trial['key_release_rt'] = trial['key_release_time']  - trial['offset_flip']
+                trial['key_release_rt'] = trial['key_release_time']  - trial['onset_flip']
             trial['all_keypresses'] = key_pressed # log to exclude trial with confounded keys
             trial['all_keyreleases'] = key_released
             self.progress_bar.set_description(
