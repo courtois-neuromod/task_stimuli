@@ -7,12 +7,12 @@ from colorama import Fore
 from ..shared import config, utils
 
 TR = 1.49
-STIMULI_DURATION = 2*TR
+STIMULI_DURATION = 4
 BASELINE_BEGIN = 6
 BASELINE_END = 9
 TRIPLET_RIGHT_KEY = "r"
 TRIPLET_LEFT_KEY = "l"
-ISI = 1*TR
+ISI = 4*TR - STIMULI_DURATION
 
 INSTRUCTION_DURATION = 10
 
@@ -107,7 +107,7 @@ Don't think too much and give the first answer that comes to mind
                 self._exp_win_last_flip_time - self._exp_win_first_flip_time
             )
             self.progress_bar.set_description(
-                f"Trial {trial_n}:: "
+                f"Trial {trial_n}:: {trial['target']}"
             )
 
             utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] - 1 / config.FRAME_RATE)
@@ -121,9 +121,13 @@ Don't think too much and give the first answer that comes to mind
                 self.trials.addData("answer_onset", first_response[1])
                 self.trials.addData("response_txt", responses[response_idx])
                 self.trials.addData("response_time", first_response[1]-trial["onset_flip"])
+                self.progress_bar.set_description(
+                    f"Trial {trial_n}:: {trial['target']}: \u2705")
             else:
                 for k in ['answer', 'answer_onset', 'response_txt','response_time']:
                     trial[k] = ''
+                self.progress_bar.set_description(
+                    f"{Fore.RED}Trial {trial_n}:: {trial['target']}: no response{Fore.RESET}")
             self.trials.addData("all_keys", triplet_answer_keys)
 
             trial["offset_flip"] = (
