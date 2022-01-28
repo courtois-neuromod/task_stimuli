@@ -85,10 +85,10 @@ Don't think too much and give the first answer that comes to mind
 
         for trial_n, trial in enumerate(self.trials):
             self.target_stim.text = trial["target"]
-            self.r1_stim.text = trial["response1"]
-            self.r2_stim.text = trial["response2"]
+            self.r1_stim.text = trial["choice_1"]
+            self.r2_stim.text = trial["choice_2"]
 
-            responses = [trial["response1"], trial["response2"]]
+            responses = [trial["choice_1"], trial["choice_2"]]
 
             exp_win.winHandle.activate()
 
