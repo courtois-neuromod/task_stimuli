@@ -48,7 +48,7 @@ CAPTURE_SETTINGS = {
     "auto_noise_suppression": True,
     #"gev_packet_size": 9140,
     #"uid": "Aravis-Fake-GV01",  # for test purposes
-    "uid": "MRC Systems GmbH-GVRD-MRC HighSpeed-MR_CAM_HS_0014",
+    "uid": "MRC Systems GmbH-GVRD-MRC HighSpeed-MR_CAM_HS_0019",
 }
 
 
