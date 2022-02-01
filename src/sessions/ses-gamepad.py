@@ -107,6 +107,7 @@ def get_tasks(parsed):
                 f"sub-{parsed.subject}_ses-{parsed.session}_run-{run:02d}_design.tsv",
             ),
             run,
+            use_eyetracking=True,
             name=f"task-gamepad_run-{run}")
         for run in range(1, n_runs+1)
     ]
