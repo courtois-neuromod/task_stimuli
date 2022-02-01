@@ -24,6 +24,10 @@ def generate_design_file(subject, all_triplets, pilot=False):
     import hashlib
     import numpy as np
 
+    # sample all ISI with same seed for matching run length
+    np.random.seed(0)
+    isi_set = np.random.random_sample(N_TRIALS_PER_RUN)*ISI_JITTER + ISI
+
     # seed numpy with subject id to have reproducible design generation
     seed = int(
         hashlib.sha1(("%s" % (subject)).encode("utf-8")).hexdigest(), 16
@@ -31,17 +35,13 @@ def generate_design_file(subject, all_triplets, pilot=False):
     print("seed", seed)
     np.random.seed(seed)
 
-    all_run_trials = pandas.DataFrame()
-    print(all_triplets.shape)
-
-    isi_set = np.random.random_sample(N_TRIALS_PER_RUN)*ISI_JITTER + ISI
     # permute categories per participant
 
     all_triplets = all_triplets.sample(frac=1)
     for run in range(int(np.ceil(len(all_triplets)/N_TRIALS_PER_RUN))):
         run_triplets = all_triplets[run*N_TRIALS_PER_RUN:(run+1)*N_TRIALS_PER_RUN]
-        run_isis = np.random.permutation(isi_set)
-        run_triplets['onset'] = BASELINE_BEGIN + np.arange(len(run_triplets))*STIMULI_DURATION + np.cumsum(run_isis[:len(run_triplets)])
+        run_triplets['isi'] = np.random.permutation(isi_set)[:len(run_triplets)]
+        run_triplets['onset'] = BASELINE_BEGIN + np.arange(len(run_triplets))*STIMULI_DURATION + np.cumsum(run_triplets['isi'])
         run_triplets['duration'] = STIMULI_DURATION
 
         session = run // N_RUNS_PER_SESSION + 1
@@ -54,6 +54,7 @@ def generate_design_file(subject, all_triplets, pilot=False):
         )
         print(f"writing {out_fname}")
         run_triplets.to_csv(out_fname, sep="\t", index=False)
+
 
 if __name__ == "__main__":
     import argparse
