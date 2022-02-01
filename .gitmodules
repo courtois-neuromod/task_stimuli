@@ -20,7 +20,7 @@
 	datalad-id = 75298391-99e3-4efb-865c-0c160b459cbe
 [submodule "data/fLoc"]
 	path = data/fLoc
-	url = ./data/fLoc
+	url = git@github.com:courtois-neuromod/floc.stimuli.git
 	datalad-id = e730eb7b-0a99-453c-a861-2e21d6c72062
 
 
