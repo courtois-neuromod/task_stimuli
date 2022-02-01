@@ -15,6 +15,7 @@ TRIPLET_LEFT_KEY = "l"
 ISI = 4*TR - STIMULI_DURATION
 
 INSTRUCTION_DURATION = 10
+RESPONSE_DURATION=ISI
 
 
 class Triplet(Task):
@@ -112,6 +113,12 @@ Don't think too much and give the first answer that comes to mind
 
             utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] - 1 / config.FRAME_RATE)
             yield True
+            trial["offset_flip"] = (
+                self._exp_win_last_flip_time - self._exp_win_first_flip_time
+            )
+            # wait until .1s before the next trial, leaving time to prepare it
+            utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] + trial['isi'] - .1)
+
             # record keypresses
             triplet_answer_keys = event.getKeys(self.RESPONSE_KEYS, timeStamped=self.task_timer)
             if len(triplet_answer_keys):
@@ -130,9 +137,8 @@ Don't think too much and give the first answer that comes to mind
                     f"{Fore.RED}Trial {trial_n}:: {trial['target']}: no response{Fore.RESET}")
             self.trials.addData("all_keys", triplet_answer_keys)
 
-            trial["offset_flip"] = (
-                self._exp_win_last_flip_time - self._exp_win_first_flip_time
-            )
+        # wait for end of run baseline
+        utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] + BASELINE_END)
 
     def _save(self):
         self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
