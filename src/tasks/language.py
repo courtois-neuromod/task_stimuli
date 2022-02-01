@@ -144,6 +144,42 @@ Don't think too much and give the first answer that comes to mind
         self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
         return False
 
+class WordFeatures(Task):
+
+    SENSORIMOTOR_FEATURES = [
+        "by feeling through touch",
+        "by hearing",
+        "by sensations inside your body",
+        "by smelling",
+        "by tasting",
+        "by performing an action with your foot/leg",
+        "by performing an action with your hand/arm",
+        "by performing an action with your head",
+        "by performing an action with your mouth/throat",
+        "by performing an action with your torso",
+    ]
+
+    SENSORIMOTOR_QUESTION = "Press A if you experience the word"
+
+    DEFAULT_INSTRUCTION = """You will be presented single words.
+{sm_question} {sm_feature}.
+Press B if you don’t know the word."""
+
+    def __init__(self, words_file, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if os.path.exists(words_file):
+            self.words_file = words_file
+            self.words_list = data.importConditions(self.words_file)
+        else:
+            raise ValueError("File %s does not exists" % words_file)
+
+    def _setup(exp_win):
+        pass
+
+    def _run(exp_win, ctl_win):
+        pass
+
+
 
 class Reading(Task):
 
