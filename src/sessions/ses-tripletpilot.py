@@ -4,7 +4,9 @@ def get_tasks(parsed):
     from ..tasks import language, task_base
     TASKS = [
         language.Triplet(
-            f"data/language/triplet/designs/sub-{parsed.subject}_ses-pilot{parsed.session}_run-{run+1:02d}_design.tsv", name="task-triplets"
+            f"data/language/triplets/designs/sub-{parsed.subject}_ses-pilot{parsed.session}_run-{run+1:02d}_design.tsv",
+            name=f"task-triplets_run-{run+1:02d}",
+            use_eyetracking=True,
         )
         for run in range(N_RUNS_PER_SESSION)
     ]
