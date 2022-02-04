@@ -101,13 +101,15 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
 
         roll_eyes_text = "Please roll your eyes ~2-3 times in clockwise and counterclockwise directions"
 
-        text_roll = visual.TextStim(
+        instructions = visual.TextStim(
             exp_win,
             text=roll_eyes_text,
             alignText="center",
             color="white",
             wrapWidth=config.WRAP_WIDTH,
             )
+
+        self.eyetracker.resume()
 
         calibration_success = False
         while not calibration_success:
@@ -119,7 +121,7 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
                         start_calibration = True
                 if start_calibration:
                     break
-                text_roll.draw(exp_win)
+                instructions.draw(exp_win)
                 yield False
             logging.info("calibration started")
             print("calibration started")
@@ -152,6 +154,9 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
             self.task_stop = np.inf
             self.eyetracker.set_pupil_cb(self._pupil_cb)
 
+            instructions.text = "Waiting for pupil"
+            instructions.draw(exp_win)
+            yield True
             while not len(self._pupils_list):  # wait until we get at least a pupil
                 yield False
 
@@ -202,6 +207,7 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
                     if not calibration_success:
                         print('#### CALIBRATION FAILED: restart with <c> ####')
                     break
+        self.eyetracker.pause()
 
 
     def stop(self, exp_win, ctl_win):
@@ -276,7 +282,11 @@ class EyeTrackerClient(threading.Thread):
     def __init__(self, output_path, output_fname_base, profile=False, debug=False):
         super(EyeTrackerClient, self).__init__()
         self.stoprequest = threading.Event()
+        self.pause_cond = threading.Condition(threading.Lock())
+        self.pause_cond.acquire()
         self.lock = threading.Lock()
+
+        self.pupil_monitor = None
 
         self.pupil = None
         self.gaze = None
@@ -376,6 +386,10 @@ class EyeTrackerClient(threading.Thread):
             )
         self.start_source()
 
+        self._req_socket.send_string("SUB_PORT")
+        self._ipc_sub_port = int(self._req_socket.recv())
+        logging.info(f"ipc_sub_port: {self._ipc_sub_port}")
+
     def start_source(self):
         self.send_recv_notification(
             {
@@ -409,6 +423,7 @@ class EyeTrackerClient(threading.Thread):
 
     def join(self, timeout=None):
         self.stoprequest.set()
+        self.pause_cond.release()
         # stop recording
         self.send_recv_notification(
             {
@@ -423,17 +438,27 @@ class EyeTrackerClient(threading.Thread):
         time.sleep(1 / 60.0)
         super(EyeTrackerClient, self).join(timeout)
 
+    def pause(self):
+        self.pause_cond.acquire()
+        del self.pupil_monitor
+
+    def resume(self):
+        print("et client: resume")
+        self.pupil_monitor = Msg_Receiver(
+            self._ctx, f"tcp://localhost:{self._ipc_sub_port}",
+            topics=("gaze", "pupil", "notify.calibration.successful", "notify.calibration.failed", "notify.aravis")
+        )
+        self.pause_cond.release()
+
     def run(self):
 
         self._aravis_notification = None
-        self._req_socket.send_string("SUB_PORT")
-        ipc_sub_port = int(self._req_socket.recv())
-        logging.info(f"ipc_sub_port: {ipc_sub_port}")
-        self.pupil_monitor = Msg_Receiver(
-            self._ctx, f"tcp://localhost:{ipc_sub_port}",
-            topics=("gaze", "pupil", "notify.calibration.successful", "notify.calibration.failed", "notify.aravis")
-        )
+
         while not self.stoprequest.isSet():
+            with self.pause_cond:
+                self.pause_cond.wait()
+
+            print('letsgo!')
             msg = self.pupil_monitor.recv()
             if not msg is None:
                 topic, tmp = msg
@@ -471,8 +496,8 @@ class EyeTrackerClient(threading.Thread):
     def interleave_calibration(self, tasks):
         calibration_index=0
         for task in tasks:
-            calibration_index+=1
             if task.use_eyetracking:
+                calibration_index+=1
                 yield EyetrackerCalibration(
                     self,
                     name=f"eyeTrackercalibration-{calibration_index}"
