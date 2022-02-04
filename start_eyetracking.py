@@ -15,7 +15,7 @@ def start_eyetracker(args):
         output_path=output_path,
         output_fname_base=basename,
         profile=False,
-        debug=False,
+        debug=True,
     )
 
     eyetracker_client.send_recv_notification(
@@ -25,9 +25,10 @@ def start_eyetracker(args):
             "args": {
                 "fullscreen": True,
                 "marker_scale": 1.0,
-                "sample_duration": 60,
+                "sample_duration": 180,
                 "monitor_name": "DP-2",
                 "fixed_screen": True,
+                "selected_gazer_class_name": "Gazer2D",
             },
         }
     )
