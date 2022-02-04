@@ -231,7 +231,7 @@ Press B if you don’t know the word."""
                 for k in ['answer', 'answer_onset', 'response_txt','response_time']:
                     trial[k] = ''
 
-            yield
+            yield True
             utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] + trial['isi'] - .1)
 
     def _save(self):
