@@ -149,6 +149,10 @@ class WordFeatures(Task):
 Press B if you don’t know the word."""
 
     RESPONSE_KEYS = ['a', 'b']
+    RESPONSE_TEXT = {
+        'a':'yes',
+        'b':'unknown',
+    }
 
     def __init__(self, words_file, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -185,7 +189,7 @@ Press B if you don’t know the word."""
 
 
     def _run(self, exp_win, ctl_win):
-
+        yield True
         for trial_n, trial in enumerate(self.trials):
 
             if trial['trial_type'] == 'feature_question':
@@ -221,18 +225,19 @@ Press B if you don’t know the word."""
             utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] + trial['isi'] - .1)
 
             # record keypresses
-            triplet_answer_keys = event.getKeys(self.RESPONSE_KEYS, timeStamped=self.task_timer)
-            if len(triplet_answer_keys):
-                first_response = triplet_answer_keys[0]
+            answer_keys = event.getKeys(self.RESPONSE_KEYS, timeStamped=self.task_timer)
+            if len(answer_keys):
+                first_response = answer_keys[0]
                 self.trials.addData("answer", first_response[0])
                 self.trials.addData("answer_onset", first_response[1])
+                self.trials.addData("answer_text", self.RESPONSE_TEXT[first_response[0]])
                 self.trials.addData("response_time", first_response[1]-trial["onset_flip"])
                 self.progress_bar.set_description(
-                    f"Trial {trial_n}:: {trial['target']}: \u2705")
+                    f"Trial {trial_n}:: {trial['word']}: \u2705")
             else:
-                for k in ['answer', 'answer_onset', 'response_txt','response_time']:
+                for k in ['answer', 'answer_onset', 'answer_text', 'response_time']:
                     trial[k] = ''
-
+            self.trials.addData("all_keys", answer_keys)
             utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] + trial['isi'] - .1)
 
         # wait for end of run baseline
