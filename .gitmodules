@@ -14,8 +14,8 @@
 	path = data/retinotopy
 	url = git@github.com:courtois-neuromod/retino.stimuli.git
 	datalad-id = 52140b46-63c8-45a7-a03f-2f2cab0db23f
-[submodule "data/language/triplet"]
-	path = data/language/triplet
+[submodule "data/language/triplets"]
+	path = data/language/triplets/triplets
 	url = git@github.com:courtois-neuromod/triplets.stimuli.git
 	datalad-id = 75298391-99e3-4efb-865c-0c160b459cbe
 [submodule "data/fLoc"]

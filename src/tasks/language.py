@@ -80,9 +80,6 @@ Don't think too much and give the first answer that comes to mind
 
     def _run(self, exp_win, ctl_win):
         yield True
-        exp_win.logOnFlip(
-            level=logging.EXP, msg="triplet: task starting at %f" % time.time()
-        )
 
         for trial_n, trial in enumerate(self.trials):
             self.target_stim.text = trial["target"]
@@ -146,24 +143,12 @@ Don't think too much and give the first answer that comes to mind
 
 class WordFeatures(Task):
 
-    SENSORIMOTOR_FEATURES = [
-        "by feeling through touch",
-        "by hearing",
-        "by sensations inside your body",
-        "by smelling",
-        "by tasting",
-        "by performing an action with your foot/leg",
-        "by performing an action with your hand/arm",
-        "by performing an action with your head",
-        "by performing an action with your mouth/throat",
-        "by performing an action with your torso",
-    ]
+    DEFAULT_INSTRUCTION = """You will be presented single words and asked questions about it."""
 
-    SENSORIMOTOR_QUESTION = "Press A if you experience the word"
-
-    DEFAULT_INSTRUCTION = """You will be presented single words.
-{sm_question} {sm_feature}.
+    SENSORIMOTOR_QUESTION = """Press A if you experience the word {sensorimotor_feature}.
 Press B if you don’t know the word."""
+
+    RESPONSE_KEYS = ['a', 'b']
 
     def __init__(self, words_file, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -173,12 +158,89 @@ Press B if you don’t know the word."""
         else:
             raise ValueError("File %s does not exists" % words_file)
 
-    def _setup(exp_win):
-        pass
 
-    def _run(exp_win, ctl_win):
-        pass
+    def _instructions(self, exp_win, ctl_win):
+        screen_text = visual.TextStim(
+            exp_win,
+            text=self.instruction,
+            alignText="center",
+            color="white",
+            wrapWidth=config.WRAP_WIDTH,
+        )
 
+        screen_text.draw(exp_win)
+        if ctl_win:
+            screen_text.draw(ctl_win)
+        yield True
+        time.sleep(INSTRUCTION_DURATION)
+        yield True
+
+    def _setup(self,exp_win):
+        self.text = visual.TextStim(
+            exp_win, text="", pos=(0, 0), alignText="center", color="white"
+        )
+        self.duration = len(self.words_list)
+        self._progress_bar_refresh_rate = 2
+        self.trials = data.TrialHandler(self.words_list, 1, method="sequential")
+
+
+    def _run(self, exp_win, ctl_win):
+
+        for trial_n, trial in enumerate(self.trials):
+
+            if trial['trial_type'] == 'feature_question':
+                self.text.bold = True
+                self.text.text = self.SENSORIMOTOR_QUESTION.format(**trial)
+                self.progress_bar.set_description(
+                    f"Block {trial['block_index']}:: {trial['sensorimotor_feature']}"
+                )
+            else:
+                self.text.bold = False
+                self.text.text = trial['word']
+                self.progress_bar.set_description(
+                    f"Trial :: {trial['word']}"
+                )
+
+            self.text.draw(exp_win)
+            if ctl_win:
+                self.text.draw(ctl_win)
+
+            utils.wait_until(self.task_timer, trial["onset"] - 1 / config.FRAME_RATE)
+            keypresses = event.getKeys(self.RESPONSE_KEYS) # flush response keys
+            yield True # flip
+            trial["onset_flip"] = (
+                self._exp_win_last_flip_time - self._exp_win_first_flip_time
+            )
+
+            utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] - 1 / config.FRAME_RATE)
+            yield True
+            trial["offset_flip"] = (
+                self._exp_win_last_flip_time - self._exp_win_first_flip_time
+            )
+            # wait until .1s before the next trial, leaving time to prepare it
+            utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] + trial['isi'] - .1)
+
+            # record keypresses
+            triplet_answer_keys = event.getKeys(self.RESPONSE_KEYS, timeStamped=self.task_timer)
+            if len(triplet_answer_keys):
+                first_response = triplet_answer_keys[0]
+                self.trials.addData("answer", first_response[0])
+                self.trials.addData("answer_onset", first_response[1])
+                self.trials.addData("response_time", first_response[1]-trial["onset_flip"])
+                self.progress_bar.set_description(
+                    f"Trial {trial_n}:: {trial['target']}: \u2705")
+            else:
+                for k in ['answer', 'answer_onset', 'response_txt','response_time']:
+                    trial[k] = ''
+
+            utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] + trial['isi'] - .1)
+
+        # wait for end of run baseline
+        utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] + BASELINE_END)
+
+    def _save(self):
+        self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
+        return False
 
 
 class Reading(Task):
