@@ -189,11 +189,13 @@ Press B if you don’t know the word."""
         for trial_n, trial in enumerate(self.trials):
 
             if trial['trial_type'] == 'feature_question':
+                self.text.bold = True
                 self.text.text = self.SENSORIMOTOR_QUESTION.format(**trial)
                 self.progress_bar.set_description(
                     f"Block {trial['block_index']}:: {trial['sensorimotor_feature']}"
                 )
             else:
+                self.text.bold = False
                 self.text.text = trial['word']
                 self.progress_bar.set_description(
                     f"Trial :: {trial['word']}"
@@ -231,8 +233,10 @@ Press B if you don’t know the word."""
                 for k in ['answer', 'answer_onset', 'response_txt','response_time']:
                     trial[k] = ''
 
-            yield True
             utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] + trial['isi'] - .1)
+
+        # wait for end of run baseline
+        utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] + BASELINE_END)
 
     def _save(self):
         self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
