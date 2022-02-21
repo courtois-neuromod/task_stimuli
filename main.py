@@ -24,7 +24,7 @@ def run(parsed):
         if isinstance(tasks, Iterator):
             tasks = itertools.islice(tasks, parsed.skip_n_tasks, None)
         else:
-            tasks[parsed.skip_n_tasks:]
+            tasks = tasks[parsed.skip_n_tasks:]
     try:
         cli.main_loop(
             tasks,
@@ -38,6 +38,7 @@ def run(parsed):
             parsed.run_on_battery,
             parsed.ptt,
             parsed.record_movie,
+            parsed.skip_soundcheck,
             )
     finally:
         if not parsed.no_force_resolution:

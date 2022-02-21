@@ -63,7 +63,7 @@ def run_task(
                 return shortcut_evt
 
     logging.info("GO")
-    if eyetracker and not shortcut_evt:
+    if eyetracker and not shortcut_evt and task.use_eyetracking:
         eyetracker.start_recording(task.name)
     # send start trigger/marker to MEG + Biopac (or anything else on parallel port)
     if task.use_meg and not shortcut_evt:
@@ -111,6 +111,7 @@ def main_loop(
     allow_run_on_battery=False,
     enable_ptt=False,
     record_movie=False,
+    skip_soundcheck=False,
 ):
 
     # force screen resolution to solve issues with video splitter at scanner
@@ -166,26 +167,16 @@ def main_loop(
         print("starting et client")
         eyetracker_client.start()
         print("done")
-        all_tasks = sum(([
-            eyetracking.EyetrackerCalibration(
-                eyetracker_client, name="EyeTracker-Calibration"
-                ), t] for t in all_tasks), [])
+
+        all_tasks = itertools.chain(
+            [eyetracking.EyetrackerSetup(eyetracker=eyetracker_client, name='eyetracker_setup'),],
+            all_tasks
+        )
+        all_tasks = eyetracker_client.interleave_calibration(all_tasks)
 
         if show_ctl_win:
             gaze_drawer = eyetracking.GazeDrawer(ctl_win)
     if use_fmri:
-        setup_video_path = glob.glob(
-            os.path.join("data", "videos", "subject_setup_videos", "sub-%s_*" % subject)
-        )
-        if not len(setup_video_path):
-            setup_video_path = [
-                os.path.join(
-                    "data",
-                    "videos",
-                    "subject_setup_videos",
-                    "sub-default_setup_video.mp4",
-                )
-            ]
 
         all_tasks = itertools.chain(
             [task_base.Pause(
@@ -201,6 +192,18 @@ Please remain still.
 We are coming to get you out of the scanner shortly."""
             )],
         )
+
+        if not skip_soundcheck:
+            setup_video_path = utils.get_subject_soundcheck_video(subject)
+            all_tasks = itertools.chain([
+                task_base.Pause(
+                    """Setup: we will soon run a soundcheck to check that the sensimetrics is adequately setup."""
+                ),
+                video.VideoAudioCheckLoop(setup_video_path, name="setup_soundcheck_video",)],
+                all_tasks,
+            )
+
+
     else:
         all_tasks = itertools.chain(
             all_tasks,
@@ -235,7 +238,6 @@ Thanks for your participation!"""
                 log_path,
                 log_name_prefix,
                 use_fmri=use_fmri,
-                use_eyetracking=use_eyetracking,
                 use_meg=use_meg,
             )
             print("READY")

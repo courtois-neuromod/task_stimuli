@@ -24,6 +24,9 @@ def parse_args():
         "--eyetracking", "-e", help="Enable eyetracking", action="store_true"
     )
     parser.add_argument(
+        "--skip-soundcheck", help="Disable soundcheck", action="store_true"
+    )
+    parser.add_argument(
         "--skip_n_tasks", help="skip n of the tasks", default=0, type=int
     )
     parser.add_argument("--ctl_win", help="show control window", action="store_true")
