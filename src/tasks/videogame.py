@@ -263,7 +263,7 @@ class VideoGame(VideoGameBase):
             },
         )
         yield True
-        _nextFrameT = self._retraceInterval
+        _nextFrameT = self.task_timer.getTime()	+ self._retraceInterval
         while not _done:
             level_step += 1
             while _nextFrameT > (self.task_timer.getTime() -
