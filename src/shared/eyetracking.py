@@ -58,20 +58,20 @@ class EyetrackerCalibration(Task):
         markers_order="random",
         marker_fill_color=MARKER_FILL_COLOR,
         markers=MARKER_POSITIONS,
+        use_eyetracking=True,
         **kwargs,
     ):
-        self.use_eyetracking = True
         self.markers_order = markers_order
         self.markers = markers
         self.marker_fill_color = marker_fill_color
-        super().__init__(**kwargs)
+        super().__init__(use_eyetracking=use_eyetracking, **kwargs)
         self.eyetracker = eyetracker
 
     def _instructions(self, exp_win, ctl_win):
         instruction_text = """We're going to calibrate the eyetracker.
 Please look at the markers that appear on the screen.
 
-While awaiting for the calibration to start please roll your eyes in one direction then in the other."""
+While awaiting for the calibration to start you will be asked to roll your eyes."""
         screen_text = visual.TextStim(
             exp_win,
             text=instruction_text,
@@ -87,6 +87,7 @@ While awaiting for the calibration to start please roll your eyes in one directi
 
     def _setup(self, exp_win):
         self.use_fmri = False
+        super()._setup(exp_win)
 
     def _pupil_cb(self, pupil):
         if pupil["timestamp"] > self.task_stop:
@@ -96,6 +97,17 @@ While awaiting for the calibration to start please roll your eyes in one directi
             self._pupils_list.append(pupil)
 
     def _run(self, exp_win, ctl_win):
+
+        roll_eyes_text = "Please roll your eyes ~2-3 times in clockwise and counterclockwise directions"
+
+        text_roll = visual.TextStim(
+            exp_win,
+            text=roll_eyes_text,
+            alignText="center",
+            color="white",
+            wrapWidth=config.WRAP_WIDTH,
+            )
+
         calibration_success = False
         while not calibration_success:
             while True:
@@ -106,6 +118,7 @@ While awaiting for the calibration to start please roll your eyes in one directi
                         start_calibration = True
                 if start_calibration:
                     break
+                text_roll.draw(exp_win)
                 yield False
             logging.info("calibration started")
             print("calibration started")
@@ -199,6 +212,46 @@ While awaiting for the calibration to start please roll your eyes in one directi
             fname = self._generate_unique_filename("calib-data", "npz")
             np.savez(fname, pupils=self._pupils_list, markers=self.all_refs_per_flip)
 
+class EyetrackerSetup(Task):
+    def __init__(
+        self,
+        eyetracker,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.eyetracker = eyetracker
+
+    def _run(self, exp_win, ctl_win):
+
+        con_text_str = "Trying to establish connection to the eyetracker %s"
+
+        con_text = visual.TextStim(
+            exp_win,
+            text=con_text_str % ' ...',
+            alignText="center",
+            color="white",
+            wrapWidth=config.WRAP_WIDTH,
+            )
+        con_text.draw(exp_win)
+        yield True
+
+        while True:
+            notif = self.eyetracker._aravis_notification
+            print(notif)
+            if (
+                notif and
+                notif["subject"] == "aravis.start_capture.successful" and
+                notif["target"] == "eye0" and
+                notif["name"] == "Aravis_Source"):
+                break
+
+            self.eyetracker.start_source()
+            con_text.text = con_text_str % 'failed, retrying'
+            con_text.draw(exp_win)
+            yield True
+            time.sleep(3)
+
+
 
 from subprocess import Popen
 
@@ -241,6 +294,10 @@ class EyeTrackerClient(threading.Thread):
         if profile:
             dev_opts.append("--profile")
 
+        pupil_logfile = open(os.path.join(self.record_dir, "pupil.log"), "wb")
+        pupil_env = os.environ.copy()
+        pupil_env.update({'ARV_DEBUG':'all:2'})
+
         self._pupil_process = Popen(
             [
                 "python3",
@@ -249,7 +306,10 @@ class EyeTrackerClient(threading.Thread):
                 "--port",
                 str(PUPIL_REMOTE_PORT),
             ]
-            + dev_opts
+            + dev_opts,
+            env=pupil_env,
+            stdout=pupil_logfile,
+            stderr=pupil_logfile,
         )
 
         self._ctx = zmq.Context()
@@ -305,7 +365,7 @@ class EyeTrackerClient(threading.Thread):
         )
 
         # stop a bunch of eye plugins for performance
-        for plugin in ["NDSI_Manager"]:
+        for plugin in ["NDSI_Manager", "Pye3DPlugin"]:
             self.send_recv_notification(
                 {
                     "subject": "stop_eye_plugin",
@@ -313,7 +373,9 @@ class EyeTrackerClient(threading.Thread):
                     "name": plugin,
                 }
             )
+        self.start_source()
 
+    def start_source(self):
         self.send_recv_notification(
             {
                 "subject": "start_eye_plugin",
@@ -362,12 +424,13 @@ class EyeTrackerClient(threading.Thread):
 
     def run(self):
 
+        self._aravis_notification = None
         self._req_socket.send_string("SUB_PORT")
         ipc_sub_port = int(self._req_socket.recv())
         logging.info(f"ipc_sub_port: {ipc_sub_port}")
         self.pupil_monitor = Msg_Receiver(
             self._ctx, f"tcp://localhost:{ipc_sub_port}",
-            topics=("gaze", "pupil", "notify.calibration.successful", "notify.calibration.failed")
+            topics=("gaze", "pupil", "notify.calibration.successful", "notify.calibration.failed", "notify.aravis")
         )
         while not self.stoprequest.isSet():
             msg = self.pupil_monitor.recv()
@@ -382,6 +445,8 @@ class EyeTrackerClient(threading.Thread):
                         self.gaze = tmp
                     elif topic.startswith("notify.calibration"):
                         self._last_calibration_notification = tmp
+                    elif topic.startswith("notify.aravis.start_capture"):
+                        self._aravis_notification = tmp
             time.sleep(1e-3)
         logging.info("eyetracker listener: stopping")
 
@@ -400,6 +465,18 @@ class EyeTrackerClient(threading.Thread):
         with nonblocking(self.lock) as locked:
             if locked:
                 return self.gaze
+
+
+    def interleave_calibration(self, tasks):
+        calibration_index=0
+        for task in tasks:
+            calibration_index+=1
+            if task.use_eyetracking:
+                yield EyetrackerCalibration(
+                    self,
+                    name=f"eyeTrackercalibration-{calibration_index}"
+                    )
+            yield task
 
     def calibrate(self, pupil_list, ref_list):
         if len(pupil_list) < 100:
