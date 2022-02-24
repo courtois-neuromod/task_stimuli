@@ -74,6 +74,7 @@ class VideoGameBase(Task):
         state_name=None,
         scenario=None,
         repeat_scenario=True,
+        scaling=1,
         inttype=retro.data.Integrations.CUSTOM_ONLY,
         *args,
         **kwargs
@@ -85,6 +86,7 @@ class VideoGameBase(Task):
         self.scenario = scenario
         self.repeat_scenario = repeat_scenario
         self.inttype = inttype
+        self._scaling = scaling
 
     def _setup(self, exp_win):
 
@@ -102,8 +104,8 @@ class VideoGameBase(Task):
             exp_win.size[0] / self._first_frame.shape[1],
             exp_win.size[1] / self._first_frame.shape[0],
         )
-        width = int(min_ratio * self._first_frame.shape[1])
-        height = int(min_ratio * self._first_frame.shape[0])
+        width = int(min_ratio * self._first_frame.shape[1] * self._scaling)
+        height = int(min_ratio * self._first_frame.shape[0] * self._scaling)
 
         self.game_vis_stim = visual.ImageStim(
             exp_win,
