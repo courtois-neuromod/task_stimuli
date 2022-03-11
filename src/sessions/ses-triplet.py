@@ -3,7 +3,7 @@ def get_tasks(parsed):
     TASKS = [
         language.Triplet(
             f"{TRIPLET_DATA_PATH}/designs/sub-{parsed.subject}_ses-{parsed.session}_run-{run+1:02d}_design.tsv",
-            name="task-triplets",
+            name=f"task-triplets_run-{run+1:02d}",
             use_eyetracking=True,
         )
         for run in range(N_RUNS_PER_SESSION)
