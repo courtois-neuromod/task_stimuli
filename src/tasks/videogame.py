@@ -5,7 +5,7 @@ import threading
 from psychopy import visual, core, data, logging, event, sound, constants
 from .task_base import Task
 
-from ..shared import config
+from ..shared import config, utils
 
 import retro
 
@@ -268,9 +268,6 @@ class VideoGame(VideoGameBase):
         _nextFrameT = self.task_timer.getTime()	+ self._retraceInterval
         while not _done:
             level_step += 1
-            while _nextFrameT > (self.task_timer.getTime() -
-                       self._retraceInterval/2.0):
-                time.sleep(.0001)
             self._handle_controller_presses(exp_win)
             keys = [k in self.pressed_keys for k in KEY_SET]
             _obs, _rew, _done, self._game_info = self.emulator.step(keys)
@@ -288,6 +285,9 @@ class VideoGame(VideoGameBase):
                 )
             if not level_step % config.FRAME_RATE:
                 exp_win.logOnFlip(level=logging.EXP, msg="level step: %d" % level_step)
+            while _nextFrameT > (self.task_timer.getTime() - self._retraceInterval/10):
+                time.sleep(.0001)
+                utils.poll_windows()
             yield True
 
             _nextFrameT += self._frameInterval
