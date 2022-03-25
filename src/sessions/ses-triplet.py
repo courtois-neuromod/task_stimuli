@@ -28,7 +28,7 @@ def generate_design_file(subject, all_triplets, pilot=False):
 
     # sample all ISI with same seed for matching run length
     np.random.seed(0)
-    isi_set = np.random.random_sample(N_TRIALS_PER_RUN)*ISI_JITTER + ISI
+    isi_set = np.random.random_sample(N_TRIALS_PER_RUN)*ISI_JITTER + TR
 
     # seed numpy with subject id to have reproducible design generation
     seed = int(
