@@ -12,7 +12,7 @@ BASELINE_BEGIN = 6
 BASELINE_END = 9
 TRIPLET_RIGHT_KEY = "r"
 TRIPLET_LEFT_KEY = "l"
-ISI = 4*TR - STIMULI_DURATION
+ISI = 4*TR - STIMULI_DURATION  
 
 INSTRUCTION_DURATION = 10
 RESPONSE_DURATION=ISI
@@ -247,6 +247,110 @@ Press B if you don’t know the word."""
         self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
         return False
 
+class WordFamiliarity(Task):
+    DEFAULT_INSTRUCTION = """You will be presented single words and asked rate the familirity with the concept they refer to"""
+
+    SENSORIMOTOR_QUESTION = """How familiar are you with this concept from 1 (unfamiliar) to 3 (familiar) """
+
+    RESPONSE_KEYS = ['up','right','left']
+    RESPONSE_TEXT = {
+        'left':'1',
+        'up':'2',
+        'right':'3',
+    }
+
+    def __init__(self, words_file, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if os.path.exists(words_file):
+            self.words_file = words_file
+            self.words_list = data.importConditions(self.words_file)
+        else:
+            raise ValueError("File %s does not exists" % words_file)
+
+
+    def _instructions(self, exp_win, ctl_win):
+        screen_text = visual.TextStim(
+            exp_win,
+            text=self.instruction,
+            alignText="center",
+            color="white",
+            wrapWidth=config.WRAP_WIDTH,
+        )
+
+        screen_text.draw(exp_win)
+        if ctl_win:
+            screen_text.draw(ctl_win)
+        yield True
+        time.sleep(INSTRUCTION_DURATION)
+        yield True
+
+    def _setup(self,exp_win):
+        self.text = visual.TextStim(
+            exp_win, text="", pos=(0, 0), alignText="center", color="white"
+        )
+        self.duration = len(self.words_list)
+        self._progress_bar_refresh_rate = 2
+        self.trials = data.TrialHandler(self.words_list, 1, method="sequential")
+
+
+    def _run(self, exp_win, ctl_win):
+        yield True
+        for trial_n, trial in enumerate(self.trials):
+
+            if trial['trial_type'] == 'feature_question':
+                self.text.bold = True
+                self.text.text = self.SENSORIMOTOR_QUESTION.format(**trial)
+                self.progress_bar.set_description(
+                    f"Block {trial['block_index']}:: {trial['sensorimotor_feature']}"
+                )
+            else:
+                self.text.bold = False
+                self.text.text = trial['word']
+                self.progress_bar.set_description(
+                    f"Trial :: {trial['word']}"
+                )
+
+            self.text.draw(exp_win)
+            if ctl_win:
+                self.text.draw(ctl_win)
+
+            utils.wait_until(self.task_timer, trial["onset"] - 1 / config.FRAME_RATE)
+            keypresses = event.getKeys(self.RESPONSE_KEYS) # flush response keys
+            yield True # flip
+            trial["onset_flip"] = (
+                self._exp_win_last_flip_time - self._exp_win_first_flip_time
+            )
+
+            utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] - 1 / config.FRAME_RATE)
+            yield True
+            trial["offset_flip"] = (
+                self._exp_win_last_flip_time - self._exp_win_first_flip_time
+            )
+            # wait until .1s before the next trial, leaving time to prepare it
+            utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] + trial['isi'] - .1)
+
+            # record keypresses
+            answer_keys = event.getKeys(self.RESPONSE_KEYS, timeStamped=self.task_timer)
+            if len(answer_keys):
+                first_response = answer_keys[0]
+                self.trials.addData("answer", first_response[0])
+                self.trials.addData("answer_onset", first_response[1])
+                self.trials.addData("answer_text", self.RESPONSE_TEXT[first_response[0]])
+                self.trials.addData("response_time", first_response[1]-trial["onset_flip"])
+                self.progress_bar.set_description(
+                    f"Trial {trial_n}:: {trial['word']}: \u2705")
+            else:
+                for k in ['answer', 'answer_onset', 'answer_text', 'response_time']:
+                    trial[k] = ''
+            self.trials.addData("all_keys", answer_keys)
+            utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] + trial['isi'] - .1)
+
+        # wait for end of run baseline
+        utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] + BASELINE_END)
+
+    def _save(self):
+        self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
+        return False
 
 class Reading(Task):
 

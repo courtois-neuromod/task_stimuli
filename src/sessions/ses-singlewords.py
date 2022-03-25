@@ -2,7 +2,7 @@
 def get_tasks(parsed):
     from ..tasks import language, task_base
     TASKS = [
-        language.WordFeatures(
+        language.WordFamiliarity(
             f"{TRIPLET_DATA_PATH}/words_designs/sub-{parsed.subject}_ses-{parsed.session}_run-{run+1:02d}_design.tsv",
             name="task-singlewords",
             use_eyetracking=True,
@@ -23,7 +23,7 @@ TRIAL_DURATION = 2*TR
 BASELINE_BEGIN = 9
 BASELINE_END = 9
 ISI = TRIAL_DURATION - STIMULI_DURATION
-ISI_JITTER = 0
+ISI_JITTER = 2
 FEATURES_INSTRUCTION_DURATION = 3*TR
 POST_FEATURES_INSTRUCTION_ISI = 1*TR
 
@@ -48,7 +48,7 @@ def generate_design_file(subject, all_words, pilot=False):
 
     # sample all ISI with same seed for matching run length
     np.random.seed(0)
-    isi_set = np.random.random_sample(N_TRIALS_PER_RUN)*ISI_JITTER + ISI
+    isi_set = np.random.random_sample(N_TRIALS_PER_RUN)*ISI_JITTER + TR
     # seed numpy with subject id to have reproducible design generation
     seed = int(
         hashlib.sha1(("%s" % (subject)).encode("utf-8")).hexdigest(), 16
