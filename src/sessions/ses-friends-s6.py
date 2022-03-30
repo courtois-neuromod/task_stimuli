@@ -13,6 +13,5 @@ for episode in list(range(1, 16))+list(range(17,25)):
                 use_eyetracking=True,
             )
         )
-        TASKS.append(task_base.Pause(
-            text="You can take a short break.",
-        ))
+
+
