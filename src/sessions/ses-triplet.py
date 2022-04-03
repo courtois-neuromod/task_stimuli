@@ -10,9 +10,9 @@ def get_tasks(parsed):
     ]
     return TASKS
 
-TRIPLET_DATA_PATH = "data/language/triplets/"
+TRIPLET_DATA_PATH = "data/language/triplets"
 TR=1.49
-N_TRIALS_PER_RUN = 100
+N_TRIALS_PER_RUN = 5
 N_RUNS_PER_SESSION = 2
 STIMULI_DURATION = 4
 TRIAL_DURATION = 4*TR

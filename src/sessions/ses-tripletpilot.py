@@ -1,5 +1,5 @@
-N_RUNS_PER_SESSION = 2
-TRIPLET_DATA_PATH = "data/language/triplets/"
+N_RUNS_PER_SESSION = 1
+TRIPLET_DATA_PATH = "data/language/triplets"
 
 def get_tasks(parsed):
     from ..tasks import language, task_base
