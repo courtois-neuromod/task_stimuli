@@ -74,12 +74,12 @@ if __name__ == "__main__":
 
     parsed = parser.parse_args()
     if parsed.pilot:
-        all_triplets = pandas.read_csv(os.path.join(TRIPLET_DATA_PATH, 'pilotable_triplets_v2.csv'), index_col=0)
+        all_triplets = pandas.read_csv(os.path.join(TRIPLET_DATA_PATH, 'pilotable_triplets_v2.csv'))
         all_triplets = pandas.DataFrame({
             'target': all_triplets.target,
             'choice_1': all_triplets.candidate_1,
             'choice_2': all_triplets.candidate_2,
         })
     else:
-        all_triplets = pandas.read_csv(os.path.join(TRIPLET_DATA_PATH, 'fMRI_triplets.csv'), index_col=0)
+        all_triplets = pandas.read_csv(os.path.join(TRIPLET_DATA_PATH, 'fMRI_triplets.csv'))
     generate_design_file(parsed.subject, all_triplets, parsed.pilot)

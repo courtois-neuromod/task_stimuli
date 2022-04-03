@@ -248,9 +248,9 @@ Press B if you don’t know the word."""
         return False
 
 class WordFamiliarity(Task):
-    DEFAULT_INSTRUCTION = """You will be presented single words and asked rate the familirity with the concept they refer to"""
 
-    FAMILIARITY_QUESTION = """How familiar are you with this concept from 1 (unfamiliar) to 3 (familiar) """
+    DEFAULT_INSTRUCTION = """You will be presented single words. 
+    Please rate how familiar are you with that concept from 1 (unfamiliar) to 3 (familiar)"""
 
     RESPONSE_KEYS = ['up','right','left']
     RESPONSE_TEXT = {
