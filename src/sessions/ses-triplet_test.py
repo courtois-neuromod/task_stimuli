@@ -2,13 +2,13 @@ def get_tasks(parsed):
     from ..tasks import language, task_base
     TASKS = [
         language.Triplet(
-            f"data/language/triplet/designs/sub-{parsed.subject}_ses-{parsed.session}_run-{run+1:02d}_design.tsv", name="task-triplets"
+            f"data/language/triplets/designs/sub-{parsed.subject}_ses-{parsed.session}_run-{run+1:02d}_design.tsv", name="task-triplets"
         )
         for run in range(N_RUNS_PER_SESSION)
     ]
     return TASKS
 
-TRIPLET_DATA_PATH = "data/language/triplet/"
+TRIPLET_DATA_PATH = "data/language/triplets"
 TR=1.49
 N_TRIALS_PER_RUN = 100
 N_RUNS_PER_SESSION = 2
