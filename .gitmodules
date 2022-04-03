@@ -18,3 +18,8 @@
 	path = data/langauge/localizer
 	url = git@github.com:courtois-neuromod/langlocalizer.stimuli.git
 	datalad-id = dc98efba-a003-4ab6-bc11-59033fcd2846
+[submodule "data/fLoc"]
+	path = data/fLoc
+	url = git@github.com:courtois-neuromod/floc.stimuli.git
+	datalad-id = e730eb7b-0a99-453c-a861-2e21d6c72062
+
