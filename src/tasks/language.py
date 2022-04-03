@@ -250,7 +250,7 @@ Press B if you don’t know the word."""
 class WordFamiliarity(Task):
     DEFAULT_INSTRUCTION = """You will be presented single words and asked rate the familirity with the concept they refer to"""
 
-    SENSORIMOTOR_QUESTION = """How familiar are you with this concept from 1 (unfamiliar) to 3 (familiar) """
+    FAMILIARITY_QUESTION = """How familiar are you with this concept from 1 (unfamiliar) to 3 (familiar) """
 
     RESPONSE_KEYS = ['up','right','left']
     RESPONSE_TEXT = {
@@ -297,18 +297,11 @@ class WordFamiliarity(Task):
         yield True
         for trial_n, trial in enumerate(self.trials):
 
-            if trial['trial_type'] == 'feature_question':
-                self.text.bold = True
-                self.text.text = self.SENSORIMOTOR_QUESTION.format(**trial)
-                self.progress_bar.set_description(
-                    f"Block {trial['block_index']}:: {trial['sensorimotor_feature']}"
-                )
-            else:
-                self.text.bold = False
-                self.text.text = trial['word']
-                self.progress_bar.set_description(
-                    f"Trial :: {trial['word']}"
-                )
+            self.text.bold = False
+            self.text.text = trial['word']
+            self.progress_bar.set_description(
+                f"Trial :: {trial['word']}"
+            )
 
             self.text.draw(exp_win)
             if ctl_win:
