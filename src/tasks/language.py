@@ -62,15 +62,15 @@ Don't think too much and give the first answer that comes to mind
 
     def _setup(self, exp_win):
         self.target_stim = visual.TextStim(
-            exp_win, text="", pos=(0, 0.25), alignText="center", color="white"
+            exp_win, text="", pos=(0, 0.50), alignText="center", color="white"
         )
 
         self.r1_stim = visual.TextStim(
-            exp_win, text="", pos=(-0.5, -0.25), alignText="center", color="white"
+            exp_win, text="", pos=(0, 0.25), alignText="center", color="white"
         )
 
         self.r2_stim = visual.TextStim(
-            exp_win, text="", pos=(0.5, -0.25), alignText="center", color="white"
+            exp_win, text="", pos=(0, -0.25), alignText="center", color="white"
         )
 
         self.trials = data.TrialHandler(self.words_list, 1, method="sequential")
@@ -82,6 +82,8 @@ Don't think too much and give the first answer that comes to mind
         yield True
 
         for trial_n, trial in enumerate(self.trials):
+
+            # TO ADD HERE THE RANDOMIZATION
             self.target_stim.text = trial["target"]
             self.r1_stim.text = trial["choice_1"]
             self.r2_stim.text = trial["choice_2"]
