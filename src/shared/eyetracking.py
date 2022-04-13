@@ -87,6 +87,9 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
 
     def _setup(self, exp_win):
         self.use_fmri = False
+        self.eyetracker.stop_capture()
+        time.sleep(.1)
+        self.eyetracker.start_capture()
         super()._setup(exp_win)
 
     def _pupil_cb(self, pupil):
@@ -400,6 +403,24 @@ class EyeTrackerClient(threading.Thread):
                 "args": CAPTURE_SETTINGS,
             }
         )
+
+
+    def start_capture(self):
+        self.send_recv_notification(
+            {
+                "subject": "capture.should_start",
+                "target": self.EYE
+            }
+        )
+
+    def stop_capture(self):
+        self.send_recv_notification(
+            {
+                "subject": "capture.should_stop",
+                "target": self.EYE
+            }
+        )
+
 
     def send_recv_notification(self, n):
         # REQ REP requires lock step communication with multipart msg (topic,msgpack_encoded dict)
