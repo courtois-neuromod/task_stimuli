@@ -283,7 +283,7 @@ class VideoGame(VideoGameBase):
                     msg="VideoGame %s: %s stopped at %f"
                     % (self.game_name, self.state_name, time.time()),
                 )
-            if not level_step % config.FRAME_RATE:
+            if not level_step % self.game_fps:
                 exp_win.logOnFlip(level=logging.EXP, msg="level step: %d" % level_step)
             while _nextFrameT > (self.task_timer.getTime() - self._retraceInterval/10):
                 time.sleep(.0001)
