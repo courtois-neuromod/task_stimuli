@@ -2,6 +2,8 @@
 from subprocess import Popen
 
 import os, sys, importlib
+import itertools
+from collections.abc import Iterable, Iterator
 
 from src.shared import parser, config, screen
 from src.shared.didyoumean import suggest_session_tasks
@@ -18,9 +20,14 @@ def run(parsed):
         suggestion = suggest_session_tasks(parsed.tasks)
         raise(ValueError('session tasks file cannot be found for %s. Did you mean %s ?'%(parsed.tasks, suggestion)))
     from src.shared import cli
+    if parsed.skip_n_tasks:
+        if isinstance(tasks, Iterator):
+            tasks = itertools.islice(tasks, parsed.skip_n_tasks, None)
+        else:
+            tasks = tasks[parsed.skip_n_tasks:]
     try:
         cli.main_loop(
-            tasks[parsed.skip_n_tasks:],
+            tasks,
             parsed.subject,
             parsed.session,
             parsed.output,
@@ -31,6 +38,7 @@ def run(parsed):
             parsed.run_on_battery,
             parsed.ptt,
             parsed.record_movie,
+            parsed.skip_soundcheck,
             )
     finally:
         if not parsed.no_force_resolution:

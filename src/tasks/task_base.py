@@ -12,9 +12,9 @@ class Task(object):
     DEFAULT_INSTRUCTION = ""
     PROGRESS_BAR_FORMAT = '{l_bar}{bar}{r_bar}'
 
-    def __init__(self, name, instruction=None):
+    def __init__(self, name, instruction=None, use_eyetracking=False):
         self.name = name
-        self.use_eyetracking = False
+        self.use_eyetracking = use_eyetracking
         if instruction is None:
             self.instruction = self.__class__.DEFAULT_INSTRUCTION
         else:
@@ -27,15 +27,19 @@ class Task(object):
         output_path,
         output_fname_base,
         use_fmri=False,
-        use_eyetracking=False,
         use_meg=False,
     ):
         self.output_path = output_path
         self.output_fname_base = output_fname_base
         self.use_fmri = use_fmri
         self.use_meg = use_meg
-        self.use_eyetracking = use_eyetracking
         self._events = []
+
+        self._exp_win_first_flip_time = None
+        self._exp_win_last_flip_time = None
+        self._ctl_win_last_flip_time = None
+        self._task_completed = False
+
         self._setup(exp_win)
         # initialize a progress bar if we know the duration of the task
         self.progress_bar = (
@@ -47,9 +51,6 @@ class Task(object):
             self._progress_bar_refresh_rate = config.FRAME_RATE
 
     def _setup(self, exp_win):
-        self._exp_win_first_flip_time = None
-        self._exp_win_last_flip_time = None
-        self._ctl_win_last_flip_time = None
         pass
 
     def _generate_unique_filename(self, suffix, ext="tsv"):
@@ -85,15 +86,17 @@ class Task(object):
             for clearBuffer in self._instructions(exp_win, ctl_win):
                 yield
                 self._flip_all_windows(exp_win, ctl_win, clearBuffer)
-        # last/only flip to clear screen
-        yield
-        self._flip_all_windows(exp_win, ctl_win, True)
+        # 2 flips to clear screen
+        for i in range(2):
+            yield
+            self._flip_all_windows(exp_win, ctl_win, True)
 
     def run(self, exp_win, ctl_win):
         # needs to be the 1rst callbacks
         exp_win.timeOnFlip(self, '_exp_win_first_flip_time')
-
-        self.task_timer = core.Clock()
+        self._flip_all_windows(exp_win, ctl_win, True)
+        #sync to first screen flip
+        self.task_timer = core.MonotonicClock(self._exp_win_first_flip_time)
 
         if self.progress_bar:
             self.progress_bar.reset()
@@ -108,6 +111,7 @@ class Task(object):
                 if self._progress_bar_refresh_rate and flip_idx % self._progress_bar_refresh_rate == 0:
                     self.progress_bar.update(1)
             flip_idx += 1
+        self._task_completed = True
 
     def stop(self, exp_win, ctl_win):
         if hasattr(self, "_stop"):
