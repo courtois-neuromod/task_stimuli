@@ -5,7 +5,7 @@ import threading
 from psychopy import visual, core, data, logging, event, sound, constants
 from .task_base import Task
 
-from ..shared import config
+from ..shared import config, utils
 
 import retro
 
@@ -74,6 +74,7 @@ class VideoGameBase(Task):
         state_name=None,
         scenario=None,
         repeat_scenario=True,
+        scaling=1,
         inttype=retro.data.Integrations.CUSTOM_ONLY,
         *args,
         **kwargs
@@ -85,6 +86,7 @@ class VideoGameBase(Task):
         self.scenario = scenario
         self.repeat_scenario = repeat_scenario
         self.inttype = inttype
+        self._scaling = scaling
 
     def _setup(self, exp_win):
 
@@ -102,8 +104,8 @@ class VideoGameBase(Task):
             exp_win.size[0] / self._first_frame.shape[1],
             exp_win.size[1] / self._first_frame.shape[0],
         )
-        width = int(min_ratio * self._first_frame.shape[1])
-        height = int(min_ratio * self._first_frame.shape[0])
+        width = int(min_ratio * self._first_frame.shape[1] * self._scaling)
+        height = int(min_ratio * self._first_frame.shape[0] * self._scaling)
 
         self.game_vis_stim = visual.ImageStim(
             exp_win,
@@ -266,9 +268,6 @@ class VideoGame(VideoGameBase):
         _nextFrameT = self.task_timer.getTime()	+ self._retraceInterval
         while not _done:
             level_step += 1
-            while _nextFrameT > (self.task_timer.getTime() -
-                       self._retraceInterval/2.0):
-                time.sleep(.0001)
             self._handle_controller_presses(exp_win)
             keys = [k in self.pressed_keys for k in KEY_SET]
             _obs, _rew, _done, self._game_info = self.emulator.step(keys)
@@ -284,8 +283,11 @@ class VideoGame(VideoGameBase):
                     msg="VideoGame %s: %s stopped at %f"
                     % (self.game_name, self.state_name, time.time()),
                 )
-            if not level_step % config.FRAME_RATE:
+            if not level_step % self.game_fps:
                 exp_win.logOnFlip(level=logging.EXP, msg="level step: %d" % level_step)
+            while _nextFrameT > (self.task_timer.getTime() - self._retraceInterval/10):
+                time.sleep(.0001)
+                utils.poll_windows()
             yield True
 
             _nextFrameT += self._frameInterval
