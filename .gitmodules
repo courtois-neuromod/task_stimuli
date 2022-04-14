@@ -6,3 +6,15 @@
 	path = data/videogames/shinobi
 	url = git@github.com:courtois-neuromod/shinobi.stimuli.git
 	datalad-id = 74cb8a6e-664b-11eb-a4f2-1a44c1d5432b
+[submodule "data/videogames/mario"]
+	path = data/videogames/mario
+	url = git@github.com:courtois-neuromod/mario.stimuli.git
+	datalad-id = 23782599-795f-46e5-aefe-5ecd578e968d
+[submodule "data/retinotopy"]
+	path = data/retinotopy
+	url = git@github.com:courtois-neuromod/retino.stimuli.git
+	datalad-id = 52140b46-63c8-45a7-a03f-2f2cab0db23f
+[submodule "data/fLoc"]
+	path = data/fLoc
+	url = git@github.com:courtois-neuromod/floc.stimuli.git
+	datalad-id = e730eb7b-0a99-453c-a861-2e21d6c72062
