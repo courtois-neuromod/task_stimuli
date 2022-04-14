@@ -108,7 +108,7 @@ class VideoGameBase(Task):
         self.game_vis_stim = visual.ImageStim(
             exp_win,
             size=(width, height),
-            units="pixels",
+            units="pix",
             interpolate=False,
             flipVert=True,
             autoLog=False,
