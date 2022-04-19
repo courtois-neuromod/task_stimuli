@@ -43,7 +43,7 @@ Try to remember the items and their location on the screen."""
     def _run(self, exp_win, ctl_win):
 
         trials = data.TrialHandler(self.item_list, 1, method="sequential")
-        img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="pixels")
+        img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="pix")
         exp_win.logOnFlip(
             level=logging.EXP, msg="memory: task starting at %f" % time.time()
         )
