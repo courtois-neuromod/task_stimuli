@@ -43,7 +43,7 @@ Please keep your eyes open."""
 
     def _setup(self, exp_win):
 
-        self.movie_stim = visual.MovieStim2(exp_win, self.filepath, units="pixels")
+        self.movie_stim = visual.MovieStim2(exp_win, self.filepath, units="pix")
         # print(self.movie_stim._audioStream.__class__)
         aspect_ratio = (
             self._aspect_ratio or self.movie_stim.size[0] / self.movie_stim.size[1]
