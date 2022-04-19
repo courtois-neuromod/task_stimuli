@@ -8,4 +8,5 @@ useradd -u "${HOST_UID}" -o -m "${USERNAME}"
 groupmod -g "${HOST_GID}" "${USERNAME}"
 
 cd /src/task_stimuli/
-gosu $USERNAME /usr/bin/python3 /src/task_stimuli/main.py $@
+gosu $USERNAME $@
+#gosu $USERNAME /usr/bin/python3 /src/task_stimuli/main.py $@
