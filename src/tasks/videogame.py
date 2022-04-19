@@ -367,7 +367,7 @@ class VideoGame(VideoGameBase):
         legends.append(visual.TextStim(
             exp_win,
             text = 'Disagree',
-            units="pixels",
+            units="pix",
             pos=(scales_block_x - extent*0.75, scales_block_y*1.1),
             wrapWidth= win_width * 0.5,
             height= y_spacing / 3,
@@ -378,7 +378,7 @@ class VideoGame(VideoGameBase):
         legends.append(visual.TextStim(
             exp_win,
             text = 'Agree',
-            units="pixels",
+            units="pix",
             pos=(scales_block_x + extent*1.15, scales_block_y*1.1),
             wrapWidth= win_width * 0.5,
             height= y_spacing / 3,
@@ -405,7 +405,7 @@ class VideoGame(VideoGameBase):
                     exp_win,
                     (scales_block_x - extent, y_pos),
                     (scales_block_x + extent, y_pos),
-                    units="pixels",
+                    units="pix",
                     lineWidth=6,
                     autoLog=False,
                     lineColor=(0, -1, -1) if q_n == 0 else (-1, -1, -1),
@@ -415,7 +415,7 @@ class VideoGame(VideoGameBase):
                 [
                     visual.Circle(
                         exp_win,
-                        units="pixels",
+                        units="pix",
                         radius=10,
                         pos=(
                             scales_block_x - extent + i * x_spacing,
@@ -432,7 +432,7 @@ class VideoGame(VideoGameBase):
             texts.append(visual.TextStim(
                 exp_win,
                 text = question,
-                units="pixels",
+                units="pix",
                 bold = q_n == active_question,
                 pos=(0, y_pos),
                 wrapWidth= win_width * 0.5,
@@ -508,7 +508,7 @@ class VideoGame(VideoGameBase):
             exp_win,
             (-extent, 0),
             (extent, 0),
-            units="pixels",
+            units="pix",
             lineWidth=2,
             autoLog=False,
         )
@@ -516,7 +516,7 @@ class VideoGame(VideoGameBase):
         circles = [
             visual.Circle(
                 exp_win,
-                units="pixels",
+                units="pix",
                 radius=40,
                 pos=(-extent + i * x_spacing, 0),
                 fillColor=(-1, -1, -1),

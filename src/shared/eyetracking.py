@@ -127,7 +127,7 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
             circle_marker = visual.Circle(
                 exp_win,
                 edges=64,
-                units="pixels",
+                units="pix",
                 lineColor=None,
                 fillColor=self.marker_fill_color,
                 autoLog=False,
@@ -504,7 +504,7 @@ class GazeDrawer:
         self._gazepoint_stim = visual.Circle(
             self.win,
             radius=30,
-            units="pixels",
+            units="pix",
             lineColor=(1, 0, 0),
             fillColor=None,
             lineWidth=2,
