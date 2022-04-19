@@ -1,5 +1,7 @@
 # Don't display 'Hello from the Pygame Community!'
+from asyncio import subprocess
 from os import environ
+import sys
 try:
     environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 except:
@@ -9,31 +11,51 @@ from ..tasks import robot, task_base
 import logging
 from cozmo_api.controller import Controller
 
-NUC_ADDR = None
-#TODO:
-"""
 NUC_ADDR = ("10.30.6.17", 6667)
 COZMO_ADDR = ("172.31.1.1", 5551)
-LOCAL_UDP_PORT = 53
+LOCAL_UDP_PORT = 5551
 LOCAL_TCP_PORT = 6667
 SERVER_TCP_PORT = 6667
 NET = "labo"
 
 from getpass import getpass
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, call
 
-# get sudo passsword
-password = getpass("Please enter server's password: ")
-# open a TCP forward port with the SSH connection
-proc = Popen("ssh -L " + str(LOCAL_TCP_PORT) + ":localhost:" + str(SERVER_TCP_PORT) + " " + NET + "@" + NUC_ADDR[0], stdin=PIPE)
-proc.communicate(password.encode())
-# setup the TCP to UDP forward on the server
-proc = Popen("mkfifo /tmp/fifo")
-proc = Popen("nc -l -p 6667 < /tmp/fifo | nc -u " + COZMO_ADDR[0] +  " " + str(COZMO_ADDR[1]) + " > /tmp/fifo")
-# setup the UDP to TCP forward on the local machine
-os.system("mkfifo /tmp/fifo")
-os.system("sudo nc -l -u -p " + str(LOCAL_UDP_PORT) + " < /tmp/fifo | nc localhost " + str(LOCAL_TCP_PORT) + " > /tmp/fifo")    #TODO: able to run commands after that ?
-"""
+def ssh_tunnel():
+    print("\n--CONFIGURING  SSH TUNNEL --")
+    # the public key of the client must be configured on the server prior to the following (see https://www.digitalocean.com/community/tutorials/how-to-set-up-ssh-keys-on-ubuntu-1804)
+
+    # open a TCP forward port with the SSH connection
+    print("opening a TCP forward port with the SSH connection...")
+    command = 'ssh -L ' + str(LOCAL_TCP_PORT) + ':localhost:' + str(SERVER_TCP_PORT) + ' ' + NET + '@' + NUC_ADDR[0] 
+    # setup the TCP to UDP forward on the server
+    #command += ' \'mkfifo /tmp/fifo \'nc -l -p 6667 < /tmp/fifo | nc -u ' + COZMO_ADDR[0] +  ' ' + str(COZMO_ADDR[1]) + ' > /tmp/fifo\'\''
+    #print("the command is ", command)
+    sshProc = Popen(command, stdin=PIPE, stdout=PIPE, shell=True)
+    
+    print("setting up the TCP to UDP forward on the server...")
+    sshProc.stdin.write(b"mkfifo /tmp/fifo\n")
+    command = str.encode("nc -l -p 6667 < /tmp/fifo | nc -u " + COZMO_ADDR[0] +  " " + str(COZMO_ADDR[1]) + " > /tmp/fifo\n")
+    sshProc.stdin.write(command)    
+    
+    """# setup the TCP to UDP forward on the server
+    print("setting up the TCP to UDP forward on the server...")
+    command = "mkfifo /tmp/fifo"
+    output = call(command, shell=True)
+    print(output)
+    exit(0)
+    sshProc.stdin.write(b"mkfifo /tmp/fifo\n")
+    command = str.encode("nc -l -p 6667 < /tmp/fifo | nc -u " + COZMO_ADDR[0] +  " " + str(COZMO_ADDR[1]) + " > /tmp/fifo\n")
+    sshProc.stdin.write(command)"""
+
+    # setup the UDP to TCP forward on the local machine
+    print("setting up the UDP to TCP forward on the local machine...")
+    localProc = Popen("mkfifo /tmp/fifo", stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
+    command = str.encode("nc -l -u -p " + str(LOCAL_UDP_PORT) + " < /tmp/fifo | nc localhost " + str(LOCAL_TCP_PORT) + " > /tmp/fifo\n")
+    localProc.stdin.write(command)    
+
+    print("-- ssh tunnel configured --\n")
+
 
 def get_tasks(parsed):
     """ if parsed.test:
@@ -42,11 +64,13 @@ def get_tasks(parsed):
         mode = "default" 
     """
 
+    ssh_tunnel()    
+
     mode = "default" 
 
     with Controller.make(
         mode=mode,
-        robot_addr=NUC_ADDR,
+        robot_addr=NUC_ADDR,    #only in modified version of PyCozmo
         enable_procedural_face=False,
         log_level=logging.INFO,
         protocol_log_level=logging.INFO,
