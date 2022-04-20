@@ -83,7 +83,7 @@ class CozmoBaseTask(Task):
                 exp_win,
                 size=(width, height),
                 units="pixels",
-                interpolate=False,
+                interpolate=True,
                 flipVert=True,
                 autoLog=False,
             )
@@ -338,8 +338,10 @@ class CozmoFirstTaskPsychoPy(CozmoBaseTask):
         keys = self._handle_controller_presses(exp_win)
         self.reset_dict()
         self.actions_list.clear()
+        key_action_dict_keys = list(KEY_ACTION_DICT.keys())
         for key in keys:
-            self.actions_list.append(KEY_ACTION_DICT[key])
+            if key in key_action_dict_keys:
+                self.actions_list.append(KEY_ACTION_DICT[key])
         self._update_dict()
         return False
 
