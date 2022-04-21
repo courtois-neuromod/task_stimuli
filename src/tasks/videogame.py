@@ -39,32 +39,80 @@ def _onPygletKeyRelease(symbol, modifier):
     key = pyglet.window.key.symbol_string(symbol).lower().lstrip("_").lstrip("NUM_")
     _keyReleaseBuffer.append((key, keyTime))
 
+import sounddevice
+class SoundDeviceGameBlockStream(object):
 
-class SoundDeviceBlockStream(sound.backend_sounddevice.SoundDeviceSound):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        sample_rate,
+        block_size=0,
+        channels=2,
+        dtype=sounddevice.default.dtype[1]):
+
         self.blocks = queue.Queue()
+        self.blocks.put(np.zeros((500,2), dtype=dtype))
         self.lock = threading.Lock()
+        self.output_stream = sounddevice.OutputStream(
+            samplerate=sample_rate,
+            blocksize=block_size,
+            latency=0.1,
+            device=None,
+            channels=2,
+            callback=self.callback,
+            dtype=dtype,
+            prime_output_buffers_using_stream_callback=False
+            )
+        self.current_block_idx = 0
+        self.current_block = None
+        self.status = constants.STOPPED
 
-    def add_block(self, block):
-        with self.lock:
-            self.blocks.put(block)
-
-    def flush(self):
-        with self.lock:
-            self.blocks = queue.Queue()
-
-    def _nextBlock(self):
+    def callback(self, outdata, frames, time, status):
         if self.status == constants.STOPPED:
             return
         if self.blocks.empty():
-            block = np.zeros((self.blockSize, 2), dtype=np.float)
-        else:
+            outdata.fill(0)
+            logging.debug('sound queue empty')
+            return
+        elif self.current_block is None:
             with self.lock:
-                block = self.blocks.get()
-        self.t += self.blockSize / float(self.sampleRate)
-        return block
+                self.current_block = self.blocks.get()
 
+        out_idx = 0
+        while True:
+            current_block_len = self.current_block.shape[0]
+
+            split_idx = min(current_block_len-self.current_block_idx, frames-out_idx)
+            split_end = self.current_block_idx + split_idx
+            #print(frames,  current_block_len, out_idx, split_idx, self.current_block_idx, split_end)
+            outdata[out_idx:out_idx+split_idx] = self.current_block[self.current_block_idx:split_end]
+            out_idx += split_idx
+
+            self.current_block_idx = split_end
+            if split_end == current_block_len:
+                with self.lock:
+                    try:
+                        self.current_block = self.blocks.get(timeout=.01)
+                    except queue.Empty:
+                        logging.debug('sound queue empty')
+                self.current_block_idx = 0
+            if out_idx == frames:
+                return
+
+    def put(self, block):
+        with self.lock:
+            self.blocks.put(block)
+
+    def play(self):
+        self.status = constants.PLAYING
+        self.output_stream.start()
+
+    def stop(self):
+        self.status = constants.STOPPED
+        self.output_stream.stop()
+        self.flush()
+
+    def flush(self):
+        self.blocks = queue.Queue()
 
 class VideoGameBase(Task):
 
@@ -95,10 +143,14 @@ class VideoGameBase(Task):
         self._first_frame = self.emulator.reset()
         first_sound_chunk = self.emulator.em.get_audio()
         blockSize = first_sound_chunk.shape[0]
-        self.game_sound = SoundDeviceBlockStream(
-            sampleRate = self.emulator.em.get_audio_rate(),
-            stereo=(first_sound_chunk.ndim==2 & first_sound_chunk.shape[1]==2),
-            blockSize=blockSize)
+        audio_rate = self.emulator.em.get_audio_rate()
+        #blockSize = int(audio_rate / self.game_fps)
+
+        logging.exp(f"VideoGame: audio sample rate {self.emulator.em.get_audio_rate()} blocksize: {blockSize}")
+        self.game_sound = SoundDeviceGameBlockStream(
+            sample_rate=audio_rate,
+            block_size=0,
+            dtype=np.int16)
 
         min_ratio = min(
             exp_win.size[0] / self._first_frame.shape[1],
@@ -116,15 +168,12 @@ class VideoGameBase(Task):
             autoLog=False,
         )
 
-    def _transform_soundblock(self, sound_block):
-        return sound_block[:self.game_sound.blockSize] / float(2 ** 15)
-
     def _render_graphics_sound(self, obs, sound_block, exp_win, ctl_win):
         self.game_vis_stim.image = obs / 255.0
         self.game_vis_stim.draw(exp_win)
         if ctl_win:
             self.game_vis_stim.draw(ctl_win)
-        self.game_sound.add_block(self._transform_soundblock(sound_block))
+        self.game_sound.put(sound_block)
         if not self.game_sound.status == constants.PLAYING:
             exp_win.callOnFlip(self.game_sound.play)  # start sound only at flip
 
@@ -265,9 +314,10 @@ class VideoGame(VideoGameBase):
             },
         )
         yield True
-        _nextFrameT = self.task_timer.getTime()	+ self._retraceInterval
+        _nextFrameT = self.task_timer.getTime()
         while not _done:
             level_step += 1
+            _nextFrameT += self._frameInterval
             self._handle_controller_presses(exp_win)
             keys = [k in self.pressed_keys for k in KEY_SET]
             _obs, _rew, _done, self._game_info = self.emulator.step(keys)
@@ -283,14 +333,15 @@ class VideoGame(VideoGameBase):
                     msg="VideoGame %s: %s stopped at %f"
                     % (self.game_name, self.state_name, time.time()),
                 )
-            if not level_step % self.game_fps:
+            if not level_step % int(self.game_fps):
                 exp_win.logOnFlip(level=logging.EXP, msg="level step: %d" % level_step)
-            while _nextFrameT > (self.task_timer.getTime() - self._retraceInterval/10):
+            while _nextFrameT > (self.task_timer.getTime() + self._retraceInterval*.9):
                 time.sleep(.0001)
                 utils.poll_windows()
+            if _nextFrameT < self.task_timer.getTime():
+                continue # drop frame
             yield True
 
-            _nextFrameT += self._frameInterval
         self._completed = self._completed or self._game_info['lives'] > -1
         self.game_sound.flush()
         self.game_sound.stop()
@@ -586,6 +637,7 @@ class VideoGameMultiLevel(VideoGame):
                 self._nlevels += 1
                 self.state_name = level
                 self.emulator.load_state(level, inttype=self.inttype)
+                self.progress_bar.set_description(level)
                 self.emulator.data.load(
                     retro.data.get_file_path(self.game_name, "data.json", inttype=self.inttype),
                     retro.data.get_file_path(self.game_name, f"{scenario}.json", inttype=self.inttype)
