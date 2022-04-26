@@ -44,8 +44,8 @@ def get_tasks(parsed):
     mode = "default" 
 
     with Controller.make(
-        mode=mode,
-        #robot_addr=('127.0.0.1', 5551),    #only in modified version of PyCozmo
+        test=False,
+        robot_addr=('127.0.0.1', 5551),    #only in modified version of PyCozmo
         enable_procedural_face=False,
         log_level=logging.INFO,
         protocol_log_level=logging.INFO,
