@@ -41,8 +41,6 @@ def get_tasks(parsed):
 
     #ssh_tunnel()    
 
-    mode = "default" 
-
     with Controller.make(
         test=False,
         robot_addr=('127.0.0.1', 5551),    #only in modified version of PyCozmo
