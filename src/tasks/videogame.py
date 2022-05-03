@@ -124,6 +124,7 @@ class VideoGameBase(Task):
         repeat_scenario=True,
         scaling=1,
         inttype=retro.data.Integrations.CUSTOM_ONLY,
+        bg_color=(-1, -1, -1),
         *args,
         **kwargs
     ):
@@ -135,6 +136,7 @@ class VideoGameBase(Task):
         self.repeat_scenario = repeat_scenario
         self.inttype = inttype
         self._scaling = scaling
+        self._bg_color = bg_color
 
     def _setup(self, exp_win):
 
@@ -188,6 +190,17 @@ class VideoGameBase(Task):
     def unload(self):
         self.emulator.close()
 
+    def fixation_cross(self, exp_win):
+        fixation = visual.TextStim(
+            exp_win,
+            text='+',
+            alignText="center",
+            color="white" if sum(self._bg_color) < 0 else "black"
+        )
+        fixation.draw(exp_win)
+        yield True
+        utils.wait_until(self.task_timer, self.task_timer.getTime()+self._fixation_cross_duration - .9* self._retraceInterval)
+        yield True
 
 class VideoGame(VideoGameBase):
 
@@ -362,9 +375,9 @@ class VideoGame(VideoGameBase):
 
         self._set_key_handler(exp_win)
         self._nlevels = 0
-        exp_win.setColor([-1.0] * 3, colorSpace='rgb')
+        exp_win.setColor(self._bg_color, colorSpace='rgb')
         if ctl_win:
-            ctl_win.setColor([-1.0] * 3, colorSpace='rgb')
+            ctl_win.setColor(self._bg_color, colorSpace='rgb')
 
         while True:
             self._nlevels += 1
@@ -616,11 +629,17 @@ class VideoGame(VideoGameBase):
 
 
 class VideoGameMultiLevel(VideoGame):
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self, *args,
+        fixation_cross_duration=0,
+        show_instruction_between_repetitions=True,
+        **kwargs):
 
         self._state_names = kwargs.pop("state_names")
         self._scenarii = kwargs.pop("scenarii")
         self._repeat_scenario_multilevel = kwargs.get("repeat_scenario", False)
+        self._fixation_cross_duration = fixation_cross_duration
+        self._show_instruction_between_repetitions = show_instruction_between_repetitions
 
         kwargs["repeat_scenario"] = False
         super().__init__(
@@ -632,24 +651,33 @@ class VideoGameMultiLevel(VideoGame):
         #exp_win.waitBlanking = False
         self._set_key_handler(exp_win)
         self._nlevels = 0
+
+        exp_win.setColor(self._bg_color, colorSpace='rgb')
+        if ctl_win:
+            ctl_win.setColor(self._bg_color, colorSpace='rgb')
         while True:
             for level, scenario in zip(self._state_names, self._scenarii):
                 self._nlevels += 1
                 self.state_name = level
                 self.emulator.load_state(level, inttype=self.inttype)
-                self.progress_bar.set_description(level)
                 self.emulator.data.load(
                     retro.data.get_file_path(self.game_name, "data.json", inttype=self.inttype),
                     retro.data.get_file_path(self.game_name, f"{scenario}.json", inttype=self.inttype)
                 )
                 self._first_frame = self.emulator.reset()
+
+
+
                 if self._nlevels > 1:
                     self._set_recording_file()
-                    yield from self._instructions(exp_win, ctl_win)
+                    if self._show_instruction_between_repetitions:
+                        yield from self._instructions(exp_win, ctl_win)
 
-                exp_win.setColor([-1.0] * 3, colorSpace='rgb')
-                if ctl_win:
-                    ctl_win.setColor([-1.0] * 3, colorSpace='rgb')
+                if self._fixation_cross_duration > 0:
+                    self.progress_bar.set_description("fixation")
+                    yield from self.fixation_cross(exp_win)
+                self.progress_bar.set_description(level)
+
                 yield from super()._run_emulator(exp_win, ctl_win)
                 self.game_sound.stop()
 

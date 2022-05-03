@@ -92,9 +92,12 @@ def get_tasks(parsed):
             repeat_scenario=True,
             max_duration=10 * 60,  # if when level completed or dead we exceed that time in secs, stop the task
             name=f"task-mariosnes_run-{run+1:02d}",
-            instruction="playing Super Mario All Stars {state_name} \n\n Let's-a go!",
+            instruction="playing Super Mario All Stars \n\n Please fixate the cross in between repetitions!",
             post_run_ratings = [(k, q, 7) for k, q in enumerate(other_ratings+flow_ratings)],
             use_eyetracking=True,
+            fixation_cross_duration=5,
+            show_instruction_between_repetitions=False,
+            bg_color=[-.5] * 3,
         )
 
         yield task
