@@ -1,3 +1,4 @@
+import threading
 import time
 from typing import Optional
 import copy
@@ -11,6 +12,7 @@ from ..shared import config
 # ----------------------------------------------------------------- #
 #                       Cozmo Abstract Task                         #
 # ----------------------------------------------------------------- #
+
 
 class CozmoBaseTaskNUC(Task):
     """Base task class, implementing the basic run loop and some facilities."""
@@ -36,10 +38,9 @@ class CozmoBaseTaskNUC(Task):
         self.info = None
 
     def _setup(self, exp_win):
-        """need to overwrite first part of function to get first frame from cozmo
-        """
-        
-        super()._setup(exp_win) 
+        """need to overwrite first part of function to get first frame from cozmo"""
+
+        super()._setup(exp_win)
 
         min_ratio = min(
             exp_win.size[0] / self._first_frame.size[0],
@@ -65,27 +66,41 @@ class CozmoBaseTaskNUC(Task):
         """
         raise NotImplementedError("Must override get_actions")
 
+
 # ----------------------------------------------------------------- #
 #                   Cozmo First Task (PsychoPy)                     #
 # ----------------------------------------------------------------- #
 
 # KEY_SET = ["x", "a", "b", "y", "u", "d", "l", "r", "p", "s", "space",]
-KEY_SET = ["x", "_", "b", "_", "u", "d", "l", "r", "_", "_", "_",]
+KEY_SET = [
+    "x",
+    "_",
+    "b",
+    "_",
+    "u",
+    "d",
+    "l",
+    "r",
+    "_",
+    "_",
+    "_",
+]
 import pyglet
 
 KEY_ACTION_DICT = {
-    KEY_SET[4] : "forward",
-    KEY_SET[5] : "backward",
-    KEY_SET[6] : "left",
-    KEY_SET[7] : "right" ,
-    KEY_SET[0] : "head_up",
-    KEY_SET[2] : "head_down"
-    }
+    KEY_SET[4]: "forward",
+    KEY_SET[5]: "backward",
+    KEY_SET[6]: "left",
+    KEY_SET[7]: "right",
+    KEY_SET[0]: "head_up",
+    KEY_SET[2]: "head_down",
+}
 
 COZMO_FPS = 15.0
 
 _keyPressBuffer = []
 _keyReleaseBuffer = []
+
 
 def _onPygletKeyPress(symbol, modifier):
     if modifier:
@@ -102,14 +117,18 @@ def _onPygletKeyRelease(symbol, modifier):
     key = pyglet.window.key.symbol_string(symbol).lower().lstrip("_").lstrip("NUM_")
     _keyReleaseBuffer.append((key, keyTime))
 
+
 from PIL import Image
-import socket 
+import socket
 import cv2
+import pickle
 
 NUC_ADDRESS = "10.30.6.17"
-TCP_PORT = 1024
+TCP_PORT_RECV = 1024
+TCP_PORT_SEND = 1025
 ADDR_FAMILY = socket.AF_INET
 SOCKET_TYPE = socket.SOCK_STREAM
+
 
 class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
 
@@ -117,11 +136,17 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
 
     def __init__(self, max_duration=5 * 60, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.max_duration=max_duration
+        self.max_duration = max_duration
         self.actions_list = []
         self.frame_timer = core.Clock()
         self.cnter = 0
-        self.sock = None
+
+        self.sock_send = socket.socket(ADDR_FAMILY, SOCKET_TYPE)
+        self.sock_send.bind(("", TCP_PORT_SEND))
+        self.sock_send.listen(10)
+        self.send_thread = None
+
+        self.sock_recv = None
 
     def _instructions(self, exp_win, ctl_win):
         screen_text = visual.TextStim(
@@ -131,7 +156,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
             color="red",
             wrapWidth=1.2,
         )
-        
+
         for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
             screen_text.draw(exp_win)
             if ctl_win:
@@ -139,16 +164,14 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
             yield ()
 
     def _setup(self, exp_win):
-        self.sock=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.connect((NUC_ADDRESS, TCP_PORT))
+        self.sock_recv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock_recv.connect((NUC_ADDRESS, TCP_PORT_RECV))
         self._get_obs()
-        self.sock.close()
-        print("1:", type(self.obs))
-        print("2:", np.shape(self.obs))
+        self.sock_recv.close()
         self._first_frame = self.obs
 
         super()._setup(exp_win)
-        
+
     def _set_key_handler(self, exp_win):
         exp_win.winHandle.on_key_press = _onPygletKeyPress
         exp_win.winHandle.on_key_release = _onPygletKeyRelease
@@ -158,7 +181,9 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
         # deactivate custom keys handling
         exp_win.winHandle.on_key_press = event._onPygletKey
 
-    def _handle_controller_presses(self, exp_win):  # k[0] : actual key, k[1] : time stamp
+    def _handle_controller_presses(
+        self, exp_win
+    ):  # k[0] : actual key, k[1] : time stamp
         exp_win.winHandle.dispatch_events()
         global _keyPressBuffer, _keyReleaseBuffer
 
@@ -173,7 +198,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
         return self.pressed_keys
 
     def _run(self, exp_win, *args, **kwargs):
-        
+
         self._set_key_handler(exp_win)
         self._reset()
         self._clear_key_buffers()
@@ -181,17 +206,19 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
         while True:
             time.sleep(0.01)
             self.get_actions(exp_win)
-            
-            flip = self.loop_fun(*args, **kwargs)   
-            if flip: 
+
+            flip = self.loop_fun(*args, **kwargs)
+            if flip:
                 yield True  # True if new frame, False otherwise
-            
+
             if (
                 self.max_duration and self.task_timer.getTime() > self.max_duration
             ):  # stop if we are above the planned duration
                 print("timeout !")
                 break
 
+        self.sock_send.close()
+    
     def _stop(self, exp_win, ctl_win):
         exp_win.setColor((0, 0, 0), "rgb")
         for _ in range(2):
@@ -209,42 +236,61 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
 
     def _reset(self):
         self.frame_timer.reset()
-        
+
     def _render_graphics(self, exp_win):
         self.obs = self.obs.transpose(Image.FLIP_TOP_BOTTOM)
-        self.game_vis_stim.image = self.obs 
+        self.game_vis_stim.image = self.obs
         self.game_vis_stim.draw(exp_win)
 
     def _get_obs(self):
-        
+
         received = bytearray()
         while True:
-            recvd_data = self.sock.recv(230400)
+            print("receiving")
+            recvd_data = self.sock_recv.recv(230400)
             if not recvd_data:
                 break
             else:
                 recvd_data = bytearray(recvd_data)
                 received += recvd_data
+        print("received")
         nparr = np.asarray(received, dtype="uint8")
-        self.obs = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        self.obs = Image.fromarray(self.obs)    # maybe a way to send/recv PIL images directly
-        
+        if nparr.size != 0:
+            self.obs = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            self.obs = Image.fromarray(
+                self.obs
+            )  # maybe a way to send/recv PIL images directly (TODO: try pickle.dumps(my PIL Image))
+
     def loop_fun(self, exp_win):
-        t = self.frame_timer.getTime()    
-        if  t >= 1 / COZMO_FPS: 
+        t = self.frame_timer.getTime()
+        if t >= 1 / COZMO_FPS:
             self.frame_timer.reset()
             # socket init
-            self.sock = socket.socket(ADDR_FAMILY, SOCKET_TYPE)
-            self.sock.connect((NUC_ADDRESS, TCP_PORT)) 
+            self.sock_recv = socket.socket(ADDR_FAMILY, SOCKET_TYPE)
+            self.sock_recv.connect((NUC_ADDRESS, TCP_PORT_RECV))
 
             self._get_obs()
             self._render_graphics(exp_win)
 
-            self.sock.close()
+            self.sock_recv.close()
 
             return True
 
         return False
+
+    def send_key_data(self):
+        conn, _ = self.sock_send.accept()
+        data = pickle.dumps(self.actions_list)
+        conn.sendall(data)
+        #time.sleep(0.05)
+        conn.close()
+
+    def _send_actions_list(self):
+        #if self.send_thread is not None:
+        #    self.send_thread.join()
+        if self.send_thread is None or not self.send_thread.is_alive():
+            self.send_thread = threading.Thread(target=self.send_key_data)
+            self.send_thread.start()
 
     def get_actions(self, exp_win):
         keys = self._handle_controller_presses(exp_win)
@@ -253,6 +299,5 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
         for key in keys:
             if key in key_action_dict_keys:
                 self.actions_list.append(KEY_ACTION_DICT[key])
-        
-        # TODO: /!\ send to NUC
-        #my_sending_function(self.actions_list)
+
+        self._send_actions_list()
