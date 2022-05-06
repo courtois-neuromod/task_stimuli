@@ -36,6 +36,7 @@ class CozmoBaseTaskNUC(Task):
         self.obs = None
         self.done = False
         self.info = None
+        self.game_vis_stim = None
 
     def _setup(self, exp_win):
         """need to overwrite first part of function to get first frame from cozmo"""
@@ -144,9 +145,11 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
         self.sock_send = socket.socket(ADDR_FAMILY, SOCKET_TYPE)
         self.sock_send.bind(("", TCP_PORT_SEND))
         self.sock_send.listen(10)
-        self.send_thread = None
+        self.thread_send = None
 
         self.sock_recv = None
+        self.thread_recv = None
+
 
     def _instructions(self, exp_win, ctl_win):
         screen_text = visual.TextStim(
@@ -166,7 +169,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
     def _setup(self, exp_win):
         self.sock_recv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock_recv.connect((NUC_ADDRESS, TCP_PORT_RECV))
-        self._get_obs()
+        self._get_obs(exp_win)
         self.sock_recv.close()
         self._first_frame = self.obs
 
@@ -238,41 +241,41 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
         self.frame_timer.reset()
 
     def _render_graphics(self, exp_win):
-        self.obs = self.obs.transpose(Image.FLIP_TOP_BOTTOM)
         self.game_vis_stim.image = self.obs
         self.game_vis_stim.draw(exp_win)
 
-    def _get_obs(self):
-
+    def _get_obs(self, exp_win):
+        # socket init
+        self.sock_recv = socket.socket(ADDR_FAMILY, SOCKET_TYPE)
+        self.sock_recv.connect((NUC_ADDRESS, TCP_PORT_RECV))
         received = bytearray()
         while True:
-            print("receiving")
             recvd_data = self.sock_recv.recv(230400)
             if not recvd_data:
                 break
             else:
                 recvd_data = bytearray(recvd_data)
                 received += recvd_data
-        print("received")
         nparr = np.asarray(received, dtype="uint8")
         if nparr.size != 0:
             self.obs = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             self.obs = Image.fromarray(
                 self.obs
             )  # maybe a way to send/recv PIL images directly (TODO: try pickle.dumps(my PIL Image))
+            self.obs = self.obs.transpose(Image.FLIP_TOP_BOTTOM)
+        
+        self.sock_recv.close()
 
     def loop_fun(self, exp_win):
         t = self.frame_timer.getTime()
         if t >= 1 / COZMO_FPS:
             self.frame_timer.reset()
-            # socket init
-            self.sock_recv = socket.socket(ADDR_FAMILY, SOCKET_TYPE)
-            self.sock_recv.connect((NUC_ADDRESS, TCP_PORT_RECV))
-
-            self._get_obs()
+            
+            if self.thread_recv is None or not self.thread_recv.is_alive():
+                self.thread_recv = threading.Thread(target=self._get_obs, args=(exp_win,))
+                self.thread_recv.start()
+            
             self._render_graphics(exp_win)
-
-            self.sock_recv.close()
 
             return True
 
@@ -286,11 +289,11 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
         conn.close()
 
     def _send_actions_list(self):
-        #if self.send_thread is not None:
-        #    self.send_thread.join()
-        if self.send_thread is None or not self.send_thread.is_alive():
-            self.send_thread = threading.Thread(target=self.send_key_data)
-            self.send_thread.start()
+        #if self.thread_send is not None:
+        #    self.thread_send.join()
+        if self.thread_send is None or not self.thread_send.is_alive():
+            self.thread_send = threading.Thread(target=self.send_key_data)
+            self.thread_send.start()
 
     def get_actions(self, exp_win):
         keys = self._handle_controller_presses(exp_win)
