@@ -143,6 +143,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
         self.cnter = 0
 
         self.sock_send = socket.socket(ADDR_FAMILY, SOCKET_TYPE)
+        self.sock_send.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock_send.bind(("", TCP_PORT_SEND))
         self.sock_send.listen(10)
         self.thread_send = None
