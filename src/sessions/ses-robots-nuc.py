@@ -14,7 +14,10 @@ def get_tasks(parsed):
 
     for run in range(3):
         task = robot_nuc.CozmoFirstTaskPsychoPyNUC(
-            max_duration=15,
+            nuc_addr = "10.30.6.17", 
+            tcp_port_send = 1025, 
+            tcp_port_recv = 1024,
+            max_duration=5,
             name=f"cozmo_run-{run+1:02d}",
             instruction="Explore the maze and find the target !",
         )

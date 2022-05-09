@@ -124,9 +124,9 @@ import socket
 import cv2
 import pickle
 
-NUC_ADDRESS = "10.30.6.17"
-TCP_PORT_RECV = 1024
-TCP_PORT_SEND = 1025
+#NUC_ADDRESS = "10.30.6.17"
+#TCP_PORT_RECV = 1024
+#TCP_PORT_SEND = 1025
 ADDR_FAMILY = socket.AF_INET
 SOCKET_TYPE = socket.SOCK_STREAM
 
@@ -135,22 +135,25 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
 
     DEFAULT_INSTRUCTION = "Let's explore the maze !"
 
-    def __init__(self, max_duration=5 * 60, *args, **kwargs):
+    def __init__(self, nuc_addr, tcp_port_send, tcp_port_recv, max_duration=5 * 60, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.max_duration = max_duration
         self.actions_list = []
         self.frame_timer = core.Clock()
         self.cnter = 0
 
+        self.nuc_addr = nuc_addr
+        self.tcp_port_send = tcp_port_send
+        self.tcp_port_recv = tcp_port_recv
+
         self.sock_send = socket.socket(ADDR_FAMILY, SOCKET_TYPE)
         self.sock_send.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock_send.bind(("", TCP_PORT_SEND))
+        self.sock_send.bind(("", self.tcp_port_send))
         self.sock_send.listen(10)
         self.thread_send = None
 
         self.sock_recv = None
         self.thread_recv = None
-
 
     def _instructions(self, exp_win, ctl_win):
         screen_text = visual.TextStim(
@@ -169,7 +172,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
 
     def _setup(self, exp_win):
         self.sock_recv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock_recv.connect((NUC_ADDRESS, TCP_PORT_RECV))
+        self.sock_recv.connect((self.nuc_addr, self.tcp_port_recv))
         self._get_obs(exp_win)
         self.sock_recv.close()
         self._first_frame = self.obs
@@ -248,7 +251,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
     def _get_obs(self, exp_win):
         # socket init
         self.sock_recv = socket.socket(ADDR_FAMILY, SOCKET_TYPE)
-        self.sock_recv.connect((NUC_ADDRESS, TCP_PORT_RECV))
+        self.sock_recv.connect((self.nuc_addr, self.tcp_port_recv))
         received = bytearray()
         while True:
             recvd_data = self.sock_recv.recv(230400)
@@ -262,9 +265,9 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
             self.obs = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             self.obs = Image.fromarray(
                 self.obs
-            )  # maybe a way to send/recv PIL images directly (TODO: try pickle.dumps(my PIL Image))
-            self.obs = self.obs.transpose(Image.FLIP_TOP_BOTTOM)
+            )  
         
+        self.obs = self.obs.transpose(Image.FLIP_TOP_BOTTOM) 
         self.sock_recv.close()
 
     def loop_fun(self, exp_win):
@@ -286,12 +289,9 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
         conn, _ = self.sock_send.accept()
         data = pickle.dumps(self.actions_list)
         conn.sendall(data)
-        #time.sleep(0.05)
         conn.close()
 
     def _send_actions_list(self):
-        #if self.thread_send is not None:
-        #    self.thread_send.join()
         if self.thread_send is None or not self.thread_send.is_alive():
             self.thread_send = threading.Thread(target=self.send_key_data)
             self.thread_send.start()
