@@ -14,7 +14,7 @@ import logging
 
 def get_tasks(parsed):
 
-    for run in range(3):
+    for run in range(2):
         task = robot_nuc.CozmoFirstTaskPsychoPyNUC(
             nuc_addr="10.30.6.17",
             tcp_port_send=1025,

@@ -155,10 +155,12 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
         self.sock_send.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock_send.bind(("", self.tcp_port_send))
         self.sock_send.listen(10)
-        self.thread_send = None
 
-        self.sock_recv = None
-        self.thread_recv = None
+        self.thread_send = threading.Thread(target=self.send_loop)
+        self.thread_send.start()
+
+        self.thread_recv = threading.Thread(target=self.recv_loop)
+        self.thread_recv.start()
 
     def _instructions(self, exp_win, ctl_win):
         screen_text = visual.TextStim(
@@ -176,10 +178,12 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
             yield ()
 
     def _setup(self, exp_win):
-        self.sock_recv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        """ self.sock_recv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock_recv.connect((self.nuc_addr, self.tcp_port_recv))
         self._get_obs(exp_win)
-        self.sock_recv.close()
+        self.sock_recv.close() """
+        while self.obs is None: # wait until a first frame is received
+            pass
         self._first_frame = self.obs
 
         super()._setup(exp_win)
@@ -229,9 +233,12 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
                 print("timeout !")
                 break
 
-        self.sock_send.close()
+        self.done = True
+        self.thread_send.join()
+        self.thread_recv.join()
+        self.sock_send.close()  # need to close it otherwise error 98 address already in use
 
-    def _stop(self, exp_win, ctl_win):
+    def _stop(self, exp_win, ctl_win):    
         exp_win.setColor((0, 0, 0), "rgb")
         for _ in range(2):
             yield True
@@ -253,60 +260,73 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
         self.game_vis_stim.image = self.obs
         self.game_vis_stim.draw(exp_win)
 
-    def _get_obs(self, exp_win):
-        # socket init
-        self.sock_recv = socket.socket(ADDR_FAMILY, SOCKET_TYPE)
-        self.sock_recv.connect((self.nuc_addr, self.tcp_port_recv))
-        received = bytearray()
-        while True:
-            recvd_data = self.sock_recv.recv(230400)
-            if not recvd_data:
-                break
-            else:
-                recvd_data = bytearray(recvd_data)
-                received += recvd_data
-        nparr = np.asarray(received, dtype="uint8")
-        if nparr.size != 0:
-            self.obs = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            self.obs = Image.fromarray(self.obs)
-
-        self.obs = self.obs.transpose(Image.FLIP_TOP_BOTTOM)
-        self.sock_recv.close()
-
     def loop_fun(self, exp_win):
         t = self.frame_timer.getTime()
         if t >= 1 / COZMO_FPS:
             self.frame_timer.reset()
-
-            if self.thread_recv is None or not self.thread_recv.is_alive():
-                self.thread_recv = threading.Thread(
-                    target=self._get_obs, args=(exp_win,)
-                )
-                self.thread_recv.start()
-
             self._render_graphics(exp_win)
 
             return True
 
         return False
 
-    def send_key_data(self):
-        conn, _ = self.sock_send.accept()
-        data = pickle.dumps(self.actions_list)
-        conn.sendall(data)
-        conn.close()
+    # RECEIVING SECTION
 
-    def _send_actions_list(self):
-        if self.thread_send is None or not self.thread_send.is_alive():
-            self.thread_send = threading.Thread(target=self.send_key_data)
-            self.thread_send.start()
+    def recv_loop(self):
+    
+        while not self.done:
+            self.sock_recv = socket.socket(ADDR_FAMILY, SOCKET_TYPE)
+
+            while True:
+                try:
+                    self.sock_recv.connect((self.nuc_addr, self.tcp_port_recv))
+                    break
+                except ConnectionRefusedError:
+                    pass
+            # receive data    
+            received = bytearray()
+            while True:
+                recvd_data = self.sock_recv.recv(230400)
+                if not recvd_data:
+                    break
+                else:
+                    recvd_data = bytearray(recvd_data)
+                    received += recvd_data
+            
+            nparr = np.asarray(received, dtype="uint8")
+            if nparr.size != 0:
+                obs_tmp = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                obs_tmp = Image.fromarray(obs_tmp)
+
+                self.obs = obs_tmp.transpose(Image.FLIP_TOP_BOTTOM)
+        
+            self.sock_recv.close()
+
+    # SENDING SECTION
+
+    def send_loop(self):
+        while not self.done:
+            conn, _ = self.sock_send.accept()
+            if self.actions_list is not None: 
+                data = pickle.dumps(self.actions_list)
+                conn.sendall(data)
+            conn.close()
+        
+        # avoid unwanted movement
+        conn, _ = self.sock_send.accept()    
+        data = pickle.dumps([])
+        conn.sendall(data)
+        conn.close()    
+        
+        
 
     def get_actions(self, exp_win):
         keys = self._handle_controller_presses(exp_win)
-        self.actions_list.clear()
+        actions = []
         key_action_dict_keys = list(KEY_ACTION_DICT.keys())
         for key in keys:
             if key in key_action_dict_keys:
-                self.actions_list.append(KEY_ACTION_DICT[key])
+                actions.append(KEY_ACTION_DICT[key])
+        self.actions_list = actions
 
-        self._send_actions_list()
+
