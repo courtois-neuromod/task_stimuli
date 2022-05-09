@@ -124,9 +124,6 @@ import socket
 import cv2
 import pickle
 
-#NUC_ADDRESS = "10.30.6.17"
-#TCP_PORT_RECV = 1024
-#TCP_PORT_SEND = 1025
 ADDR_FAMILY = socket.AF_INET
 SOCKET_TYPE = socket.SOCK_STREAM
 
@@ -135,7 +132,15 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
 
     DEFAULT_INSTRUCTION = "Let's explore the maze !"
 
-    def __init__(self, nuc_addr, tcp_port_send, tcp_port_recv, max_duration=5 * 60, *args, **kwargs):
+    def __init__(
+        self,
+        nuc_addr,
+        tcp_port_send,
+        tcp_port_recv,
+        max_duration=5 * 60,
+        *args,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self.max_duration = max_duration
         self.actions_list = []
@@ -225,7 +230,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
                 break
 
         self.sock_send.close()
-    
+
     def _stop(self, exp_win, ctl_win):
         exp_win.setColor((0, 0, 0), "rgb")
         for _ in range(2):
@@ -263,22 +268,22 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTaskNUC):
         nparr = np.asarray(received, dtype="uint8")
         if nparr.size != 0:
             self.obs = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            self.obs = Image.fromarray(
-                self.obs
-            )  
-        
-        self.obs = self.obs.transpose(Image.FLIP_TOP_BOTTOM) 
+            self.obs = Image.fromarray(self.obs)
+
+        self.obs = self.obs.transpose(Image.FLIP_TOP_BOTTOM)
         self.sock_recv.close()
 
     def loop_fun(self, exp_win):
         t = self.frame_timer.getTime()
         if t >= 1 / COZMO_FPS:
             self.frame_timer.reset()
-            
+
             if self.thread_recv is None or not self.thread_recv.is_alive():
-                self.thread_recv = threading.Thread(target=self._get_obs, args=(exp_win,))
+                self.thread_recv = threading.Thread(
+                    target=self._get_obs, args=(exp_win,)
+                )
                 self.thread_recv.start()
-            
+
             self._render_graphics(exp_win)
 
             return True
