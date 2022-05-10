@@ -25,12 +25,6 @@ class CozmoBaseTaskNUC(Task):
         **kwargs,
     ):
         """CozmoTask class constructor.
-
-        Args:
-            #controller (cozmo_api.controller.Controller): Controller object for interacting with Cozmo.
-            img_path (Optional[str], optional): path of the image to display on Cozmo's screen. Defaults to None.
-            sound_path (Optional[str], optional): path of the sound to play in Cozmo's speaker. Defaults to None.
-            capture_path (Optional[str], optional): path for picture saving. Defaults to None.
         """
         super().__init__(**kwargs)
         self.obs = None

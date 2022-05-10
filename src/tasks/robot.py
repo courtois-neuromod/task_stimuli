@@ -1,9 +1,6 @@
 import time
-from turtle import fillcolor
 from typing import Optional
 import copy
-import numpy as np
-import skimage
 
 from psychopy import visual, core, logging, event
 from .task_base import Task
@@ -67,11 +64,13 @@ class CozmoBaseTask(Task):
 
     def _setup(self, exp_win):
         super()._setup(exp_win) 
+
         self.controller.reset()
         if self.controller._mode == "default":
             while self.controller.last_frame is None:   #wait for frame to be captured (busy waiting ok ? no time constraint in setup ?)
                 pass
             self._first_frame = self.controller.last_frame
+            
             min_ratio = min(
                 exp_win.size[0] / self._first_frame.size[0],
                 exp_win.size[1] / self._first_frame.size[1],
@@ -133,25 +132,6 @@ class CozmoBaseTask(Task):
 
     def _stop_cozmo(self):
         self.controller.stop()
-
-    """def run_cozmo(self, *args, **kwargs):
-        """"""Main task loop."""""""
-        _done = False
-
-        self._reset()
-        while not _done:
-            time.sleep(0.01)
-            _done = self.get_actions(*args, **kwargs)
-            if _done:
-                break
-            elif self.actions_is_new():
-                self.actions_old = copy.deepcopy(self.actions)
-                self._step()
-            flip = self.loop_fun(*args, **kwargs)   #TODO: the "yield" thing does not fit with the original pygame-based task organization (in task_stimuli_emulator)
-            if flip: yield True  # True if new frame, False otherwise
-
-        self._stop_cozmo()"""
-
 
 # ----------------------------------------------------------------- #
 #                   Cozmo First Task (PsychoPy)                     #
@@ -344,8 +324,3 @@ class CozmoFirstTaskPsychoPy(CozmoBaseTask):
                 self.actions_list.append(KEY_ACTION_DICT[key])
         self._update_dict()
         return False
-
-    """def run_cozmo(self, exp_win):#useless
-        # flush all keys to avoid unwanted actions
-        self._clear_key_buffers()
-        yield from super().run_cozmo(exp_win)"""
