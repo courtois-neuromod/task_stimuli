@@ -221,7 +221,7 @@ class CozmoFirstTaskPsychoPy(CozmoBaseTask):
                 self.actions_old = copy.deepcopy(self.actions)
                 self._step()
             
-            flip = self.loop_fun(*args, **kwargs)   #TODO: the "yield" thing does not fit with the original pygame-based task organization (in task_stimuli_emulator)
+            flip = self.loop_fun(*args, **kwargs)
             if flip: 
                 yield True  # True if new frame, False otherwise
             
@@ -374,6 +374,7 @@ from PIL import Image
 import socket
 import cv2
 import pickle
+import signal 
 
 ADDR_FAMILY = socket.AF_INET
 SOCKET_TYPE = socket.SOCK_STREAM
@@ -406,6 +407,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self.sock_send.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock_send.bind(("", self.tcp_port_send))
         self.sock_send.listen(10)
+        self.sock_send.settimeout(1.5)  # in seconds, to avoid being stuck
 
         self.thread_send = threading.Thread(target=self.send_loop)
         self.thread_send.start()
@@ -466,7 +468,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self._reset()
         self._clear_key_buffers()
 
-        while True:
+        while not self.done:
             time.sleep(0.01)
             self.get_actions(exp_win)
 
@@ -478,17 +480,15 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                 self.max_duration and self.task_timer.getTime() > self.max_duration
             ):  # stop if we are above the planned duration
                 print("timeout !")
-                break
+                self.done = True
 
+    def _stop(self, exp_win, ctl_win):
         self.done = True
         self.thread_send.join()
         self.thread_recv.join()
-        self.sock_send.close()  # need to close it otherwise error 98 address already in use
-
-    def _stop(self, exp_win, ctl_win):    
-        exp_win.setColor((0, 0, 0), "rgb")
-        for _ in range(2):
-            yield True
+        self.sock_send.close()  # need to close it otherwise error 98 address already in use  
+       
+        yield True
 
     def _save(self):
         pass
