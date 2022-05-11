@@ -8,6 +8,7 @@ except:
 
 from ..tasks import robot_unified, task_base
 
+
 def get_tasks(parsed):
 
     for run in range(2):
@@ -25,5 +26,5 @@ def get_tasks(parsed):
             print("Task completed.")
 
         yield task_base.Pause(
-                text="You can take a short break while we reset Cozmo.",
-            )
+            text="You can take a short break while we reset Cozmo.",
+        )

@@ -25,8 +25,7 @@ class CozmoBaseTask(Task):
         *args,
         **kwargs,
     ):
-        """CozmoTask class constructor.
-        """
+        """CozmoTask class constructor."""
         super().__init__(**kwargs)
         self.obs = None
         self.done = False
@@ -63,21 +62,34 @@ class CozmoBaseTask(Task):
         """
         raise NotImplementedError("Must override get_actions")
 
+
 # ----------------------------------------------------------------- #
 #                   Cozmo First Task (PsychoPy)                     #
 # ----------------------------------------------------------------- #
 
 # KEY_SET = ["x", "a", "b", "y", "u", "d", "l", "r", "p", "s", "space",]
-KEY_SET = ["x", "_", "b", "_", "u", "d", "l", "r", "_", "_", "_",]
+KEY_SET = [
+    "x",
+    "_",
+    "b",
+    "_",
+    "u",
+    "d",
+    "l",
+    "r",
+    "_",
+    "_",
+    "_",
+]
 
 KEY_ACTION_DICT = {
-    KEY_SET[4] : "forward",
-    KEY_SET[5] : "backward",
-    KEY_SET[6] : "left",
-    KEY_SET[7] : "right" ,
-    KEY_SET[0] : "head_up",
-    KEY_SET[2] : "head_down"
-    }
+    KEY_SET[4]: "forward",
+    KEY_SET[5]: "backward",
+    KEY_SET[6]: "left",
+    KEY_SET[7]: "right",
+    KEY_SET[0]: "head_up",
+    KEY_SET[2]: "head_down",
+}
 
 ACTION_ACTU_DICT = {
     "forward": "drive",
@@ -86,12 +98,13 @@ ACTION_ACTU_DICT = {
     "right": "drive",
     "head_up": "head",
     "head_down": "head",
-    }
+}
 
 COZMO_FPS = 15.0
 
 _keyPressBuffer = []
 _keyReleaseBuffer = []
+
 
 def _onPygletKeyPress(symbol, modifier):
     if modifier:
@@ -108,18 +121,25 @@ def _onPygletKeyRelease(symbol, modifier):
     key = pyglet.window.key.symbol_string(symbol).lower().lstrip("_").lstrip("NUM_")
     _keyReleaseBuffer.append((key, keyTime))
 
+
 from PIL import ImageOps, Image
 from cozmo_api.controller import Controller
+
 
 class CozmoFirstTaskPsychoPy(CozmoBaseTask):
 
     DEFAULT_INSTRUCTION = "Let's explore the maze !"
 
-    def __init__(self, max_duration=5 * 60, 
+    def __init__(
+        self,
+        max_duration=5 * 60,
         controller: Controller = None,
-        img_path: Optional[str] = None, 
+        img_path: Optional[str] = None,
         sound_path: Optional[str] = None,
-        capture_path: Optional[str] = None,*args, **kwargs):
+        capture_path: Optional[str] = None,
+        *args,
+        **kwargs,
+    ):
 
         super().__init__(*args, **kwargs)
         self.controller = controller
@@ -145,7 +165,7 @@ class CozmoFirstTaskPsychoPy(CozmoBaseTask):
         self.sound_path = sound_path
         self.capture_path = capture_path
 
-        self.max_duration=max_duration
+        self.max_duration = max_duration
         self.actions_list = []
         self.frame_timer = core.Clock()
         self.cnter = 0
@@ -158,7 +178,7 @@ class CozmoFirstTaskPsychoPy(CozmoBaseTask):
             color="red",
             wrapWidth=1.2,
         )
-        
+
         for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
             screen_text.draw(exp_win)
             if ctl_win:
@@ -168,12 +188,12 @@ class CozmoFirstTaskPsychoPy(CozmoBaseTask):
     def _setup(self, exp_win):
         self.controller.reset()
         if self.controller._mode == "default":
-            while self.controller.last_frame is None:   #wait for frame to be captured 
+            while self.controller.last_frame is None:  # wait for frame to be captured
                 pass
             self._first_frame = self.controller.last_frame
 
         super()._setup(exp_win)
-        
+
     def _set_key_handler(self, exp_win):
         exp_win.winHandle.on_key_press = _onPygletKeyPress
         exp_win.winHandle.on_key_release = _onPygletKeyRelease
@@ -183,7 +203,9 @@ class CozmoFirstTaskPsychoPy(CozmoBaseTask):
         # deactivate custom keys handling
         exp_win.winHandle.on_key_press = event._onPygletKey
 
-    def _handle_controller_presses(self, exp_win):  # k[0] : actual key, k[1] : time stamp
+    def _handle_controller_presses(
+        self, exp_win
+    ):  # k[0] : actual key, k[1] : time stamp
         exp_win.winHandle.dispatch_events()
         global _keyPressBuffer, _keyReleaseBuffer
 
@@ -203,7 +225,7 @@ class CozmoFirstTaskPsychoPy(CozmoBaseTask):
         Returns:
             bool: True if the updated actions instance dictionary is different from the previous actions dictionary sent for controlling Cozmo. False otherwise.
         """
-    
+
         return self.actions != self.actions_old
 
     def _run(self, exp_win, *args, **kwargs):
@@ -213,18 +235,18 @@ class CozmoFirstTaskPsychoPy(CozmoBaseTask):
         self._clear_key_buffers()
         while not _done:
             time.sleep(0.01)
-            #breakpoint()
+            # breakpoint()
             _done = self.get_actions(exp_win)
             if _done:
                 break
             elif self.actions_is_new():
                 self.actions_old = copy.deepcopy(self.actions)
                 self._step()
-            
+
             flip = self.loop_fun(*args, **kwargs)
-            if flip: 
+            if flip:
                 yield True  # True if new frame, False otherwise
-            
+
             if (
                 self.max_duration and self.task_timer.getTime() > self.max_duration
             ):  # stop if we are above the planned duration
@@ -266,7 +288,7 @@ class CozmoFirstTaskPsychoPy(CozmoBaseTask):
         _keyReleaseBuffer.clear()
         _keyPressBuffer.clear()
 
-    def _reset(self): 
+    def _reset(self):
         """Initializes/Resets display, sound and image capture handles."""
         self.controller.reset(
             img_path=self.img_path,
@@ -293,14 +315,14 @@ class CozmoFirstTaskPsychoPy(CozmoBaseTask):
         self.controller.stop()
 
     def _render_graphics(self, exp_win):
-        #self.obs = ImageOps.grayscale(self.obs)
+        # self.obs = ImageOps.grayscale(self.obs)
         self.obs = self.obs.transpose(Image.FLIP_TOP_BOTTOM)
-        self.game_vis_stim.image = self.obs 
+        self.game_vis_stim.image = self.obs
         self.game_vis_stim.draw(exp_win)
 
     def loop_fun(self, exp_win):
-        t = self.frame_timer.getTime()    
-        if  t >= 1 / COZMO_FPS: 
+        t = self.frame_timer.getTime()
+        if t >= 1 / COZMO_FPS:
             self.frame_timer.reset()
             self.info = self.controller.infos
             self.obs = self.controller.last_frame
@@ -319,6 +341,7 @@ class CozmoFirstTaskPsychoPy(CozmoBaseTask):
                 self.actions_list.append(KEY_ACTION_DICT[key])
         self._update_dict()
         return False
+
 
 # ----------------------------------------------------------------- #
 #                     Cozmo NUC Task (PsychoPy)                     #
@@ -374,7 +397,7 @@ from PIL import Image
 import socket
 import cv2
 import pickle
-import signal 
+import signal
 
 ADDR_FAMILY = socket.AF_INET
 SOCKET_TYPE = socket.SOCK_STREAM
@@ -431,7 +454,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
             yield ()
 
     def _setup(self, exp_win):
-        while self.obs is None: # wait until a first frame is received
+        while self.obs is None:  # wait until a first frame is received
             pass
         self._first_frame = self.obs
 
@@ -486,8 +509,8 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self.done = True
         self.thread_send.join()
         self.thread_recv.join()
-        self.sock_send.close()  # need to close it otherwise error 98 address already in use  
-       
+        self.sock_send.close()  # need to close it otherwise error 98 address already in use
+
         yield True
 
     def _save(self):
@@ -520,7 +543,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
     # RECEIVING SECTION
 
     def recv_loop(self):
-    
+
         while not self.done:
             self.sock_recv = socket.socket(ADDR_FAMILY, SOCKET_TYPE)
 
@@ -530,7 +553,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                     break
                 except ConnectionRefusedError:
                     pass
-            # receive data    
+            # receive data
             received = bytearray()
             while True:
                 recvd_data = self.sock_recv.recv(230400)
@@ -539,14 +562,14 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                 else:
                     recvd_data = bytearray(recvd_data)
                     received += recvd_data
-            
+
             nparr = np.asarray(received, dtype="uint8")
             if nparr.size != 0:
                 obs_tmp = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
                 obs_tmp = Image.fromarray(obs_tmp)
 
                 self.obs = obs_tmp.transpose(Image.FLIP_TOP_BOTTOM)
-        
+
             self.sock_recv.close()
 
     # SENDING SECTION
@@ -554,17 +577,17 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
     def send_loop(self):
         while not self.done:
             conn, _ = self.sock_send.accept()
-            if self.actions_list is not None: 
+            if self.actions_list is not None:
                 data = pickle.dumps(self.actions_list)
                 conn.sendall(data)
             conn.close()
-        
+
         # avoid unwanted movement
-        conn, _ = self.sock_send.accept()    
+        conn, _ = self.sock_send.accept()
         data = pickle.dumps([])
         conn.sendall(data)
-        conn.close()    
-        
+        conn.close()
+
     def get_actions(self, exp_win):
         keys = self._handle_controller_presses(exp_win)
         actions = []
