@@ -1,13 +1,13 @@
 # Don't display 'Hello from the Pygame Community!'
 from asyncio import subprocess
 from os import environ
-import sys
+
 try:
     environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 except:
     pass
 
-from ..tasks import robot, task_base
+from ..tasks import robot_unified, task_base
 import logging
 from cozmo_api.controller import Controller
 
@@ -18,8 +18,7 @@ LOCAL_TCP_PORT = 6667
 SERVER_TCP_PORT = 6667
 NET = "labo"
 
-from getpass import getpass
-from subprocess import Popen, PIPE, call
+from subprocess import Popen, PIPE
 
 def ssh_tunnel():
     # the public key of the client must be configured on the server prior to the following (see https://www.digitalocean.com/community/tutorials/how-to-set-up-ssh-keys-on-ubuntu-1804)
@@ -33,26 +32,21 @@ def ssh_tunnel():
     print("-- ssh tunnel configured --\n")
     
 def get_tasks(parsed):
-    """ if parsed.test:
-        mode = "test"
-    else:
-        mode = "default" 
-    """
-
+   
     #ssh_tunnel()    
 
     with Controller.make(
         test=False,
-        robot_addr=('127.0.0.1', 5551),    #only in modified version of PyCozmo
+        #robot_addr=('127.0.0.1', 5551),    #only in modified version of PyCozmo
         enable_procedural_face=False,
         log_level=logging.INFO,
         protocol_log_level=logging.INFO,
         robot_log_level=logging.INFO,
     ) as ctrlr:
         for run in range(3):
-            task = robot.CozmoFirstTaskPsychoPy(
+            task = robot_unified.CozmoFirstTaskPsychoPy(
                 controller=ctrlr,
-                max_duration=15,
+                max_duration=5,
                 name=f"cozmo_run-{run+1:02d}",
                 instruction="Explore the maze and find the target !",
             )
@@ -61,7 +55,7 @@ def get_tasks(parsed):
             if task._task_completed:
                 print("Task completed.")
             
-            """yield task_base.Pause(
+            yield task_base.Pause(
                 text="You can take a short break while we reset Cozmo.",
-            )"""
+            )
 

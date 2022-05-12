@@ -122,7 +122,7 @@ def _onPygletKeyRelease(symbol, modifier):
     _keyReleaseBuffer.append((key, keyTime))
 
 
-from PIL import ImageOps, Image
+from PIL import Image
 from cozmo_api.controller import Controller
 
 
@@ -187,7 +187,7 @@ class CozmoFirstTaskPsychoPy(CozmoBaseTask):
 
     def _setup(self, exp_win):
         self.controller.reset()
-        if self.controller._mode == "default":
+        if self.controller._test is False:
             while self.controller.last_frame is None:  # wait for frame to be captured
                 pass
             self._first_frame = self.controller.last_frame
@@ -326,7 +326,7 @@ class CozmoFirstTaskPsychoPy(CozmoBaseTask):
             self.frame_timer.reset()
             self.info = self.controller.infos
             self.obs = self.controller.last_frame
-            if self.controller._mode != "test":
+            if self.controller._test is False:
                 self._render_graphics(exp_win)
                 return True
         return False
@@ -397,7 +397,6 @@ from PIL import Image
 import socket
 import cv2
 import pickle
-import signal
 
 ADDR_FAMILY = socket.AF_INET
 SOCKET_TYPE = socket.SOCK_STREAM
