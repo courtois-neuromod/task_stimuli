@@ -397,6 +397,8 @@ from PIL import Image
 import socket
 import cv2
 import pickle
+from psychopy import sound
+import os
 
 ADDR_FAMILY = socket.AF_INET
 SOCKET_TYPE = socket.SOCK_STREAM
@@ -420,6 +422,8 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self.actions_list = []
         self.frame_timer = core.Clock()
         self.cnter = 0
+
+        self.music = None
 
         self.nuc_addr = nuc_addr
         self.tcp_port_send = tcp_port_send
@@ -453,6 +457,10 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
             yield ()
 
     def _setup(self, exp_win):
+        theme = 'daft-punk-robot-rock.wav'
+        path = os.path.join(os.getcwd(), 'src', 'tasks', theme)
+        self.music = sound.Sound(path)
+
         while self.obs is None:  # wait until a first frame is received
             pass
         self._first_frame = self.obs
@@ -490,6 +498,8 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self._reset()
         self._clear_key_buffers()
 
+        self.music.play()
+
         while not self.done:
             time.sleep(0.01)
             self.get_actions(exp_win)
@@ -505,6 +515,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                 self.done = True
 
     def _stop(self, exp_win, ctl_win):
+        self.music.stop()
         self.done = True
         self.thread_send.join()
         self.thread_recv.join()
