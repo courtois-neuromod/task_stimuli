@@ -29,7 +29,7 @@ def generate_design_file(subject):
     out_fname = os.path.join(
         'data',
         'videogames',
-        'mario-snes',
+        'mariostars',
         "designs",
         f"sub-{subject}_design.tsv",
     )
@@ -93,7 +93,7 @@ def get_tasks(parsed):
             scenarii=[scenario]*len(next_levels),
             repeat_scenario=True,
             max_duration=10 * 60,  # if when level completed or dead we exceed that time in secs, stop the task
-            name=f"task-mariosnes_run-{run+1:02d}",
+            name=f"task-mariostars_run-{run+1:02d}",
             instruction="playing Super Mario All Stars \n\n Please fixate the cross in between repetitions!",
             post_run_ratings = [(k, q, 7) for k, q in enumerate(other_ratings+flow_ratings)],
             use_eyetracking=True,
