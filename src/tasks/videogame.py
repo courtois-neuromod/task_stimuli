@@ -199,7 +199,7 @@ class VideoGameBase(Task):
         )
         fixation.draw(exp_win)
         yield True
-        utils.wait_until(self.task_timer, self.task_timer.getTime()+self._fixation_cross_duration - .9* self._retraceInterval)
+        utils.wait_until(self.task_timer, self.task_timer.getTime()+self._fixation_duration - .9* self._retraceInterval)
         yield True
 
 class VideoGame(VideoGameBase):
@@ -633,14 +633,14 @@ class VideoGame(VideoGameBase):
 class VideoGameMultiLevel(VideoGame):
     def __init__(
         self, *args,
-        fixation_cross_duration=0,
+        fixation_duration=0,
         show_instruction_between_repetitions=True,
         **kwargs):
 
         self._state_names = kwargs.pop("state_names")
         self._scenarii = kwargs.pop("scenarii")
         self._repeat_scenario_multilevel = kwargs.get("repeat_scenario", False)
-        self._fixation_cross_duration = fixation_cross_duration
+        self._fixation_duration = fixation_duration
         self._show_instruction_between_repetitions = show_instruction_between_repetitions
 
         kwargs["repeat_scenario"] = False
@@ -675,7 +675,7 @@ class VideoGameMultiLevel(VideoGame):
                     if self._show_instruction_between_repetitions:
                         yield from self._instructions(exp_win, ctl_win)
 
-                if self._fixation_cross_duration > 0:
+                if self._fixation_duration > 0:
                     self.progress_bar.set_description("fixation")
                     yield from self.fixation_cross(exp_win)
                 self.progress_bar.set_description(level)
