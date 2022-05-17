@@ -441,6 +441,9 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self.thread_recv = threading.Thread(target=self.recv_loop)
         self.thread_recv.start()
 
+        self.frame_timestamp_pycozmo = np.empty(0)
+        self.frame_timestamp_psychopy = np.empty(0)
+
     def _instructions(self, exp_win, ctl_win):
         screen_text = visual.TextStim(
             exp_win,
@@ -461,9 +464,9 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         path = os.path.join(os.getcwd(), 'src', 'tasks', theme)
         self.music = sound.Sound(path)
 
-        while self.obs is None:  # wait until a first frame is received
+        while self.obs[1] is None:  # wait until a first frame is received
             pass
-        self._first_frame = self.obs
+        self._first_frame = self.obs[1]
 
         super()._setup(exp_win)
 
@@ -515,6 +518,10 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                 self.done = True
 
     def _stop(self, exp_win, ctl_win):
+        # save timestamp arrays
+        np.savetxt(f"ts_pycozmo_nametochange.csv", self.frame_timestamp_pycozmo, delimiter=',', fmt=['%d', '%d'])
+        np.savetxt(f"ts_psychopy_nametochange.csv", self.frame_timestamp_psychopy, delimiter=',', fmt=['%d', '%f'])
+
         self.music.stop()
         self.done = True
         self.thread_send.join()
@@ -536,15 +543,18 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
     def _reset(self):
         self.frame_timer.reset()
 
-    def _render_graphics(self, exp_win):
-        self.game_vis_stim.image = self.obs
+    def _render_graphics(self, exp_win, timestamp):
+        obs = self.obs
+        self.game_vis_stim.image = obs[1]
+        id = obs[0]
+        self.frame_timestamp_psychopy = np.append(self.frame_timestamp_psychopy, (id, timestamp))   #TODO: ok to take t as timestamp ?
         self.game_vis_stim.draw(exp_win)
 
     def loop_fun(self, exp_win):
         t = self.frame_timer.getTime()
         if t >= 1 / COZMO_FPS:
             self.frame_timer.reset()
-            self._render_graphics(exp_win)
+            self._render_graphics(exp_win, t)
 
             return True
 
@@ -553,7 +563,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
     # RECEIVING SECTION
 
     def recv_loop(self):
-
+        id = 0
         while not self.done:
             self.sock_recv = socket.socket(ADDR_FAMILY, SOCKET_TYPE)
 
@@ -563,6 +573,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                     break
                 except ConnectionRefusedError:
                     pass
+
             # receive data
             received = bytearray()
             while True:
@@ -570,15 +581,19 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                 if not recvd_data:
                     break
                 else:
-                    recvd_data = bytearray(recvd_data)
+                    #recvd_data = bytearray(recvd_data)
                     received += recvd_data
+            if len(received) > 0: 
+                timestamp = int.from_bytes(received[:3], byteorder='big')    # timestamp sent as 3 first bytes
+                self.frame_timestamp_pycozmo = np.append(self.frame_timestamp_pycozmo, (id, timestamp))
 
-            nparr = np.asarray(received, dtype="uint8")
-            if nparr.size != 0:
-                obs_tmp = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-                obs_tmp = Image.fromarray(obs_tmp)
+                nparr = np.asarray(received[3:], dtype="uint8")
+                if nparr.size != 0:
+                    obs_tmp = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                    obs_tmp = Image.fromarray(obs_tmp)
 
-                self.obs = obs_tmp.transpose(Image.FLIP_TOP_BOTTOM)
+                    self.obs = (id, obs_tmp.transpose(Image.FLIP_TOP_BOTTOM))
+                id += 1
 
             self.sock_recv.close()
 
