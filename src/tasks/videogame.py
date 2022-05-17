@@ -124,7 +124,7 @@ class VideoGameBase(Task):
         repeat_scenario=True,
         scaling=1,
         inttype=retro.data.Integrations.CUSTOM_ONLY,
-        bg_color=(-1, -1, -1),
+        bg_color=(0,0,0),
         *args,
         **kwargs
     ):
@@ -191,13 +191,10 @@ class VideoGameBase(Task):
         self.emulator.close()
 
     def fixation_cross(self, exp_win):
-        fixation = visual.TextStim(
-            exp_win,
-            text='+',
-            alignText="center",
-            color="white" if sum(self._bg_color) < 0 else "black"
-        )
-        fixation.draw(exp_win)
+        from ..shared.eyetracking import fixation_dot
+        fixation = fixation_dot(exp_win)
+        for stim in fixation:
+            stim.draw(exp_win)
         yield True
         utils.wait_until(self.task_timer, self.task_timer.getTime()+self._fixation_duration - .9* self._retraceInterval)
         yield True
@@ -377,9 +374,9 @@ class VideoGame(VideoGameBase):
 
         self._set_key_handler(exp_win)
         self._nlevels = 0
-        exp_win.setColor(self._bg_color, colorSpace='rgb')
+        exp_win.setColor(self._bg_color, colorSpace='rgb255')
         if ctl_win:
-            ctl_win.setColor(self._bg_color, colorSpace='rgb')
+            ctl_win.setColor(self._bg_color, colorSpace='rgb255')
 
         while True:
             self._nlevels += 1
@@ -397,9 +394,9 @@ class VideoGame(VideoGameBase):
                 break
             self.emulator.reset()
 
-        exp_win.setColor([0] * 3, colorSpace='rgb')
+        exp_win.setColor([0] * 3, colorSpace='rgb255')
         if ctl_win:
-            ctl_win.setColor([0] * 3, colorSpace='rgb')
+            ctl_win.setColor([0] * 3, colorSpace='rgb255')
 
     def _run_ratings(self, exp_win, ctl_win):
         for question, n_pts in self.post_level_ratings:
@@ -414,10 +411,9 @@ class VideoGame(VideoGameBase):
             yield True
 
     def _questionnaire(self, exp_win, ctl_win, questions):
-
-        exp_win.setColor([0] * 3, colorSpace='rgb')
         if questions is None:
             return
+        exp_win.setColor([0] * 3, colorSpace='rgb')
         lines = []
         bullets = []
         responses = []
@@ -654,9 +650,9 @@ class VideoGameMultiLevel(VideoGame):
         self._set_key_handler(exp_win)
         self._nlevels = 0
 
-        exp_win.setColor(self._bg_color, colorSpace='rgb')
+        exp_win.setColor(self._bg_color, colorSpace='rgb255')
         if ctl_win:
-            ctl_win.setColor(self._bg_color, colorSpace='rgb')
+            ctl_win.setColor(self._bg_color, colorSpace='rgb255')
         while True:
             for level, scenario in zip(self._state_names, self._scenarii):
                 self._nlevels += 1
