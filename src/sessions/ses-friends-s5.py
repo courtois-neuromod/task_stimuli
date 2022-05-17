@@ -4,7 +4,7 @@ TASKS = []
 
 for episode in range(1, 23):
     segments = "abcd" if episode in [23] else "ab"
-    for segment in segments
+    for segment in segments:
         TASKS.append(
             video.SingleVideo(
                 "data/videos/friends/s5/friends_s05e%02d%s.mkv" % (episode, segment),
@@ -13,6 +13,6 @@ for episode in range(1, 23):
                 use_eyetracking=True,
             )
         )
-        TASKS.append(task_base.Pause(
-            text="You can take a short break.",
-        ))
+
+    
+
