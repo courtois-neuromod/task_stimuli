@@ -14,7 +14,7 @@ all_levels = [(world, level)
     if (world,level) not in exclude_list]
 n_repetitions = 50 # very high number, will never reach that point
 
-MARIOSTARS_KEYSET = ["b", "y", "_", "_", "u", "d", "l", "r", "_", "_", "_", "_"]
+MARIOSTARS_KEYSET = ["b", "y", "1", "2", "u", "d", "l", "r", "3", "4", "5", "6"]
 
 def generate_design_file(subject):
 
@@ -64,7 +64,7 @@ def get_tasks(parsed):
     design_path = os.path.join(
         'data',
         'videogames',
-        'mario-snes',
+        'mariostars',
         "designs",
         f"{bids_sub}_design.tsv",
     )
@@ -97,10 +97,10 @@ def get_tasks(parsed):
             instruction="playing Super Mario All Stars \n\n Please fixate the cross in between repetitions!",
             post_run_ratings = [(k, q, 7) for k, q in enumerate(other_ratings+flow_ratings)],
             use_eyetracking=True,
-            fixation_cross_duration=5,
+            fixation_duration=5,
             show_instruction_between_repetitions=False,
             bg_color=[-.5] * 3,
-            key_rset=MARIOSTARS_KEYSET, #set to match mario 1 jump/speed mapping
+            key_set=MARIOSTARS_KEYSET, #set to match mario 1 jump/speed mapping
         )
 
         yield task
