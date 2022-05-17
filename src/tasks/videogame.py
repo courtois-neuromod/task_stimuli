@@ -15,7 +15,7 @@ DEFAULT_GAME_NAME = "ShinobiIIIReturnOfTheNinjaMaster-Genesis"
 # KEY_SET = 'zx__udlry___'
 # KEY_SET = ['a','b','c','d','up','down','left','right','x','y','z','k']
 # KEY_SET = ['x','z','_','_','up','down','left','right','c','_','_','_']
-KEY_SET = ["y", "a", "_", "_", "u", "d", "l", "r", "b", "_", "_", "_"]
+DEFAULT_KEY_SET = ["y", "a", "_", "_", "u", "d", "l", "r", "b", "_", "_", "_"]
 
 # KEY_SET = '0123456789'
 
@@ -211,6 +211,7 @@ class VideoGame(VideoGameBase):
         max_duration=0,
         post_level_ratings=None,
         post_run_ratings=None,
+        key_set=DEFAULT_KEY_SET,
         *args,
         **kwargs
     ):
@@ -220,6 +221,7 @@ class VideoGame(VideoGameBase):
         self.duration = max_duration
         self.post_level_ratings = post_level_ratings
         self.post_run_ratings = post_run_ratings
+        self.key_set = key_set
         self._completed = False
 
     def _instructions(self, exp_win, ctl_win):
@@ -332,7 +334,7 @@ class VideoGame(VideoGameBase):
             level_step += 1
             _nextFrameT += self._frameInterval
             self._handle_controller_presses(exp_win)
-            keys = [k in self.pressed_keys for k in KEY_SET]
+            keys = [k in self.pressed_keys for k in self.key_set]
             _obs, _rew, _done, self._game_info = self.emulator.step(keys)
             total_reward += _rew
             if _rew > 0:

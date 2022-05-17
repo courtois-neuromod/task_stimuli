@@ -14,6 +14,8 @@ all_levels = [(world, level)
     if (world,level) not in exclude_list]
 n_repetitions = 50 # very high number, will never reach that point
 
+MARIOSTARS_KEYSET = ["b", "y", "_", "_", "u", "d", "l", "r", "_", "_", "_", "_"]
+
 def generate_design_file(subject):
 
     seed = int(
@@ -98,6 +100,7 @@ def get_tasks(parsed):
             fixation_cross_duration=5,
             show_instruction_between_repetitions=False,
             bg_color=[-.5] * 3,
+            key_rset=MARIOSTARS_KEYSET, #set to match mario 1 jump/speed mapping
         )
 
         yield task
