@@ -19,6 +19,6 @@
 	url = git@github.com:courtois-neuromod/floc.stimuli.git
 	datalad-id = e730eb7b-0a99-453c-a861-2e21d6c72062
 [submodule "data/videogames/mario-snes"]
-	path = data/videogames/mario-snes
+	path = data/videogames/mariostars
 	url = ./data/videogames/mario-snes
 	datalad-id = 13404e51-6050-4ed4-902b-f8bc42cded1f
