@@ -555,3 +555,16 @@ def read_pl_data(fname):
     with open(fname, "rb") as fh:
         for data in msgpack.Unpacker(fh, raw=False, use_list=False):
             yield (data)
+
+
+def fixation_dot(win, **kwargs):
+    radius = kwargs.pop('radius', 30)
+    kwargs = {
+        'lineColor': (1,-.5,-.5),
+        'fillColor': (1,1,1),
+        'units': 'pix',
+        **kwargs
+    }
+    circle = visual.Circle(win, lineWidth=radius*.4, **kwargs, radius=radius)
+    dot = visual.Circle(win, units=kwargs["units"], radius=radius*.2, lineWidth=0, fillColor=(-1,-1,-1))
+    return (circle, dot)
