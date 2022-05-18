@@ -11,11 +11,13 @@ FADE_TO_GREY_DURATION = 2
 class SingleVideo(Task):
 
     DEFAULT_INSTRUCTION = """You are about to watch a video.
-Please keep your eyes open."""
+Please keep your eyes open,
+and fixate the dot at the beginning and end of the segment."""
 
     def __init__(self, filepath, *args, **kwargs):
         self._aspect_ratio = kwargs.pop("aspect_ratio", None)
         self._scaling = kwargs.pop("scaling", None)
+        self._fixations_duration = kwargs.pop("fixations_duration", 0)
         super().__init__(**kwargs)
         self.filepath = filepath
         if not os.path.exists(self.filepath):
@@ -43,7 +45,11 @@ Please keep your eyes open."""
 
     def _setup(self, exp_win):
 
-        self.movie_stim = visual.MovieStim2(exp_win, self.filepath, units="pixels")
+        if self._fixations_duration > 0:
+            from ..shared.eyetracking import fixation_dot
+            self.fixation_dot = fixation_dot(exp_win)
+
+        self.movie_stim = visual.MovieStim2(exp_win, self.filepath, units="pix")
         # print(self.movie_stim._audioStream.__class__)
         aspect_ratio = (
             self._aspect_ratio or self.movie_stim.size[0] / self.movie_stim.size[1]
@@ -77,6 +83,12 @@ Please keep your eyes open."""
             self.movie_stim.draw(exp_win)
             if ctl_win:
                 self.movie_stim.draw(ctl_win)
+            if self._fixations_duration > 0:
+                next_frame_time = self.movie_stim.getCurrentFrameTime()
+                if next_frame_time <= self._fixations_duration or \
+                    next_frame_time >= self.movie_stim.duration-self._fixations_duration:
+                    for stim in self.fixation_dot:
+                        stim.draw(exp_win)
             yield False
 
     def _stop(self, exp_win, ctl_win):

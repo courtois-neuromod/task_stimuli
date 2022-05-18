@@ -130,7 +130,7 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
             circle_marker = visual.Circle(
                 exp_win,
                 edges=64,
-                units="pixels",
+                units="pix",
                 lineColor=None,
                 fillColor=self.marker_fill_color,
                 autoLog=False,
@@ -533,7 +533,7 @@ class GazeDrawer:
         self._gazepoint_stim = visual.Circle(
             self.win,
             radius=30,
-            units="pixels",
+            units="pix",
             lineColor=(1, 0, 0),
             fillColor=None,
             lineWidth=2,
@@ -555,3 +555,16 @@ def read_pl_data(fname):
     with open(fname, "rb") as fh:
         for data in msgpack.Unpacker(fh, raw=False, use_list=False):
             yield (data)
+
+
+def fixation_dot(win, **kwargs):
+    radius = kwargs.pop('radius', 30)
+    kwargs = {
+        'lineColor': (1,-.5,-.5),
+        'fillColor': (1,1,1),
+        'units': 'pix',
+        **kwargs
+    }
+    circle = visual.Circle(win, lineWidth=radius*.4, **kwargs, radius=radius)
+    dot = visual.Circle(win, units=kwargs["units"], radius=radius*.2, lineWidth=0, fillColor=(-1,-1,-1))
+    return (circle, dot)
