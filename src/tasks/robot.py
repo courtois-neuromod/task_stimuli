@@ -553,6 +553,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
 
     def _render_graphics(self, exp_win, timestamp):
         obs = self.obs
+
         self.game_vis_stim.image = obs[1]
         id = obs[0]
         self.frame_timestamp_psychopy.append((id, timestamp))   #TODO: ok to take t as timestamp ?
@@ -595,10 +596,14 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                 timestamp = int.from_bytes(received[:3], byteorder='big')    # timestamp sent as 3 first bytes
                 self.frame_timestamp_pycozmo.append((id, timestamp))
 
-                nparr = np.asarray(received[3:], dtype="uint8")
-                if nparr.size != 0:
-                    obs_tmp = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                img_raw = np.asarray(received[3:], dtype="uint8")
+                is_color_image = img_raw[0] != 0
+
+                if img_raw.size != 0:
+                    obs_tmp = cv2.imdecode(img_raw, cv2.IMREAD_COLOR)
                     obs_tmp = Image.fromarray(obs_tmp)
+                    if is_color_image:
+                        obs_tmp = obs_tmp.resize((320, 240))
 
                     self.obs = (id, obs_tmp.transpose(Image.FLIP_TOP_BOTTOM))
                 id += 1
