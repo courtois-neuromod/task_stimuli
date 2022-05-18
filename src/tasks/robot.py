@@ -396,6 +396,7 @@ def _onPygletKeyRelease(symbol, modifier):
 from PIL import Image
 import socket
 import cv2
+import pandas as pd
 import pickle
 from psychopy import sound
 import os
@@ -441,8 +442,8 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self.thread_recv = threading.Thread(target=self.recv_loop)
         self.thread_recv.start()
 
-        self.frame_timestamp_pycozmo = np.empty(0)
-        self.frame_timestamp_psychopy = np.empty(0)
+        self.frame_timestamp_pycozmo = []
+        self.frame_timestamp_psychopy = []
 
     def _instructions(self, exp_win, ctl_win):
         screen_text = visual.TextStim(
@@ -518,14 +519,21 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                 self.done = True
 
     def _stop(self, exp_win, ctl_win):
-        # save timestamp arrays
-        np.savetxt(f"ts_pycozmo_nametochange.csv", self.frame_timestamp_pycozmo, delimiter=',', fmt=['%d', '%d'])
-        np.savetxt(f"ts_psychopy_nametochange.csv", self.frame_timestamp_psychopy, delimiter=',', fmt=['%d', '%f'])
-
         self.music.stop()
         self.done = True
-        self.thread_send.join()
         self.thread_recv.join()
+
+        # padding of shorter list (psychopy timestamps)
+        diff = len(self.frame_timestamp_pycozmo) - len(self.frame_timestamp_psychopy)
+        padding = diff * [(None, None)]
+        self.frame_timestamp_psychopy = padding + self.frame_timestamp_psychopy
+        # save timestamp arrays
+        self.frame_timestamp_pycozmo = np.asarray(self.frame_timestamp_pycozmo)
+        self.frame_timestamp_psychopy = np.asarray(self.frame_timestamp_psychopy)
+        df = pd.DataFrame({"PyCozmo idx" : self.frame_timestamp_pycozmo[:, 0], "PyCozmo timestamp" : self.frame_timestamp_pycozmo[:, 1], "PsychoPy idx" : self.frame_timestamp_psychopy[:, 0], "PsychoPy timestamp" : self.frame_timestamp_psychopy[:, 1]})
+        df.to_csv("timestamps.csv", index=False)
+
+        self.thread_send.join()
         self.sock_send.close()  # need to close it otherwise error 98 address already in use
 
         yield True
@@ -547,7 +555,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         obs = self.obs
         self.game_vis_stim.image = obs[1]
         id = obs[0]
-        self.frame_timestamp_psychopy = np.append(self.frame_timestamp_psychopy, (id, timestamp))   #TODO: ok to take t as timestamp ?
+        self.frame_timestamp_psychopy.append((id, timestamp))   #TODO: ok to take t as timestamp ?
         self.game_vis_stim.draw(exp_win)
 
     def loop_fun(self, exp_win):
@@ -585,7 +593,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                     received += recvd_data
             if len(received) > 0: 
                 timestamp = int.from_bytes(received[:3], byteorder='big')    # timestamp sent as 3 first bytes
-                self.frame_timestamp_pycozmo = np.append(self.frame_timestamp_pycozmo, (id, timestamp))
+                self.frame_timestamp_pycozmo.append((id, timestamp))
 
                 nparr = np.asarray(received[3:], dtype="uint8")
                 if nparr.size != 0:
