@@ -1,7 +1,7 @@
 import os, sys, time
 
-import psychopy
-psychopy.prefs.hardware['audioLib'] = ['PTB', 'sounddevice', 'pyo','pygame']
+#import psychopy
+#psychopy.prefs.hardware['audioLib'] = ['PTB', 'sounddevice', 'pyo','pygame'] # for local dev (laptop)
 from psychopy import visual, core, data, logging
 from .task_base import Task
 
@@ -94,7 +94,7 @@ and fixate the dot whenever it appears in the segment."""
         exp_win.logOnFlip(
             level=logging.EXP, msg="video: task starting at %f" % time.time()
         )
-        fixation_on = False
+        fixation_on = False  # "switch" to determine fixation onset/offset time for logs
         self.movie_stim.play()
         while self.movie_stim.status != visual.FINISHED:
             #self.black_bgd.draw(exp_win)
@@ -103,6 +103,11 @@ and fixate the dot whenever it appears in the segment."""
 
             if ctl_win:
                 self.movie_stim.draw(ctl_win)
+            '''
+            Added: option to either have fixations @ start/end of run,
+            or to have them at regular intervals through the run (w logged time)
+            For within-run fixations, endstart_fixduration must be set to 0.0 (from ses-friends-s6.py file)
+            '''
             if self._endstart_fixduration > 0:
                 if next_frame_time <= self._endstart_fixduration or \
                     next_frame_time >= self.movie_stim.duration-self._endstart_fixduration:
@@ -110,22 +115,30 @@ and fixate the dot whenever it appears in the segment."""
                         stim.draw(exp_win)
             elif self._inmovie_fixations:
                 if (next_frame_time % self._infix_freq < self._infix_dur):
+                    '''
+                    grey_bgd color matches mean intensity of Friends frames, but adding black full-screen frame
+                    after fixation introduces weird glitches. Black fix background godd enough?
+                    '''
                     self.black_bgd.draw(exp_win)
                     #self.grey_bgd.draw(exp_win)
                     for stim in self.fixation_dot:
                         stim.draw(exp_win)
                     if not fixation_on:
                         exp_win.logOnFlip(
-                            level=logging.EXP, msg="fixation onset at %f" % time.time()
+                            level=logging.EXP, msg="fixation onset at %f" % time.time() # log next_frame_time ?
                         )
                         fixation_on = True
                 elif fixation_on:
+                    #self.black_bgd.draw(exp_win) # creates strange glitches... due to my set up?
                     exp_win.logOnFlip(
-                        level=logging.EXP, msg="fixation offset at %f" % time.time()
+                        level=logging.EXP, msg="fixation offset at %f" % time.time() # log next_frame_time ?
                     )
                     fixation_on = False
 
             '''
+            Alternative: have both/either/none start/end fixations and within-run fixations;
+            Heavier to run, could cause a lag?
+
             if self._endstart_fixduration > 0 or self._inmovie_fixations:
                 next_frame_time = self.movie_stim.getCurrentFrameTime()
                 if next_frame_time <= self._endstart_fixduration or \
