@@ -1,5 +1,7 @@
 import os, sys, time
 
+import psychopy
+psychopy.prefs.hardware['audioLib'] = ['PTB', 'sounddevice', 'pyo','pygame']
 from psychopy import visual, core, data, logging
 from .task_base import Task
 
@@ -14,11 +16,19 @@ class SingleVideo(Task):
 Please keep your eyes open,
 and fixate the dot at the beginning and end of the segment."""
 
+    FIXTASK_INSTRUCTION = """You are about to watch a video.
+Please keep your eyes open,
+and fixate the dot whenever it appears in the segment."""
+
     def __init__(self, filepath, *args, **kwargs):
         self._aspect_ratio = kwargs.pop("aspect_ratio", None)
         self._scaling = kwargs.pop("scaling", None)
-        self._fixations_duration = kwargs.pop("fixations_duration", 0)
-        super().__init__(**kwargs)
+        self._endstart_fixduration = kwargs.pop("endstart_fixduration", 0)
+        self._inmovie_fixations = kwargs.pop("inmovie_fixations", False)
+        self._infix_freq = kwargs.pop("infix_freq", 20)
+        self._infix_dur = kwargs.pop("infix_dur", 1.5)
+        instruct = self.__class__.FIXTASK_INSTRUCTION if self._inmovie_fixations else self.__class__.DEFAULT_INSTRUCTION
+        super().__init__(instruction=instruct, **kwargs)
         self.filepath = filepath
         if not os.path.exists(self.filepath):
             raise ValueError("File %s does not exists" % self.filepath)
@@ -45,9 +55,15 @@ and fixate the dot at the beginning and end of the segment."""
 
     def _setup(self, exp_win):
 
-        if self._fixations_duration > 0:
+        if self._endstart_fixduration > 0 or self._inmovie_fixations:
             from ..shared.eyetracking import fixation_dot
             self.fixation_dot = fixation_dot(exp_win)
+
+        if self._inmovie_fixations:
+            self.grey_bgd = visual.Rect(exp_win, size=exp_win.size, lineWidth=0,
+                                        colorSpace='rgb', fillColor=(-.58, -.58, -.58)) # (54, 54, 54) on 0-255 scale
+            self.black_bgd = visual.Rect(exp_win, size=exp_win.size, lineWidth=0,
+                                        colorSpace='rgb', fillColor=(-1, -1, -1))
 
         self.movie_stim = visual.MovieStim2(exp_win, self.filepath, units="pix")
         # print(self.movie_stim._audioStream.__class__)
@@ -78,17 +94,65 @@ and fixate the dot at the beginning and end of the segment."""
         exp_win.logOnFlip(
             level=logging.EXP, msg="video: task starting at %f" % time.time()
         )
+        fixation_on = False
         self.movie_stim.play()
         while self.movie_stim.status != visual.FINISHED:
+            #self.black_bgd.draw(exp_win)
             self.movie_stim.draw(exp_win)
+            next_frame_time = self.movie_stim.getCurrentFrameTime()
+
             if ctl_win:
                 self.movie_stim.draw(ctl_win)
-            if self._fixations_duration > 0:
-                next_frame_time = self.movie_stim.getCurrentFrameTime()
-                if next_frame_time <= self._fixations_duration or \
-                    next_frame_time >= self.movie_stim.duration-self._fixations_duration:
+            if self._endstart_fixduration > 0:
+                if next_frame_time <= self._endstart_fixduration or \
+                    next_frame_time >= self.movie_stim.duration-self._endstart_fixduration:
                     for stim in self.fixation_dot:
                         stim.draw(exp_win)
+            elif self._inmovie_fixations:
+                if (next_frame_time % self._infix_freq < self._infix_dur):
+                    self.black_bgd.draw(exp_win)
+                    #self.grey_bgd.draw(exp_win)
+                    for stim in self.fixation_dot:
+                        stim.draw(exp_win)
+                    if not fixation_on:
+                        exp_win.logOnFlip(
+                            level=logging.EXP, msg="fixation onset at %f" % time.time()
+                        )
+                        fixation_on = True
+                elif fixation_on:
+                    exp_win.logOnFlip(
+                        level=logging.EXP, msg="fixation offset at %f" % time.time()
+                    )
+                    fixation_on = False
+
+            '''
+            if self._endstart_fixduration > 0 or self._inmovie_fixations:
+                next_frame_time = self.movie_stim.getCurrentFrameTime()
+                if next_frame_time <= self._endstart_fixduration or \
+                    next_frame_time >= self.movie_stim.duration-self._endstart_fixduration:
+                    for stim in self.fixation_dot:
+                        stim.draw(exp_win)
+                    if not fixation_on:
+                        exp_win.logOnFlip(
+                            level=logging.EXP, msg="fixation onset at %s" % next_frame_time
+                        )
+                        fixation_on = True
+                elif self._inmovie_fixations and (next_frame_time % self._infix_freq < self._infix_dur):
+                    self.black_bgd.draw(exp_win)
+                    #self.grey_bgd.draw(exp_win)
+                    for stim in self.fixation_dot:
+                        stim.draw(exp_win)
+                    if not fixation_on:
+                        exp_win.logOnFlip(
+                            level=logging.EXP, msg="fixation onset at %s" % next_frame_time
+                        )
+                        fixation_on = True
+                elif fixation_on:
+                    exp_win.logOnFlip(
+                        level=logging.EXP, msg="fixation offset at %s" % next_frame_time
+                    )
+                    fixation_on = False
+            '''
             yield False
 
     def _stop(self, exp_win, ctl_win):
