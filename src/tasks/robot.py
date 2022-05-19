@@ -197,7 +197,7 @@ class CozmoFirstTaskPsychoPy(CozmoBaseTask):
     def _set_key_handler(self, exp_win):
         exp_win.winHandle.on_key_press = _onPygletKeyPress
         exp_win.winHandle.on_key_release = _onPygletKeyRelease
-        self.pressed_keys = set()
+        self.pressed_keys = dict()
 
     def _unset_key_handler(self, exp_win):
         # deactivate custom keys handling
@@ -210,13 +210,22 @@ class CozmoFirstTaskPsychoPy(CozmoBaseTask):
         global _keyPressBuffer, _keyReleaseBuffer
 
         for k in _keyReleaseBuffer:
-            self.pressed_keys.discard(k[0])
+            self._log_event({'trial_type':'button_press', 
+                            'onset':self.pressed_keys[k[0]],
+                            'offset':k[1], 
+                            'duration':k[1]-self.pressed_keys[k[0]],
+                            'key':k[0]})
+            del self.pressed_keys[k[0]]
             logging.data(f"Keyrelease: {k[0]}", t=k[1])
+
         _keyReleaseBuffer.clear()
+        
         for k in _keyPressBuffer:
-            self.pressed_keys.add(k[0])
+            self.pressed_keys[k[0]] = k[1]  # key : onset
         self._new_key_pressed = _keyPressBuffer[:]  # copy
+        
         _keyPressBuffer.clear()
+        
         return self.pressed_keys
 
     def actions_is_new(self):
@@ -246,6 +255,7 @@ class CozmoFirstTaskPsychoPy(CozmoBaseTask):
             flip = self.loop_fun(*args, **kwargs)
             if flip:
                 yield True  # True if new frame, False otherwise
+
 
             if (
                 self.max_duration and self.task_timer.getTime() > self.max_duration
@@ -396,14 +406,16 @@ def _onPygletKeyRelease(symbol, modifier):
 from PIL import Image
 import socket
 import cv2
-import pandas as pd
 import pickle
+import av 
+
 from psychopy import sound
+from fractions import Fraction
+
 import os
 
 ADDR_FAMILY = socket.AF_INET
 SOCKET_TYPE = socket.SOCK_STREAM
-
 
 class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
 
@@ -444,6 +456,11 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
 
         self.frame_timestamp_pycozmo = []
         self.frame_timestamp_psychopy = []
+        self.curr_obs_id  = None
+
+        self.container = av.open(f'cozmo_feed_{self.name}.mp4', 'w')
+        self.stream = self.container.add_stream(codec_name='mjpeg', rate=15)
+        self.stream.pix_fmt = "yuvj422p"
 
     def _instructions(self, exp_win, ctl_win):
         screen_text = visual.TextStim(
@@ -454,7 +471,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
             wrapWidth=1.2,
         )
 
-        for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
+        for _ in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
             screen_text.draw(exp_win)
             if ctl_win:
                 screen_text.draw(ctl_win)
@@ -474,7 +491,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
     def _set_key_handler(self, exp_win):
         exp_win.winHandle.on_key_press = _onPygletKeyPress
         exp_win.winHandle.on_key_release = _onPygletKeyRelease
-        self.pressed_keys = set()
+        self.pressed_keys = dict()
 
     def _unset_key_handler(self, exp_win):
         # deactivate custom keys handling
@@ -482,20 +499,29 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
 
     def _handle_controller_presses(
         self, exp_win
-    ):  # k[0] : actual key, k[1] : time stamp
+    ):  # k[0] : key, k[1] : time stamp
+        
         exp_win.winHandle.dispatch_events()
         global _keyPressBuffer, _keyReleaseBuffer
 
         for k in _keyReleaseBuffer:
-            self.pressed_keys.discard(k[0])
+            self._log_event({'trial_type':'button_press', 
+                            'onset':self.pressed_keys[k[0]],
+                            'offset':k[1], 
+                            'duration':k[1]-self.pressed_keys[k[0]],
+                            'key':k[0]})
+
+            del self.pressed_keys[k[0]]
+
             logging.data(f"Keyrelease: {k[0]}", t=k[1])
         _keyReleaseBuffer.clear()
+
         for k in _keyPressBuffer:
-            self.pressed_keys.add(k[0])
+            self.pressed_keys[k[0]] = k[1]  # key : onset
+
         self._new_key_pressed = _keyPressBuffer[:]  # copy
         _keyPressBuffer.clear()
-        return self.pressed_keys
-
+        
     def _run(self, exp_win, *args, **kwargs):
 
         self._set_key_handler(exp_win)
@@ -511,6 +537,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
             flip = self.loop_fun(*args, **kwargs)
             if flip:
                 yield True  # True if new frame, False otherwise
+                self.frame_timestamp_psychopy.append((self.curr_obs_id, self._exp_win_last_flip_time))   
 
             if (
                 self.max_duration and self.task_timer.getTime() > self.max_duration
@@ -518,29 +545,24 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                 print("timeout !")
                 self.done = True
 
+
     def _stop(self, exp_win, ctl_win):
+       
+        self.container.close()
         self.music.stop()
         self.done = True
         self.thread_recv.join()
 
-        # padding of shorter list (psychopy timestamps)
-        diff = len(self.frame_timestamp_pycozmo) - len(self.frame_timestamp_psychopy)
-        padding = diff * [(None, None)]
-        self.frame_timestamp_psychopy = padding + self.frame_timestamp_psychopy
         # save timestamp arrays
         self.frame_timestamp_pycozmo = np.asarray(self.frame_timestamp_pycozmo)
         self.frame_timestamp_psychopy = np.asarray(self.frame_timestamp_psychopy)
-        df = pd.DataFrame({"PyCozmo idx" : self.frame_timestamp_pycozmo[:, 0], "PyCozmo timestamp" : self.frame_timestamp_pycozmo[:, 1], "PsychoPy idx" : self.frame_timestamp_psychopy[:, 0], "PsychoPy timestamp" : self.frame_timestamp_psychopy[:, 1]})
-        df.to_csv("timestamps.csv", index=False)
-
+        np.save(f"timestamp_pycozmo_{self.name}", self.frame_timestamp_pycozmo)
+        np.save(f"timestamp_psychopy_{self.name}", self.frame_timestamp_psychopy)
+        
         self.thread_send.join()
         self.sock_send.close()  # need to close it otherwise error 98 address already in use
 
         yield True
-
-    def _save(self):
-        pass
-        return False
 
     def _clear_key_buffers(self):
         global _keyPressBuffer, _keyReleaseBuffer
@@ -551,19 +573,18 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
     def _reset(self):
         self.frame_timer.reset()
 
-    def _render_graphics(self, exp_win, timestamp):
+    def _render_graphics(self, exp_win):
         obs = self.obs
-
+        self.curr_obs_id = obs[0]
         self.game_vis_stim.image = obs[1]
-        id = obs[0]
-        self.frame_timestamp_psychopy.append((id, timestamp))   #TODO: ok to take t as timestamp ?
         self.game_vis_stim.draw(exp_win)
 
     def loop_fun(self, exp_win):
         t = self.frame_timer.getTime()
         if t >= 1 / COZMO_FPS:
+            #self.frame_timestamp_incr += t
             self.frame_timer.reset()
-            self._render_graphics(exp_win, t)
+            self._render_graphics(exp_win)
 
             return True
 
@@ -590,11 +611,17 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                 if not recvd_data:
                     break
                 else:
-                    #recvd_data = bytearray(recvd_data)
                     received += recvd_data
+
             if len(received) > 0: 
                 timestamp = int.from_bytes(received[:3], byteorder='big')    # timestamp sent as 3 first bytes
                 self.frame_timestamp_pycozmo.append((id, timestamp))
+                
+                packet = av.packet.Packet(received[3:])
+                packet.stream = self.stream
+                packet.time_base = Fraction(1, int(COZMO_FPS))
+                packet.pts = id
+                self.container.mux(packet)
 
                 img_raw = np.asarray(received[3:], dtype="uint8")
                 is_color_image = img_raw[0] != 0
@@ -627,10 +654,10 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         conn.close()
 
     def get_actions(self, exp_win):
-        keys = self._handle_controller_presses(exp_win)
+        self._handle_controller_presses(exp_win) 
         actions = []
         key_action_dict_keys = list(KEY_ACTION_DICT.keys())
-        for key in keys:
+        for key in self.pressed_keys.keys():
             if key in key_action_dict_keys:
                 actions.append(KEY_ACTION_DICT[key])
         self.actions_list = actions
