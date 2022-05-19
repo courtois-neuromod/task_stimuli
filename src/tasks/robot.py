@@ -210,22 +210,26 @@ class CozmoFirstTaskPsychoPy(CozmoBaseTask):
         global _keyPressBuffer, _keyReleaseBuffer
 
         for k in _keyReleaseBuffer:
-            self._log_event({'trial_type':'button_press', 
-                            'onset':self.pressed_keys[k[0]],
-                            'offset':k[1], 
-                            'duration':k[1]-self.pressed_keys[k[0]],
-                            'key':k[0]})
+            self._log_event(
+                {
+                    "trial_type": "button_press",
+                    "onset": self.pressed_keys[k[0]],
+                    "offset": k[1],
+                    "duration": k[1] - self.pressed_keys[k[0]],
+                    "key": k[0],
+                }
+            )
             del self.pressed_keys[k[0]]
             logging.data(f"Keyrelease: {k[0]}", t=k[1])
 
         _keyReleaseBuffer.clear()
-        
+
         for k in _keyPressBuffer:
             self.pressed_keys[k[0]] = k[1]  # key : onset
         self._new_key_pressed = _keyPressBuffer[:]  # copy
-        
+
         _keyPressBuffer.clear()
-        
+
         return self.pressed_keys
 
     def actions_is_new(self):
@@ -255,7 +259,6 @@ class CozmoFirstTaskPsychoPy(CozmoBaseTask):
             flip = self.loop_fun(*args, **kwargs)
             if flip:
                 yield True  # True if new frame, False otherwise
-
 
             if (
                 self.max_duration and self.task_timer.getTime() > self.max_duration
@@ -407,7 +410,7 @@ from PIL import Image
 import socket
 import cv2
 import pickle
-import av 
+import av
 
 from psychopy import sound
 from fractions import Fraction
@@ -416,6 +419,7 @@ import os
 
 ADDR_FAMILY = socket.AF_INET
 SOCKET_TYPE = socket.SOCK_STREAM
+
 
 class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
 
@@ -456,10 +460,10 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
 
         self.frame_timestamp_pycozmo = []
         self.frame_timestamp_psychopy = []
-        self.curr_obs_id  = None
+        self.curr_obs_id = None
 
-        self.container = av.open(f'cozmo_feed_{self.name}.mp4', 'w')
-        self.stream = self.container.add_stream(codec_name='mjpeg', rate=15)
+        self.container = av.open(f"cozmo_feed_{self.name}.mp4", "w")
+        self.stream = self.container.add_stream(codec_name="mjpeg", rate=15)
         self.stream.pix_fmt = "yuvj422p"
 
     def _instructions(self, exp_win, ctl_win):
@@ -478,8 +482,8 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
             yield ()
 
     def _setup(self, exp_win):
-        theme = 'daft-punk-robot-rock.wav'
-        path = os.path.join(os.getcwd(), 'src', 'tasks', theme)
+        theme = "daft-punk-robot-rock.wav"
+        path = os.path.join(os.getcwd(), "src", "tasks", theme)
         self.music = sound.Sound(path)
 
         while self.obs[1] is None:  # wait until a first frame is received
@@ -497,19 +501,21 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         # deactivate custom keys handling
         exp_win.winHandle.on_key_press = event._onPygletKey
 
-    def _handle_controller_presses(
-        self, exp_win
-    ):  # k[0] : key, k[1] : time stamp
-        
+    def _handle_controller_presses(self, exp_win):  # k[0] : key, k[1] : time stamp
+
         exp_win.winHandle.dispatch_events()
         global _keyPressBuffer, _keyReleaseBuffer
 
         for k in _keyReleaseBuffer:
-            self._log_event({'trial_type':'button_press', 
-                            'onset':self.pressed_keys[k[0]],
-                            'offset':k[1], 
-                            'duration':k[1]-self.pressed_keys[k[0]],
-                            'key':k[0]})
+            self._log_event(
+                {
+                    "trial_type": "button_press",
+                    "onset": self.pressed_keys[k[0]],
+                    "offset": k[1],
+                    "duration": k[1] - self.pressed_keys[k[0]],
+                    "key": k[0],
+                }
+            )
 
             del self.pressed_keys[k[0]]
 
@@ -521,7 +527,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
 
         self._new_key_pressed = _keyPressBuffer[:]  # copy
         _keyPressBuffer.clear()
-        
+
     def _run(self, exp_win, *args, **kwargs):
 
         self._set_key_handler(exp_win)
@@ -537,7 +543,9 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
             flip = self.loop_fun(*args, **kwargs)
             if flip:
                 yield True  # True if new frame, False otherwise
-                self.frame_timestamp_psychopy.append((self.curr_obs_id, self._exp_win_last_flip_time))   
+                self.frame_timestamp_psychopy.append(
+                    (self.curr_obs_id, self._exp_win_last_flip_time)
+                )
 
             if (
                 self.max_duration and self.task_timer.getTime() > self.max_duration
@@ -545,9 +553,8 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                 print("timeout !")
                 self.done = True
 
-
     def _stop(self, exp_win, ctl_win):
-       
+
         self.container.close()
         self.music.stop()
         self.done = True
@@ -558,7 +565,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self.frame_timestamp_psychopy = np.asarray(self.frame_timestamp_psychopy)
         np.save(f"timestamp_pycozmo_{self.name}", self.frame_timestamp_pycozmo)
         np.save(f"timestamp_psychopy_{self.name}", self.frame_timestamp_psychopy)
-        
+
         self.thread_send.join()
         self.sock_send.close()  # need to close it otherwise error 98 address already in use
 
@@ -612,10 +619,12 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                 else:
                     received += recvd_data
 
-            if len(received) > 0: 
-                timestamp = int.from_bytes(received[:3], byteorder='big')    # timestamp sent as 3 first bytes
+            if len(received) > 0:
+                timestamp = int.from_bytes(
+                    received[:3], byteorder="big"
+                )  # timestamp sent as 3 first bytes
                 self.frame_timestamp_pycozmo.append((id, timestamp))
-                
+
                 packet = av.packet.Packet(received[3:])
                 packet.stream = self.stream
                 packet.time_base = Fraction(1, int(COZMO_FPS))
@@ -653,7 +662,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         conn.close()
 
     def get_actions(self, exp_win):
-        self._handle_controller_presses(exp_win) 
+        self._handle_controller_presses(exp_win)
         actions = []
         key_action_dict_keys = list(KEY_ACTION_DICT.keys())
         for key in self.pressed_keys.keys():
