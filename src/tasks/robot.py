@@ -582,7 +582,6 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
     def loop_fun(self, exp_win):
         t = self.frame_timer.getTime()
         if t >= 1 / COZMO_FPS:
-            #self.frame_timestamp_incr += t
             self.frame_timer.reset()
             self._render_graphics(exp_win)
 
