@@ -413,7 +413,7 @@ import cv2
 import pickle
 import av
 
-from psychopy import sound
+#from psychopy import sound
 from fractions import Fraction
 
 import os
@@ -441,7 +441,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self.frame_timer = core.Clock()
         self.cnter = 0
 
-        self.music = None
+        #self.music = None
 
         self.nuc_addr = nuc_addr
         self.tcp_port_send = tcp_port_send
@@ -485,11 +485,11 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
             yield ()
 
     def _setup(self, exp_win):
-        theme = "daft-punk-robot-rock.wav"
-        path = os.path.join(os.getcwd(), "src", "tasks", theme)
-        self.music = sound.Sound(path)
+        #theme = "daft-punk-robot-rock.wav"
+        #path = os.path.join(os.getcwd(), "src", "tasks", theme)
+        #self.music = sound.Sound(path)
 
-        while self.obs[1] is None:  # wait until a first frame is received
+        while self.obs is None:  # wait until a first frame is received
             pass
         self._first_frame = self.obs[1]
 
@@ -537,7 +537,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self._reset()
         self._clear_key_buffers()
 
-        self.music.play()
+        #self.music.play()
 
         while not self.done:
             time.sleep(0.01)
@@ -559,7 +559,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
     def _stop(self, exp_win, ctl_win):
 
         self.container.close()
-        self.music.stop()
+        #self.music.stop()
         self.done = True
         self.thread_recv.join()
 
@@ -614,7 +614,9 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                     self.sock_recv.connect((self.nuc_addr, self.tcp_port_recv))
                     break
                 except ConnectionRefusedError:
-                    pass
+                    continue
+                except ConnectionAbortedError:
+                    continue
 
             # receive data
             received = bytearray()
@@ -657,11 +659,17 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
 
     def send_loop(self):
         while not self.done:
-            conn, _ = self.sock_send.accept()
+            try:
+                conn, _ = self.sock_send.accept()
+            except socket.timeout:
+                continue
+
             self.lock_send.acquire()
-            if self.actions_list is not None:
-                data = pickle.dumps(self.actions_list)
-                self.lock_send.release()
+            actions = self.actions_list
+            self.lock_send.release()
+
+            if actions is not None:
+                data = pickle.dumps(actions)
                 conn.sendall(data)
             conn.close()
 
