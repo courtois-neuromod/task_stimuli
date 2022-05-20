@@ -1,3 +1,4 @@
+from concurrent.futures import thread
 import threading
 import time
 from typing import Optional
@@ -454,9 +455,11 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
 
         self.thread_send = threading.Thread(target=self.send_loop)
         self.thread_send.start()
+        self.lock_send = threading.Lock()
 
         self.thread_recv = threading.Thread(target=self.recv_loop)
         self.thread_recv.start()
+        self.lock_recv = threading.Lock()
 
         self.frame_timestamp_pycozmo = []
         self.frame_timestamp_psychopy = []
@@ -581,7 +584,10 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self.frame_timer.reset()
 
     def _render_graphics(self, exp_win):
+        self.lock_recv.acquire()
         obs = self.obs
+        self.lock_recv.release()
+        
         self.curr_obs_id = obs[0]
         self.game_vis_stim.image = obs[1]
         self.game_vis_stim.draw(exp_win)
@@ -640,7 +646,9 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                     if is_color_image:
                         obs_tmp = obs_tmp.resize((320, 240))
 
+                    self.lock_recv.acquire()
                     self.obs = (id, obs_tmp.transpose(Image.FLIP_TOP_BOTTOM))
+                    self.lock_recv.release()
                 id += 1
 
             self.sock_recv.close()
@@ -650,8 +658,10 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
     def send_loop(self):
         while not self.done:
             conn, _ = self.sock_send.accept()
+            self.lock_send.acquire()
             if self.actions_list is not None:
                 data = pickle.dumps(self.actions_list)
+                self.lock_send.release()
                 conn.sendall(data)
             conn.close()
 
@@ -668,4 +678,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         for key in self.pressed_keys.keys():
             if key in key_action_dict_keys:
                 actions.append(KEY_ACTION_DICT[key])
+        
+        self.lock_send.acquire()
         self.actions_list = actions
+        self.lock_send.release()
