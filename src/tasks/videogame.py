@@ -196,6 +196,7 @@ class VideoGameBase(Task):
         for stim in fixation:
             stim.draw(exp_win)
         yield True
+        self._log_event({'trial_type':'fixation_dot', 'duration': self._fixation_duration}, clock='flip')
         utils.wait_until(self.task_timer, self.task_timer.getTime()+self._fixation_duration - .9* self._retraceInterval)
         yield True
 
