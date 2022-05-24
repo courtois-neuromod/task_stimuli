@@ -420,7 +420,7 @@ import os
 
 ADDR_FAMILY = socket.AF_INET
 SOCKET_TYPE = socket.SOCK_STREAM
-
+BUFF_SIZE = 65536
 
 class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
 
@@ -604,28 +604,28 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
 
     # RECEIVING SECTION
 
-    def recv_loop(self):
+    def recv_connect(self):
+        self.sock_recv = socket.socket(ADDR_FAMILY, SOCKET_TYPE)
+        while True:
+            try:
+                self.sock_recv.connect((self.nuc_addr, self.tcp_port_recv))
+                break
+            except ConnectionRefusedError:
+                continue
+            except ConnectionAbortedError:
+                continue
+
+    def recv_loop(self):    #TODO: maybe fifo queue needed
+        self.recv_connect()
         id = 0
         while not self.done:
-            self.sock_recv = socket.socket(ADDR_FAMILY, SOCKET_TYPE)
-
-            while True:
-                try:
-                    self.sock_recv.connect((self.nuc_addr, self.tcp_port_recv))
-                    break
-                except ConnectionRefusedError:
-                    continue
-                except ConnectionAbortedError:
-                    continue
-
             # receive data
             received = bytearray()
             while True:
-                recvd_data = self.sock_recv.recv(230400)
-                if not recvd_data:
+                recvd_data = self.sock_recv.recv(BUFF_SIZE)
+                received += recvd_data
+                if recvd_data[-2:] == b'\xff\xd9':  
                     break
-                else:
-                    received += recvd_data
 
             if len(received) > 0:
                 timestamp = int.from_bytes(
@@ -653,7 +653,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                     self.lock_recv.release()
                 id += 1
 
-            self.sock_recv.close()
+        self.sock_recv.close()  #TODO: use context managers and/or generators to deal with closing
 
     # SENDING SECTION
 
