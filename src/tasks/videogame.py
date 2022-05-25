@@ -691,6 +691,9 @@ class VideoGameMultiLevel(VideoGame):
                     break
             if time_exceeded or not self._repeat_scenario_multilevel:
                 break
+        if self._fixation_duration > 0:
+            self.progress_bar.set_description("fixation")
+            yield from self.fixation_cross(exp_win)
         yield from self._questionnaire(
             exp_win, ctl_win, self.post_run_ratings
         )
