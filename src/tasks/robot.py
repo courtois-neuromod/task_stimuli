@@ -413,7 +413,7 @@ import cv2
 import pickle
 import av
 
-#from psychopy import sound
+# from psychopy import sound
 from fractions import Fraction
 
 import os
@@ -421,6 +421,7 @@ import os
 ADDR_FAMILY = socket.AF_INET
 SOCKET_TYPE = socket.SOCK_STREAM
 BUFF_SIZE = 65536
+
 
 class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
 
@@ -441,7 +442,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self.frame_timer = core.Clock()
         self.cnter = 0
 
-        #self.music = None
+        # self.music = None
 
         self.nuc_addr = nuc_addr
         self.tcp_port_send = tcp_port_send
@@ -485,9 +486,9 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
             yield ()
 
     def _setup(self, exp_win):
-        #theme = "daft-punk-robot-rock.wav"
-        #path = os.path.join(os.getcwd(), "src", "tasks", theme)
-        #self.music = sound.Sound(path)
+        # theme = "daft-punk-robot-rock.wav"
+        # path = os.path.join(os.getcwd(), "src", "tasks", theme)
+        # self.music = sound.Sound(path)
 
         while self.obs is None:  # wait until a first frame is received
             pass
@@ -537,7 +538,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self._reset()
         self._clear_key_buffers()
 
-        #self.music.play()
+        # self.music.play()
 
         while not self.done:
             time.sleep(0.01)
@@ -558,10 +559,10 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
 
     def _stop(self, exp_win, ctl_win):
 
-        self.container.close()
-        #self.music.stop()
-        self.done = True
+        # self.music.stop()
+        self.done = True    #TODO: useless probably
         self.thread_recv.join()
+        self.container.close()
 
         # save timestamp arrays
         self.frame_timestamp_pycozmo = np.asarray(self.frame_timestamp_pycozmo)
@@ -587,7 +588,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self.lock_recv.acquire()
         obs = self.obs
         self.lock_recv.release()
-        
+
         self.curr_obs_id = obs[0]
         self.game_vis_stim.image = obs[1]
         self.game_vis_stim.draw(exp_win)
@@ -615,7 +616,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
             except ConnectionAbortedError:
                 continue
 
-    def recv_loop(self):    #TODO: maybe fifo queue needed
+    def recv_loop(self):  # TODO: maybe fifo queue needed if lag
         self.recv_connect()
         id = 0
         while not self.done:
@@ -624,36 +625,32 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
             while True:
                 recvd_data = self.sock_recv.recv(BUFF_SIZE)
                 received += recvd_data
-                if recvd_data[-2:] == b'\xff\xd9':  
+                if recvd_data[-2:] == b"\xff\xd9":
                     break
-
+            #if fifo queue or similar, part here beneath should be located elsewhere
             if len(received) > 0:
                 timestamp = int.from_bytes(
                     received[:3], byteorder="big"
                 )  # timestamp sent as 3 first bytes
                 self.frame_timestamp_pycozmo.append((id, timestamp))
-
                 packet = av.packet.Packet(received[3:])
                 packet.stream = self.stream
                 packet.time_base = Fraction(1, int(COZMO_FPS))
                 packet.pts = id
                 self.container.mux(packet)
-
                 img_raw = np.asarray(received[3:], dtype="uint8")
                 is_color_image = img_raw[0] != 0
-
                 if img_raw.size != 0:
                     obs_tmp = cv2.imdecode(img_raw, cv2.IMREAD_COLOR)
                     obs_tmp = Image.fromarray(obs_tmp)
                     if is_color_image:
                         obs_tmp = obs_tmp.resize((320, 240))
-
                     self.lock_recv.acquire()
                     self.obs = (id, obs_tmp.transpose(Image.FLIP_TOP_BOTTOM))
                     self.lock_recv.release()
                 id += 1
-
-        self.sock_recv.close()  #TODO: use context managers and/or generators to deal with closing
+                
+        self.sock_recv.close()  # TODO: use context managers and/or generators to deal with closing
 
     # SENDING SECTION
 
@@ -686,7 +683,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         for key in self.pressed_keys.keys():
             if key in key_action_dict_keys:
                 actions.append(KEY_ACTION_DICT[key])
-        
+
         self.lock_send.acquire()
         self.actions_list = actions
         self.lock_send.release()
