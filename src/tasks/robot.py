@@ -457,7 +457,8 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
             "head_up": False,
             "head_down": False,
         }
-        self.frame_timer = core.Clock()
+        #self.frame_timer = core.Clock()
+        self.new_obs = False
         self.send_timer = core.Clock()
         self.cnter = 0
 
@@ -594,10 +595,11 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         _keyPressBuffer.clear()
 
     def _reset(self):
-        self.frame_timer.reset()
+        pass
+        #self.frame_timer.reset()
 
     def _render_graphics(self, exp_win):
-        self.lock_recv.acquire()
+        self.lock_recv.acquire()    #TODO: we could get self.obs at the same time as self.new_obs to be sure they correspond (?)
         obs = self.obs
         self.lock_recv.release()
 
@@ -606,11 +608,16 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self.game_vis_stim.draw(exp_win)
 
     def loop_fun(self, exp_win):
-        t = self.frame_timer.getTime()
-        if t >= 1 / COZMO_FPS / 2:
-            self.frame_timer.reset()
-            self._render_graphics(exp_win)
+        #t = self.frame_timer.getTime()
+        #if t >= 1 / COZMO_FPS / 2:
+        self.lock_recv.acquire()
+        new_obs = self.new_obs
+        self.new_obs = False
+        self.lock_recv.release()
 
+        if new_obs:
+            #self.frame_timer.reset()
+            self._render_graphics(exp_win)
             return True
 
         return False
@@ -646,9 +653,10 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
     def recv_loop(self):
         self.recv_connect()
         id = 0
+        img_raw = np.array(0)
         while not self.done:
-            time.sleep(1 / 120)
-            # receive data
+            time.sleep(1 / COZMO_FPS / 8)
+
             received = bytearray()
             while not self.done:
                 try:
@@ -668,12 +676,13 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                 )  # timestamp sent as 3 first bytes
                 self.frame_timestamp_pycozmo.append((id, timestamp))
 
-                img_raw = np.asarray(received[3:], dtype="uint8")
+                img_raw = np.asarray(received[3:], dtype="uint8")   # TODO: always new image here (tested)
                 is_color_image = img_raw[0] != 0
                 if img_raw.size != 0:
                     obs_tmp = self.img_decode(img_raw, is_color_image)
                     self.lock_recv.acquire()
                     self.obs = (id, obs_tmp.transpose(Image.FLIP_TOP_BOTTOM))
+                    self.new_obs = True
                     self.lock_recv.release()
                 id += 1
 
@@ -698,7 +707,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self.send_timer.reset()
 
         while not self.done and conn:
-            time.sleep(1 / 60)
+            time.sleep(1 / COZMO_FPS / 4)
             self.lock_send.acquire()
             actions = copy.deepcopy(self.actions_to_send)
             self.lock_send.release()
