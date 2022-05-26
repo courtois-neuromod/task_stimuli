@@ -376,6 +376,8 @@ KEY_SET = [
     "_",
 ]
 
+N_ACTIONS = 6
+
 KEY_ACTION_DICT = {
     KEY_SET[4]: "forward",
     KEY_SET[5]: "backward",
@@ -439,7 +441,24 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         super().__init__(*args, **kwargs)
         self.max_duration = max_duration
         self.actions_list = []
+        self.actions_dict = {
+            "forward": False,
+            "backward": False,
+            "left": False,
+            "right": False,
+            "head_up": False,
+            "head_down": False,
+        }
+        self.actions_to_send = {
+            "forward": False,
+            "backward": False,
+            "left": False,
+            "right": False,
+            "head_up": False,
+            "head_down": False,
+        }
         self.frame_timer = core.Clock()
+        self.send_timer = core.Clock()
         self.cnter = 0
 
         # self.music = None
@@ -455,12 +474,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self.sock_send.settimeout(1.5)  # in seconds, to avoid being stuck
 
         self.thread_send = threading.Thread(target=self.send_loop)
-        self.thread_send.start()
         self.lock_send = threading.Lock()
-
-        self.thread_recv = threading.Thread(target=self.recv_loop)
-        self.thread_recv.start()
-        self.lock_recv = threading.Lock()
 
         self.frame_timestamp_pycozmo = []
         self.frame_timestamp_psychopy = []
@@ -470,6 +484,10 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self.stream = self.container.add_stream(codec_name="mjpeg", rate=15)
         self.stream.pix_fmt = "yuvj422p"
 
+        self.thread_recv = threading.Thread(target=self.recv_loop)
+        self.thread_recv.start()
+        self.lock_recv = threading.Lock()
+
     def _instructions(self, exp_win, ctl_win):
         screen_text = visual.TextStim(
             exp_win,
@@ -478,7 +496,6 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
             color="red",
             wrapWidth=1.2,
         )
-
         for _ in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
             screen_text.draw(exp_win)
             if ctl_win:
@@ -489,7 +506,6 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         # theme = "daft-punk-robot-rock.wav"
         # path = os.path.join(os.getcwd(), "src", "tasks", theme)
         # self.music = sound.Sound(path)
-
         while self.obs is None:  # wait until a first frame is received
             pass
         self._first_frame = self.obs[1]
@@ -533,17 +549,14 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         _keyPressBuffer.clear()
 
     def _run(self, exp_win, *args, **kwargs):
-
         self._set_key_handler(exp_win)
         self._reset()
         self._clear_key_buffers()
-
+        self.thread_send.start()
         # self.music.play()
-
         while not self.done:
             time.sleep(0.01)
             self.get_actions(exp_win)
-
             flip = self.loop_fun(*args, **kwargs)
             if flip:
                 yield True  # True if new frame, False otherwise
@@ -560,7 +573,6 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
     def _stop(self, exp_win, ctl_win):
 
         # self.music.stop()
-        self.done = True    #TODO: useless probably
         self.thread_recv.join()
         self.container.close()
 
@@ -595,7 +607,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
 
     def loop_fun(self, exp_win):
         t = self.frame_timer.getTime()
-        if t >= 1 / COZMO_FPS:
+        if t >= 1 / COZMO_FPS / 2:
             self.frame_timer.reset()
             self._render_graphics(exp_win)
 
@@ -607,83 +619,116 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
 
     def recv_connect(self):
         self.sock_recv = socket.socket(ADDR_FAMILY, SOCKET_TYPE)
-        while True:
+        self.sock_send.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        while not self.done:
             try:
                 self.sock_recv.connect((self.nuc_addr, self.tcp_port_recv))
                 break
-            except ConnectionRefusedError:
+            except ConnectionError:
                 continue
-            except ConnectionAbortedError:
-                continue
+            except OSError as error:
+                print(error)
 
-    def recv_loop(self):  # TODO: maybe fifo queue needed if lag
+    def save_mjpeg(self, id, buffer):
+        packet = av.packet.Packet(buffer)
+        packet.stream = self.stream
+        packet.time_base = Fraction(1, int(2*COZMO_FPS))
+        packet.pts = id
+        self.container.mux(packet)
+
+    def img_decode(self, img_raw, is_color_image):
+        obs_tmp = cv2.imdecode(img_raw, cv2.IMREAD_COLOR)
+        obs_tmp = Image.fromarray(obs_tmp)
+        if is_color_image:
+            obs_tmp = obs_tmp.resize((320, 240))
+        return obs_tmp
+
+    def recv_loop(self):
         self.recv_connect()
         id = 0
         while not self.done:
+            time.sleep(1 / 120)
             # receive data
             received = bytearray()
-            while True:
-                recvd_data = self.sock_recv.recv(BUFF_SIZE)
-                received += recvd_data
-                if recvd_data[-2:] == b"\xff\xd9":
-                    break
-            #if fifo queue or similar, part here beneath should be located elsewhere
-            if len(received) > 0:
+            while not self.done:
+                try:
+                    recvd_data = self.sock_recv.recv(BUFF_SIZE)
+                    received += recvd_data
+                    if recvd_data[-2:] == b"\xff\xd9":
+                        break
+                except ConnectionError as error:
+                    print(error)
+                    self.done = True
+
+            if len(received) > 0 and not self.done:
+                self.save_mjpeg(id, received[3:])
+
                 timestamp = int.from_bytes(
                     received[:3], byteorder="big"
                 )  # timestamp sent as 3 first bytes
                 self.frame_timestamp_pycozmo.append((id, timestamp))
-                packet = av.packet.Packet(received[3:])
-                packet.stream = self.stream
-                packet.time_base = Fraction(1, int(COZMO_FPS))
-                packet.pts = id
-                self.container.mux(packet)
+
                 img_raw = np.asarray(received[3:], dtype="uint8")
                 is_color_image = img_raw[0] != 0
                 if img_raw.size != 0:
-                    obs_tmp = cv2.imdecode(img_raw, cv2.IMREAD_COLOR)
-                    obs_tmp = Image.fromarray(obs_tmp)
-                    if is_color_image:
-                        obs_tmp = obs_tmp.resize((320, 240))
+                    obs_tmp = self.img_decode(img_raw, is_color_image)
                     self.lock_recv.acquire()
                     self.obs = (id, obs_tmp.transpose(Image.FLIP_TOP_BOTTOM))
                     self.lock_recv.release()
                 id += 1
-                
+
         self.sock_recv.close()  # TODO: use context managers and/or generators to deal with closing
 
     # SENDING SECTION
-
-    def send_loop(self):
+    def send_connect(self):
         while not self.done:
             try:
                 conn, _ = self.sock_send.accept()
+                break
             except socket.timeout:
                 continue
+        if self.done:
+            return None
 
+        return conn
+
+    def send_loop(self):
+        conn = self.send_connect()
+        actions_prev = dict()
+        self.send_timer.reset()
+
+        while not self.done and conn:
+            time.sleep(1 / 60)
             self.lock_send.acquire()
-            actions = self.actions_list
+            actions = copy.deepcopy(self.actions_to_send)
             self.lock_send.release()
 
-            if actions is not None:
+            if actions is not None and (
+                actions != actions_prev or self.send_timer.getTime() > 0.5
+            ):
+                actions_prev = copy.deepcopy(actions)
+                self.send_timer.reset()
                 data = pickle.dumps(actions)
-                conn.sendall(data)
-            conn.close()
+                try:
+                    conn.sendall(data)
+                except ConnectionError as error:
+                    # print(error)
+                    self.done = True
 
         # avoid unwanted movement
-        conn, _ = self.sock_send.accept()
-        data = pickle.dumps([])
-        conn.sendall(data)
-        conn.close()
+        if conn and not self.done:
+            data = pickle.dumps(dict.fromkeys(actions, False))
+            conn.sendall(data)
+            conn.close()
 
     def get_actions(self, exp_win):
         self._handle_controller_presses(exp_win)
-        actions = []
+        self.actions_dict = dict.fromkeys(self.actions_dict, False)  # reset to False
         key_action_dict_keys = list(KEY_ACTION_DICT.keys())
         for key in self.pressed_keys.keys():
             if key in key_action_dict_keys:
-                actions.append(KEY_ACTION_DICT[key])
+                self.actions_dict[KEY_ACTION_DICT[key]] = True
 
         self.lock_send.acquire()
-        self.actions_list = actions
+        self.actions_to_send = copy.deepcopy(self.actions_dict)
         self.lock_send.release()
