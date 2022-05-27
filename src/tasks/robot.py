@@ -573,6 +573,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
 
     def _stop(self, exp_win, ctl_win):
 
+        self.done = True
         # self.music.stop()
         self.thread_recv.join()
         self.container.close()
