@@ -632,7 +632,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
     def save_mjpeg(self, id, buffer):
         packet = av.packet.Packet(buffer)
         packet.stream = self.stream
-        packet.time_base = Fraction(1, int(2*COZMO_FPS))
+        packet.time_base = Fraction(1, int(2 * COZMO_FPS))
         packet.pts = id
         self.container.mux(packet)
 
@@ -669,7 +669,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                 )  # timestamp sent as 3 first bytes
                 self.frame_timestamp_pycozmo.append((id, timestamp))
 
-                img_raw = np.asarray(received[3:], dtype="uint8")   
+                img_raw = np.asarray(received[3:], dtype="uint8")
                 is_color_image = img_raw[0] != 0
                 if img_raw.size != 0:
                     obs_tmp = self.img_decode(img_raw, is_color_image)
