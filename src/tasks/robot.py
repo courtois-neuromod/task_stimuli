@@ -457,7 +457,6 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
             "head_up": False,
             "head_down": False,
         }
-        #self.frame_timer = core.Clock()
         self.new_obs = False
         self.send_timer = core.Clock()
         self.cnter = 0
@@ -597,28 +596,21 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
 
     def _reset(self):
         pass
-        #self.frame_timer.reset()
 
-    def _render_graphics(self, exp_win):
-        self.lock_recv.acquire()    #TODO: we could get self.obs at the same time as self.new_obs to be sure they correspond (?)
-        obs = self.obs
-        self.lock_recv.release()
-
+    def _render_graphics(self, exp_win, obs):
         self.curr_obs_id = obs[0]
         self.game_vis_stim.image = obs[1]
         self.game_vis_stim.draw(exp_win)
 
     def loop_fun(self, exp_win):
-        #t = self.frame_timer.getTime()
-        #if t >= 1 / COZMO_FPS / 2:
         self.lock_recv.acquire()
         new_obs = self.new_obs
         self.new_obs = False
+        obs = self.obs
         self.lock_recv.release()
 
         if new_obs:
-            #self.frame_timer.reset()
-            self._render_graphics(exp_win)
+            self._render_graphics(exp_win, obs)
             return True
 
         return False
@@ -677,7 +669,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                 )  # timestamp sent as 3 first bytes
                 self.frame_timestamp_pycozmo.append((id, timestamp))
 
-                img_raw = np.asarray(received[3:], dtype="uint8")   # TODO: always new image here (tested)
+                img_raw = np.asarray(received[3:], dtype="uint8")   
                 is_color_image = img_raw[0] != 0
                 if img_raw.size != 0:
                     obs_tmp = self.img_decode(img_raw, is_color_image)
@@ -722,7 +714,6 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                 try:
                     conn.sendall(data)
                 except ConnectionError as error:
-                    # print(error)
                     self.done = True
 
         # avoid unwanted movement
