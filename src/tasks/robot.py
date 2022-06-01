@@ -632,7 +632,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
     def save_mjpeg(self, id, buffer):
         packet = av.packet.Packet(buffer)
         packet.stream = self.stream
-        packet.time_base = Fraction(1, int(2 * COZMO_FPS))
+        packet.time_base = Fraction(1, int(COZMO_FPS))
         packet.pts = id
         self.container.mux(packet)
 
