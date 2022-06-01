@@ -1,4 +1,5 @@
 from concurrent.futures import thread
+import struct
 import threading
 import time
 from typing import Optional
@@ -476,7 +477,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self.thread_send = threading.Thread(target=self.send_loop)
         self.lock_send = threading.Lock()
 
-        self.frame_timestamp_pycozmo = []
+        self.frame_timestamp_pos_pycozmo = []
         self.frame_timestamp_psychopy = []
         self.curr_obs_id = None
 
@@ -578,9 +579,9 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self.container.close()
 
         # save timestamp arrays
-        self.frame_timestamp_pycozmo = np.asarray(self.frame_timestamp_pycozmo)
+        self.frame_timestamp_pos_pycozmo = np.asarray(self.frame_timestamp_pos_pycozmo)
         self.frame_timestamp_psychopy = np.asarray(self.frame_timestamp_psychopy)
-        np.save(f"timestamp_pycozmo_{self.name}", self.frame_timestamp_pycozmo)
+        np.save(f"timestamp_pos_pycozmo_{self.name}", self.frame_timestamp_pos_pycozmo)
         np.save(f"timestamp_psychopy_{self.name}", self.frame_timestamp_psychopy)
 
         self.thread_send.join()
@@ -667,9 +668,13 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                 timestamp = int.from_bytes(
                     received[:3], byteorder="big"
                 )  # timestamp sent as 3 first bytes
-                self.frame_timestamp_pycozmo.append((id, timestamp))
 
-                img_raw = np.asarray(received[3:], dtype="uint8")
+                x_pos = struct.unpack("d", received[3:11])  # x_pos encoded as C double (8 bytes)
+                y_pos = struct.unpack("d", received[11:19])  # x_pos encoded as C double (8 bytes)
+                
+                self.frame_timestamp_pos_pycozmo.append((id, timestamp, x_pos, y_pos))
+
+                img_raw = np.asarray(received[19:], dtype="uint8")
                 is_color_image = img_raw[0] != 0
                 if img_raw.size != 0:
                     obs_tmp = self.img_decode(img_raw, is_color_image)
