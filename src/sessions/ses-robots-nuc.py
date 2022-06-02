@@ -17,9 +17,10 @@ def get_tasks(parsed):
             nuc_addr="10.30.6.17",
             tcp_port_send=1025,
             tcp_port_recv=1024,
-            max_duration=5*60,
+            max_duration=0.5*60,
             name=f"cozmo_run-{run+1:02d}",
             instruction="Explore the maze and find the target !",
+            tracking=True, 
         )
         yield task
 
