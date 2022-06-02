@@ -419,8 +419,6 @@ import av
 # from psychopy import sound
 from fractions import Fraction
 
-import os
-
 ADDR_FAMILY = socket.AF_INET
 SOCKET_TYPE = socket.SOCK_STREAM
 BUFF_SIZE = 65536
@@ -436,6 +434,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         tcp_port_send,
         tcp_port_recv,
         max_duration=5 * 60,
+        tracking=False,
         *args,
         **kwargs,
     ):
@@ -477,7 +476,11 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self.thread_send = threading.Thread(target=self.send_loop)
         self.lock_send = threading.Lock()
 
-        self.frame_timestamp_pos_pycozmo = []
+        self.tracking = tracking
+        if self.tracking:
+            self.frame_timestamp_pos_pycozmo = []
+        else:
+            self.frame_timestamp_pycozmo = []
         self.frame_timestamp_psychopy = []
         self.curr_obs_id = None
 
@@ -538,7 +541,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                 }
             )
 
-            del self.pressed_keys[k[0]]
+            del self.pressed_keys[k[0]] #TODO: can yield problem if twice same key in keyreleasebuffer (happened once)
 
             logging.data(f"Keyrelease: {k[0]}", t=k[1])
         _keyReleaseBuffer.clear()
@@ -579,9 +582,13 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self.container.close()
 
         # save timestamp arrays
-        self.frame_timestamp_pos_pycozmo = np.asarray(self.frame_timestamp_pos_pycozmo)
+        if self.tracking:
+            self.frame_timestamp_pos_pycozmo = np.asarray(self.frame_timestamp_pos_pycozmo)
+            np.save(f"timestamp_pos_pycozmo_{self.name}", self.frame_timestamp_pos_pycozmo)
+        else:
+            self.frame_timestamp_pycozmo = np.asarray(self.frame_timestamp_pycozmo)
+            np.save(f"timestamp_pycozmo_{self.name}", self.frame_timestamp_pycozmo)
         self.frame_timestamp_psychopy = np.asarray(self.frame_timestamp_psychopy)
-        np.save(f"timestamp_pos_pycozmo_{self.name}", self.frame_timestamp_pos_pycozmo)
         np.save(f"timestamp_psychopy_{self.name}", self.frame_timestamp_psychopy)
 
         self.thread_send.join()
@@ -639,9 +646,12 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
 
     def img_decode(self, img_raw, is_color_image):
         obs_tmp = cv2.imdecode(img_raw, cv2.IMREAD_COLOR)
-        obs_tmp = Image.fromarray(obs_tmp)
-        if is_color_image:
-            obs_tmp = obs_tmp.resize((320, 240))
+        
+        if obs_tmp is not None:
+            obs_tmp = cv2.cvtColor(obs_tmp, cv2.COLOR_BGR2RGB)  # OpenCV stores images in B G R ordering
+            obs_tmp = Image.fromarray(obs_tmp)
+            if is_color_image:
+                obs_tmp = obs_tmp.resize((320, 240))
         return obs_tmp
 
     def recv_loop(self):
@@ -669,12 +679,17 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                     received[:3], byteorder="big"
                 )  # timestamp sent as 3 first bytes
 
-                x_pos = struct.unpack("d", received[3:11])  # x_pos encoded as C double (8 bytes)
-                y_pos = struct.unpack("d", received[11:19])  # x_pos encoded as C double (8 bytes)
-                
-                self.frame_timestamp_pos_pycozmo.append((id, timestamp, x_pos, y_pos))
+                offset = 0
+                if self.tracking:
+                    offset = 8
+                    x_pos = struct.unpack("d", received[3:3+offset])  # x_pos encoded as C double (8 bytes)
+                    y_pos = struct.unpack("d", received[3+offset:3+(2*offset)])  # x_pos encoded as C double (8 bytes)
+                    self.frame_timestamp_pos_pycozmo.append((id, timestamp, x_pos[0], y_pos[0]))
+                else:
+                    self.frame_timestamp_pycozmo.append((id, timestamp))
 
-                img_raw = np.asarray(received[19:], dtype="uint8")
+                img_raw = np.asarray(received[3+(2*offset):], dtype="uint8")
+
                 is_color_image = img_raw[0] != 0
                 if img_raw.size != 0:
                     obs_tmp = self.img_decode(img_raw, is_color_image)
