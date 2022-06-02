@@ -16,9 +16,11 @@ INSTRUCTION_DURATION = 5
 CALIBRATE_HOTKEY = "c"
 INSTRUCTION_DURATION = 5
 
-MARKER_SIZE = 50
-MARKER_FILL_COLOR = (0.8, 0, 0.5)
-MARKER_DURATION_FRAMES = 240
+MARKER_SIZE = 20 # this is the radius
+#MARKER_FILL_COLOR = (0.8, 0, 0.5)
+MARKER_DURATION_FRAMES = 90 #240 # 60 fps, 4s = 240; 60fps, 1.5s = 90 frames
+'''
+# 10-pt calibration
 MARKER_POSITIONS = np.asarray(
     [
         (0.25, 0.5),
@@ -33,17 +35,33 @@ MARKER_POSITIONS = np.asarray(
         (0.75, 0.5),
     ]
 )
+'''
+# 9-pt calibration
+MARKER_POSITIONS = np.asarray(
+    [
+        (0.5, 0.5),
+        (0, 0.5),
+        (0.0, 1.0),
+        (0.5, 1.0),
+        (1.0, 1.0),
+        (1.0, 0.5),
+        (1.0, 0.0),
+        (0.5, 0.0),
+        (0.0, 0.0),
+    ]
+)
 
 # number of frames to eliminate at start and end of marker
-CALIBRATION_LEAD_IN = 20
-CALIBRATION_LEAD_OUT = 20
+CALIBRATION_LEAD_IN = 10 # 20
+CALIBRATION_LEAD_OUT = 0 #20
 
 # Pupil settings
 PUPIL_REMOTE_PORT = 50123
 CAPTURE_SETTINGS = {
     "frame_size": [640, 480],
     "frame_rate": 250,
-    "exposure_time": 4000,
+    "exposure_time": 1500,
+    #"exposure_time": 4000,
     "global_gain": 1,
     "gev_packet_size": 1400,
     "uid": "Aravis-Fake-GV01",  # for test purposes
@@ -56,22 +74,21 @@ class EyetrackerCalibration(Task):
         self,
         eyetracker,
         markers_order="random",
-        marker_fill_color=MARKER_FILL_COLOR,
+        #marker_fill_color=MARKER_FILL_COLOR,
         markers=MARKER_POSITIONS,
         use_eyetracking=True,
         **kwargs,
     ):
         self.markers_order = markers_order
         self.markers = markers
-        self.marker_fill_color = marker_fill_color
+        #self.marker_fill_color = marker_fill_color
         super().__init__(use_eyetracking=use_eyetracking, **kwargs)
         self.eyetracker = eyetracker
 
     def _instructions(self, exp_win, ctl_win):
-        instruction_text = """We're going to calibrate the eyetracker.
-Please look at the markers that appear on the screen.
+        instruction_text = """Eyetracker Calibration.
 
-While awaiting for the calibration to start you will be asked to roll your eyes."""
+You'll be asked to roll your eyes, then fixate on the CENTER of the markers that appear on the screen."""
         screen_text = visual.TextStim(
             exp_win,
             text=instruction_text,
@@ -88,6 +105,8 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
     def _setup(self, exp_win):
         self.use_fmri = False
         super()._setup(exp_win)
+        self.fixation_dot = fixation_dot(exp_win, radius=MARKER_SIZE)
+
 
     def _pupil_cb(self, pupil):
         if pupil["timestamp"] > self.task_stop:
@@ -123,15 +142,19 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
             logging.info("calibration started")
             print("calibration started")
 
-            window_size_frame = exp_win.size - MARKER_SIZE * 2
+            #window_size_frame = exp_win.size - MARKER_SIZE * 2
+            window_size_frame = exp_win.size - 50 * 2 # 50 = previous MARKER_SIZE; hard-coded to maintain distance from screen edge regardless of target shape
+
+            '''
             circle_marker = visual.Circle(
                 exp_win,
                 edges=64,
                 units="pix",
                 lineColor=None,
-                fillColor=self.marker_fill_color,
+                #fillColor=self.marker_fill_color,
                 autoLog=False,
             )
+            '''
 
             markers_order = np.arange(len(self.markers))
             if self.markers_order == "random":
@@ -140,12 +163,14 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
             self.all_refs_per_flip = []
             self._pupils_list = []
 
+            '''
             radius_anim = np.hstack(
                 [
                     np.linspace(MARKER_SIZE, 0, MARKER_DURATION_FRAMES // 2),
                     np.linspace(0, MARKER_SIZE, MARKER_DURATION_FRAMES // 2),
                 ]
             )
+            '''
 
             self.task_start = time.monotonic()
             self.task_stop = np.inf
@@ -160,8 +185,10 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
             )
             for site_id in markers_order:
                 marker_pos = self.markers[site_id]
-                pos = (marker_pos - 0.5) * window_size_frame
-                circle_marker.pos = pos
+                pos = (marker_pos - 0.5) * window_size_frame # remove 0.5 since 0, 0 is the middle in psychopy
+                #circle_marker.pos = pos
+                for stim in self.fixation_dot:
+                    stim.pos = pos
                 exp_win.logOnFlip(
                     level=logging.EXP,
                     msg="calibrate_position,%d,%d,%d,%d"
@@ -170,14 +197,19 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
                 exp_win.callOnFlip(
                     self._log_event, {"marker_x": pos[0], "marker_y": pos[1]}
                 )
-                for f, r in enumerate(radius_anim):
-                    circle_marker.radius = r
-                    circle_marker.draw(exp_win)
-                    circle_marker.draw(ctl_win)
+                #for f, r in enumerate(radius_anim):
+                for f in range(MARKER_DURATION_FRAMES):
+                    #circle_marker.radius = r
+                    #circle_marker.draw(exp_win)
+                    #circle_marker.draw(ctl_win)
+                    for stim in self.fixation_dot:
+                        stim.draw(exp_win)
+                        stim.draw(ctl_win)
 
                     if (
                         f > CALIBRATION_LEAD_IN
-                        and f < len(radius_anim) - CALIBRATION_LEAD_OUT
+                        #and f < len(radius_anim) - CALIBRATION_LEAD_OUT
+                        and f < MARKER_DURATION_FRAMES - CALIBRATION_LEAD_OUT
                     ):
                         screen_pos = pos + exp_win.size / 2
                         norm_pos = screen_pos / exp_win.size
@@ -529,7 +561,8 @@ def read_pl_data(fname):
 
 
 def fixation_dot(win, **kwargs):
-    radius = kwargs.pop('radius', 30)
+    #radius = kwargs.pop('radius', 30)
+    radius = kwargs.pop('radius', 20)
     kwargs = {
         'lineColor': (1,-.5,-.5),
         'fillColor': (1,1,1),
@@ -537,5 +570,6 @@ def fixation_dot(win, **kwargs):
         **kwargs
     }
     circle = visual.Circle(win, lineWidth=radius*.4, **kwargs, radius=radius)
-    dot = visual.Circle(win, units=kwargs["units"], radius=radius*.2, lineWidth=0, fillColor=(-1,-1,-1))
+    dot = visual.Circle(win, units=kwargs["units"], radius=radius*.25, lineWidth=0, fillColor=(-1,-1,-1))
+    #dot = visual.Circle(win, units=kwargs["units"], radius=radius*.2, lineWidth=0, fillColor=(-1,-1,-1))
     return (circle, dot)
