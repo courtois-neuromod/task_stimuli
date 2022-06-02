@@ -23,7 +23,7 @@ and fixate the dot whenever it appears in the segment."""
     def __init__(self, filepath, *args, **kwargs):
         self._aspect_ratio = kwargs.pop("aspect_ratio", None)
         self._scaling = kwargs.pop("scaling", None)
-        self._endstart_fixduration = kwargs.pop("endstart_fixduration", 0)
+        self._startend_fixduration = kwargs.pop("startend_fixduration", 0)
         self._inmovie_fixations = kwargs.pop("inmovie_fixations", False)
         self._infix_freq = kwargs.pop("infix_freq", 20)
         self._infix_dur = kwargs.pop("infix_dur", 1.5)
@@ -55,7 +55,7 @@ and fixate the dot whenever it appears in the segment."""
 
     def _setup(self, exp_win):
 
-        if self._endstart_fixduration > 0 or self._inmovie_fixations:
+        if self._startend_fixduration > 0 or self._inmovie_fixations:
             from ..shared.eyetracking import fixation_dot
             self.fixation_dot = fixation_dot(exp_win)
 
@@ -108,9 +108,9 @@ and fixate the dot whenever it appears in the segment."""
             or to have them at regular intervals through the run (w logged time)
             For within-run fixations, endstart_fixduration must be set to 0.0 (from ses-friends-s6.py file)
             '''
-            if self._endstart_fixduration > 0:
-                if next_frame_time <= self._endstart_fixduration or \
-                    next_frame_time >= self.movie_stim.duration-self._endstart_fixduration:
+            if self._startend_fixduration > 0:
+                if next_frame_time <= self._startend_fixduration or \
+                    next_frame_time >= self.movie_stim.duration-self._startend_fixduration:
                     for stim in self.fixation_dot:
                         stim.draw(exp_win)
             elif self._inmovie_fixations:
@@ -139,10 +139,10 @@ and fixate the dot whenever it appears in the segment."""
             Alternative: have both/either/none start/end fixations and within-run fixations;
             Heavier to run, could cause a lag?
 
-            if self._endstart_fixduration > 0 or self._inmovie_fixations:
+            if self._startend_fixduration > 0 or self._inmovie_fixations:
                 next_frame_time = self.movie_stim.getCurrentFrameTime()
-                if next_frame_time <= self._endstart_fixduration or \
-                    next_frame_time >= self.movie_stim.duration-self._endstart_fixduration:
+                if next_frame_time <= self._startend_fixduration or \
+                    next_frame_time >= self.movie_stim.duration-self._startend_fixduration:
                     for stim in self.fixation_dot:
                         stim.draw(exp_win)
                     if not fixation_on:
