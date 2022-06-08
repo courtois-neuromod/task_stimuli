@@ -533,6 +533,10 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         global _keyPressBuffer, _keyReleaseBuffer
 
         for k in _keyReleaseBuffer:
+            if k[0]=='5' or k[0]=='percent' or k[0]=='lshift':
+                continue
+            if not k[0] in self.pressed_keys:
+                continue # weird case
             self._log_event(
                 {
                     "trial_type": "button_press",
