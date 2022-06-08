@@ -125,7 +125,7 @@ def _onPygletKeyRelease(symbol, modifier):
 
 
 from PIL import Image
-from cozmo_api.controller import Controller
+#from cozmo_api.controller import Controller
 
 
 class CozmoFirstTaskPsychoPy(CozmoBaseTask):
@@ -135,7 +135,7 @@ class CozmoFirstTaskPsychoPy(CozmoBaseTask):
     def __init__(
         self,
         max_duration=5 * 60,
-        controller: Controller = None,
+        controller=None,#Controller = None,
         img_path: Optional[str] = None,
         sound_path: Optional[str] = None,
         capture_path: Optional[str] = None,
@@ -484,14 +484,6 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self.frame_timestamp_psychopy = []
         self.curr_obs_id = None
 
-        self.container = av.open(f"cozmo_feed_{self.name}.mp4", "w")
-        self.stream = self.container.add_stream(codec_name="mjpeg", rate=15)
-        self.stream.pix_fmt = "yuvj422p"
-
-        self.thread_recv = threading.Thread(target=self.recv_loop)
-        self.thread_recv.start()
-        self.lock_recv = threading.Lock()
-
     def _instructions(self, exp_win, ctl_win):
         screen_text = visual.TextStim(
             exp_win,
@@ -510,12 +502,22 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         # theme = "daft-punk-robot-rock.wav"
         # path = os.path.join(os.getcwd(), "src", "tasks", theme)
         # self.music = sound.Sound(path)
+
+        cozmo_feed_fname = self._generate_unique_filename("cozmo-feed", "mp4")
+        self.container = av.open(cozmo_feed_fname, "w")
+        self.stream = self.container.add_stream(codec_name="mjpeg", rate=15)
+        self.stream.pix_fmt = "yuvj422p"
+
+        self.thread_recv = threading.Thread(target=self.recv_loop)
+        self.thread_recv.start()
+        self.lock_recv = threading.Lock()
+
         while self.obs is None:  # wait until a first frame is received
             pass
         self._first_frame = self.obs[1]
-
         super()._setup(exp_win)
 
+        
     def _set_key_handler(self, exp_win):
         exp_win.winHandle.on_key_press = _onPygletKeyPress
         exp_win.winHandle.on_key_release = _onPygletKeyRelease
@@ -584,12 +586,15 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         # save timestamp arrays
         if self.tracking:
             self.frame_timestamp_pos_pycozmo = np.asarray(self.frame_timestamp_pos_pycozmo)
-            np.save(f"timestamp_pos_pycozmo_{self.name}", self.frame_timestamp_pos_pycozmo)
+            tracking_ts_fname = self._generate_unique_filename("timestamp-pos-pycozmo", "npy")
+            np.save(tracking_ts_fname, self.frame_timestamp_pos_pycozmo)
         else:
             self.frame_timestamp_pycozmo = np.asarray(self.frame_timestamp_pycozmo)
-            np.save(f"timestamp_pycozmo_{self.name}", self.frame_timestamp_pycozmo)
+            pycozmo_ts_fname = self._generate_unique_filename("timestamp-pycozmo", "npy")
+            np.save(pycozmo_ts_fname, self.frame_timestamp_pycozmo)
         self.frame_timestamp_psychopy = np.asarray(self.frame_timestamp_psychopy)
-        np.save(f"timestamp_psychopy_{self.name}", self.frame_timestamp_psychopy)
+        psychopy_ts_fname = self._generate_unique_filename("timestamp-psychopy", "npy")
+        np.save(psychopy_ts_fname, self.frame_timestamp_psychopy)
 
         self.thread_send.join()
         self.sock_send.close()  # need to close it otherwise error 98 address already in use
@@ -727,7 +732,6 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                 continue
         if self.done:
             return None
-
         return conn
 
     def send_loop(self):
@@ -746,7 +750,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
             ):
                 actions_prev = copy.deepcopy(actions)
                 self.send_timer.reset()
-                data = pickle.dumps(actions)
+                data = pickle.dumps(actions, protocol=4)
                 try:
                     conn.sendall(data)
                 except ConnectionError as error:
@@ -754,7 +758,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
 
         # avoid unwanted movement
         if conn and not self.done:
-            data = pickle.dumps(dict.fromkeys(actions, False))
+            data = pickle.dumps(dict.fromkeys(actions, False), protocol=4)
             conn.sendall(data)
             conn.close()
 
