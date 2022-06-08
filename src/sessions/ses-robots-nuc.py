@@ -20,7 +20,7 @@ def get_tasks(parsed):
             max_duration=0.5*60,
             name=f"cozmo_run-{run+1:02d}",
             instruction="Explore the maze and find the target !",
-            tracking=True, 
+            tracking=False, 
         )
         yield task
 

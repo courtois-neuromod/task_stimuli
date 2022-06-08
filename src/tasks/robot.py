@@ -423,7 +423,6 @@ ADDR_FAMILY = socket.AF_INET
 SOCKET_TYPE = socket.SOCK_STREAM
 BUFF_SIZE = 65536
 
-
 class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
 
     DEFAULT_INSTRUCTION = "Let's explore the maze !"
@@ -460,6 +459,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self.new_obs = False
         self.send_timer = core.Clock()
         self.cnter = 0
+        self.tracking_frame = None
 
         # self.music = None
 
@@ -575,7 +575,7 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                 self.done = True
 
     def _stop(self, exp_win, ctl_win):
-
+        cv2.destroyAllWindows()
         self.done = True
         # self.music.stop()
         self.thread_recv.join()
@@ -605,20 +605,24 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
     def _reset(self):
         pass
 
-    def _render_graphics(self, exp_win, obs):
+    def _render_graphics(self, exp_win, obs, tracking_frame=None):
         self.curr_obs_id = obs[0]
         self.game_vis_stim.image = obs[1]
         self.game_vis_stim.draw(exp_win)
+        if self.tracking and tracking_frame is not None:
+            cv2.imshow("Tracking", tracking_frame)
+            cv2.waitKey(1)
 
     def loop_fun(self, exp_win):
         self.lock_recv.acquire()
         new_obs = self.new_obs
         self.new_obs = False
         obs = self.obs
+        tracking_frame = self.tracking_frame
         self.lock_recv.release()
 
         if new_obs:
-            self._render_graphics(exp_win, obs)
+            self._render_graphics(exp_win, obs, tracking_frame)
             return True
 
         return False
@@ -646,7 +650,6 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
 
     def img_decode(self, img_raw, is_color_image):
         obs_tmp = cv2.imdecode(img_raw, cv2.IMREAD_COLOR)
-        
         if obs_tmp is not None:
             obs_tmp = cv2.cvtColor(obs_tmp, cv2.COLOR_BGR2RGB)  # OpenCV stores images in B G R ordering
             obs_tmp = Image.fromarray(obs_tmp)
@@ -658,44 +661,57 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self.recv_connect()
         id = 0
         img_raw = np.array(0)
+        img_tracking_raw = np.array(0)
         while not self.done:
             time.sleep(1 / COZMO_FPS / 8)
 
             received = bytearray()
-            while not self.done:
-                try:
-                    recvd_data = self.sock_recv.recv(BUFF_SIZE)
-                    received += recvd_data
-                    if recvd_data[-2:] == b"\xff\xd9":
-                        break
-                except ConnectionError as error:
-                    print(error)
-                    self.done = True
+            try:
+                sz = int.from_bytes(self.sock_recv.recv(3), byteorder='big')    # TODO change if not long enough
+                if sz > 0:
+                    while len(received) < sz:
+                        received += self.sock_recv.recv(sz - len(received))
+                else:
+                    pass #TODO
+            except ConnectionError as error:
+                print(error)
+                self.done = True
 
             if len(received) > 0 and not self.done:
-                self.save_mjpeg(id, received[3:])
-
-                timestamp = int.from_bytes(
-                    received[:3], byteorder="big"
-                )  # timestamp sent as 3 first bytes
-
+                #self.save_mjpeg(id, received[3:])
                 offset = 0
+                onset = 3
+                timestamp = int.from_bytes(
+                    received[offset:offset+onset], byteorder="big"
+                )  # timestamp sent as 3 first bytes after 3 first bytes (size of message)
+                offset += onset
                 if self.tracking:
-                    offset = 8
-                    x_pos = struct.unpack("d", received[3:3+offset])  # x_pos encoded as C double (8 bytes)
-                    y_pos = struct.unpack("d", received[3+offset:3+(2*offset)])  # x_pos encoded as C double (8 bytes)
+                    onset = 3
+                    onset_track = onset
+                    sz = int.from_bytes(received[offset:offset+onset], byteorder='big')
+                    onset_track += onset
+                    offset += onset
+                    onset = 8
+                    x_pos = struct.unpack("d", received[offset:offset+onset])  # x_pos encoded as C double (8 bytes)
+                    y_pos = struct.unpack("d", received[offset+onset:offset+(2*onset)])  # x_pos encoded as C double (8 bytes)
                     self.frame_timestamp_pos_pycozmo.append((id, timestamp, x_pos[0], y_pos[0]))
+                    offset += 2 * onset
+                    tracking_frame =  received[offset:onset_track+sz]
+                    img_tracking_raw = np.asarray(tracking_frame, dtype="uint8")
+                    offset = onset_track + sz
                 else:
                     self.frame_timestamp_pycozmo.append((id, timestamp))
 
-                img_raw = np.asarray(received[3+(2*offset):], dtype="uint8")
-
+                cozmo_img = received[offset:]
+                self.save_mjpeg(id, cozmo_img)
+                img_raw = np.asarray(cozmo_img, dtype="uint8")
                 is_color_image = img_raw[0] != 0
                 if img_raw.size != 0:
                     obs_tmp = self.img_decode(img_raw, is_color_image)
                     self.lock_recv.acquire()
                     self.obs = (id, obs_tmp.transpose(Image.FLIP_TOP_BOTTOM))
                     self.new_obs = True
+                    self.tracking_frame = img_tracking_raw
                     self.lock_recv.release()
                 id += 1
 
