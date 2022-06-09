@@ -701,8 +701,8 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                     sz = int.from_bytes(
                         received[offset : offset + onset], byteorder="big"
                     )
+                    onset_track += onset
                     if sz != 0:
-                        onset_track += onset
                         offset += onset
                         onset = 8
                         x_pos = struct.unpack(
