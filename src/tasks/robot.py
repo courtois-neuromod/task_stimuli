@@ -701,18 +701,23 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                     sz = int.from_bytes(
                         received[offset : offset + onset], byteorder="big"
                     )
-                    onset_track += onset
-                    offset += onset
-                    onset = 8
-                    x_pos = struct.unpack(
-                        "d", received[offset : offset + onset]
-                    )  # x_pos encoded as C double (8 bytes)
-                    y_pos = struct.unpack(
-                        "d", received[offset + onset : offset + (2 * onset)]
-                    )  # x_pos encoded as C double (8 bytes)
-                    self.frame_timestamp_pos_pycozmo.append(
-                        (id, timestamp, x_pos[0], y_pos[0])
-                    )
+                    if sz != 0:
+                        onset_track += onset
+                        offset += onset
+                        onset = 8
+                        x_pos = struct.unpack(
+                            "d", received[offset : offset + onset]
+                        )  # x_pos encoded as C double (8 bytes)
+                        y_pos = struct.unpack(
+                            "d", received[offset + onset : offset + (2 * onset)]
+                        )  # x_pos encoded as C double (8 bytes)
+                        self.frame_timestamp_pos_pycozmo.append(
+                            (id, timestamp, x_pos[0], y_pos[0])
+                        )
+                    else:
+                        self.frame_timestamp_pos_pycozmo.append(
+                            (id, timestamp, None, None)
+                        )
                     offset = onset_track + sz
                 else:
                     self.frame_timestamp_pycozmo.append((id, timestamp))
