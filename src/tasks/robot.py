@@ -125,7 +125,8 @@ def _onPygletKeyRelease(symbol, modifier):
 
 
 from PIL import Image
-#from cozmo_api.controller import Controller
+
+# from cozmo_api.controller import Controller
 
 
 class CozmoFirstTaskPsychoPy(CozmoBaseTask):
@@ -423,6 +424,7 @@ ADDR_FAMILY = socket.AF_INET
 SOCKET_TYPE = socket.SOCK_STREAM
 BUFF_SIZE = 65536
 
+
 class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
 
     DEFAULT_INSTRUCTION = "Let's explore the maze !"
@@ -459,7 +461,6 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self.new_obs = False
         self.send_timer = core.Clock()
         self.cnter = 0
-        self.tracking_frame = None
 
         # self.music = None
 
@@ -540,7 +541,9 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                 }
             )
 
-            del self.pressed_keys[k[0]] #TODO: can yield problem if twice same key in keyreleasebuffer (happened once)
+            del self.pressed_keys[
+                k[0]
+            ]  # TODO: can yield problem if twice same key in keyreleasebuffer (happened once)
 
             logging.data(f"Keyrelease: {k[0]}", t=k[1])
         _keyReleaseBuffer.clear()
@@ -582,17 +585,20 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
 
         # save timestamp arrays
         if self.tracking:
-            self.frame_timestamp_pos_pycozmo = np.asarray(self.frame_timestamp_pos_pycozmo)
-            #np.save(f"timestamp_pos_pycozmo_{self.name}", self.frame_timestamp_pos_pycozmo)
-            tracking_ts_fname = self._generate_unique_filename("timestamp-pos-pycozmo", "npy")
+            self.frame_timestamp_pos_pycozmo = np.asarray(
+                self.frame_timestamp_pos_pycozmo
+            )
+            tracking_ts_fname = self._generate_unique_filename(
+                "timestamp-pos-pycozmo", "npy"
+            )
             np.save(tracking_ts_fname, self.frame_timestamp_pos_pycozmo)
         else:
             self.frame_timestamp_pycozmo = np.asarray(self.frame_timestamp_pycozmo)
-            #np.save(f"timestamp_pycozmo_{self.name}", self.frame_timestamp_pycozmo)
-            pycozmo_ts_fname = self._generate_unique_filename("timestamp-pycozmo", "npy")
+            pycozmo_ts_fname = self._generate_unique_filename(
+                "timestamp-pycozmo", "npy"
+            )
             np.save(pycozmo_ts_fname, self.frame_timestamp_pycozmo)
         self.frame_timestamp_psychopy = np.asarray(self.frame_timestamp_psychopy)
-        #np.save(f"timestamp_psychopy_{self.name}", self.frame_timestamp_psychopy)
         psychopy_ts_fname = self._generate_unique_filename("timestamp-psychopy", "npy")
         np.save(psychopy_ts_fname, self.frame_timestamp_psychopy)
 
@@ -610,24 +616,23 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
     def _reset(self):
         pass
 
-    def _render_graphics(self, exp_win, obs, tracking_frame=None):
+    def _render_graphics(self, exp_win, obs):
         self.curr_obs_id = obs[0]
         self.game_vis_stim.image = obs[1]
         self.game_vis_stim.draw(exp_win)
-        if self.tracking and tracking_frame is not None:
+        """ if self.tracking and tracking_frame is not None:
             cv2.imshow("Tracking", tracking_frame)
-            cv2.waitKey(1)
+            cv2.waitKey(1) """
 
     def loop_fun(self, exp_win):
         self.lock_recv.acquire()
         new_obs = self.new_obs
         self.new_obs = False
         obs = self.obs
-        tracking_frame = self.tracking_frame
         self.lock_recv.release()
 
         if new_obs:
-            self._render_graphics(exp_win, obs, tracking_frame)
+            self._render_graphics(exp_win, obs)
             return True
 
         return False
@@ -656,7 +661,9 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
     def img_decode(self, img_raw, is_color_image):
         obs_tmp = cv2.imdecode(img_raw, cv2.IMREAD_COLOR)
         if obs_tmp is not None:
-            obs_tmp = cv2.cvtColor(obs_tmp, cv2.COLOR_BGR2RGB)  # OpenCV stores images in B G R ordering
+            obs_tmp = cv2.cvtColor(
+                obs_tmp, cv2.COLOR_BGR2RGB
+            )  # OpenCV stores images in B G R ordering
             obs_tmp = Image.fromarray(obs_tmp)
             if is_color_image:
                 obs_tmp = obs_tmp.resize((320, 240))
@@ -666,43 +673,51 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
         self.recv_connect()
         id = 0
         img_raw = np.array(0)
-        img_tracking_raw = np.array(0)
         while not self.done:
             time.sleep(1 / COZMO_FPS / 8)
 
             received = bytearray()
             try:
-                sz = int.from_bytes(self.sock_recv.recv(3), byteorder='big')    # TODO change if not long enough
+                sz = int.from_bytes(self.sock_recv.recv(3), byteorder="big")
                 if sz > 0:
                     while len(received) < sz:
                         received += self.sock_recv.recv(sz - len(received))
                 else:
-                    pass #TODO
+                    pass  # TODO
             except ConnectionError as error:
                 print(error)
                 self.done = True
 
             if len(received) > 0 and not self.done:
-                #self.save_mjpeg(id, received[3:])
                 offset = 0
                 onset = 3
                 timestamp = int.from_bytes(
-                    received[offset:offset+onset], byteorder="big"
+                    received[offset : offset + onset], byteorder="big"
                 )  # timestamp sent as 3 first bytes after 3 first bytes (size of message)
                 offset += onset
                 if self.tracking:
                     onset = 3
                     onset_track = onset
-                    sz = int.from_bytes(received[offset:offset+onset], byteorder='big')
+                    sz = int.from_bytes(
+                        received[offset : offset + onset], byteorder="big"
+                    )
                     onset_track += onset
-                    offset += onset
-                    onset = 8
-                    x_pos = struct.unpack("d", received[offset:offset+onset])  # x_pos encoded as C double (8 bytes)
-                    y_pos = struct.unpack("d", received[offset+onset:offset+(2*onset)])  # x_pos encoded as C double (8 bytes)
-                    self.frame_timestamp_pos_pycozmo.append((id, timestamp, x_pos[0], y_pos[0]))
-                    offset += 2 * onset
-                    tracking_frame =  received[offset:onset_track+sz]
-                    img_tracking_raw = np.asarray(tracking_frame, dtype="uint8")
+                    if sz != 0:
+                        offset += onset
+                        onset = 8
+                        x_pos = struct.unpack(
+                            "d", received[offset : offset + onset]
+                        )  # x_pos encoded as C double (8 bytes)
+                        y_pos = struct.unpack(
+                            "d", received[offset + onset : offset + (2 * onset)]
+                        )  # x_pos encoded as C double (8 bytes)
+                        self.frame_timestamp_pos_pycozmo.append(
+                            (id, timestamp, x_pos[0], y_pos[0])
+                        )
+                    else:
+                        self.frame_timestamp_pos_pycozmo.append(
+                            (id, timestamp, None, None)
+                        )
                     offset = onset_track + sz
                 else:
                     self.frame_timestamp_pycozmo.append((id, timestamp))
@@ -717,11 +732,10 @@ class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
                     self.lock_recv.acquire()
                     self.obs = (id, obs_tmp.transpose(Image.FLIP_TOP_BOTTOM))
                     self.new_obs = True
-                    self.tracking_frame = img_tracking_raw
                     self.lock_recv.release()
                 id += 1
 
-        self.sock_recv.close()  # TODO: use context managers and/or generators to deal with closing
+        self.sock_recv.close()
 
     # SENDING SECTION
     def send_connect(self):
