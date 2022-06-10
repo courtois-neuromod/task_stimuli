@@ -77,6 +77,7 @@ class EyetrackerCalibration(Task):
         #marker_fill_color=MARKER_FILL_COLOR,
         markers=MARKER_POSITIONS,
         use_eyetracking=True,
+        validation=False,
         **kwargs,
     ):
         self.markers_order = markers_order
@@ -84,11 +85,17 @@ class EyetrackerCalibration(Task):
         #self.marker_fill_color = marker_fill_color
         super().__init__(use_eyetracking=use_eyetracking, **kwargs)
         self.eyetracker = eyetracker
+        self.validation = validation
 
     def _instructions(self, exp_win, ctl_win):
-        instruction_text = """Eyetracker Calibration.
+        if self.validation:
+            instruction_text = """Eyetracker Validation.
 
-You'll be asked to roll your eyes, then fixate on the CENTER of the markers that appear on the screen."""
+    Once again, please fixate on the CENTER of the markers that appear on the screen."""
+        else:
+            instruction_text = """Eyetracker Calibration.
+
+    You'll be asked to roll your eyes, then fixate on the CENTER of the markers that appear on the screen."""
         screen_text = visual.TextStim(
             exp_win,
             text=instruction_text,
@@ -115,9 +122,25 @@ You'll be asked to roll your eyes, then fixate on the CENTER of the markers that
         if pupil["timestamp"] > self.task_start:
             self._pupils_list.append(pupil)
 
+    def _gaze_cb(self, gaze):
+        if gaze["timestamp"] > self.task_stop:
+            self.eyetracker.unset_gaze_cb()
+            return
+        if gaze["timestamp"] > self.task_start:
+            self._gaze_list.append(gaze)
+
+    def _fix_cb(self, fixation):
+        if fixation["timestamp"] > self.task_stop:
+            self.eyetracker.unset_fix_cb()
+            return
+        if fixation["timestamp"] > self.task_start:
+            self._fix_list.append(fixation)
+
     def _run(self, exp_win, ctl_win):
 
         roll_eyes_text = "Please roll your eyes ~2-3 times in clockwise and counterclockwise directions"
+        if self.validation:
+            roll_eyes_text = "Get Ready" # no need to roll eyes again
 
         text_roll = visual.TextStim(
             exp_win,
@@ -139,8 +162,12 @@ You'll be asked to roll your eyes, then fixate on the CENTER of the markers that
                     break
                 text_roll.draw(exp_win)
                 yield False
-            logging.info("calibration started")
-            print("calibration started")
+            if self.validation:
+                logging.info("validation started")
+                print("validation started")
+            else:
+                logging.info("calibration started")
+                print("calibration started")
 
             #window_size_frame = exp_win.size - MARKER_SIZE * 2
             window_size_frame = exp_win.size - 50 * 2 # 50 = previous MARKER_SIZE; hard-coded to maintain distance from screen edge regardless of target shape
@@ -162,6 +189,8 @@ You'll be asked to roll your eyes, then fixate on the CENTER of the markers that
 
             self.all_refs_per_flip = []
             self._pupils_list = []
+            self._gaze_list = []
+            self._fix_list = []
 
             '''
             radius_anim = np.hstack(
@@ -175,25 +204,40 @@ You'll be asked to roll your eyes, then fixate on the CENTER of the markers that
             self.task_start = time.monotonic()
             self.task_stop = np.inf
             self.eyetracker.set_pupil_cb(self._pupil_cb)
+            self.eyetracker.set_gaze_cb(self._gaze_cb)
+            self.eyetracker.set_fix_cb(self._fix_cb)
 
             while not len(self._pupils_list):  # wait until we get at least a pupil
                 yield False
 
-            exp_win.logOnFlip(
-                level=logging.EXP,
-                msg="eyetracker_calibration: starting at %f" % time.time(),
-            )
+            if self.validation:
+                exp_win.logOnFlip(
+                    level=logging.EXP,
+                    msg="eyetracker_validation: starting at %f" % time.time(),
+                )
+            else:
+                exp_win.logOnFlip(
+                    level=logging.EXP,
+                    msg="eyetracker_calibration: starting at %f" % time.time(),
+                )
             for site_id in markers_order:
                 marker_pos = self.markers[site_id]
                 pos = (marker_pos - 0.5) * window_size_frame # remove 0.5 since 0, 0 is the middle in psychopy
                 #circle_marker.pos = pos
                 for stim in self.fixation_dot:
                     stim.pos = pos
-                exp_win.logOnFlip(
-                    level=logging.EXP,
-                    msg="calibrate_position,%d,%d,%d,%d"
-                    % (marker_pos[0], marker_pos[1], pos[0], pos[1]),
-                )
+                if self.validation:
+                    exp_win.logOnFlip(
+                        level=logging.EXP,
+                        msg="validate_position,%d,%d,%d,%d"
+                        % (marker_pos[0], marker_pos[1], pos[0], pos[1]),
+                    )
+                else:
+                    exp_win.logOnFlip(
+                        level=logging.EXP,
+                        msg="calibrate_position,%d,%d,%d,%d"
+                        % (marker_pos[0], marker_pos[1], pos[0], pos[1]),
+                    )
                 exp_win.callOnFlip(
                     self._log_event, {"marker_x": pos[0], "marker_y": pos[1]}
                 )
@@ -222,27 +266,46 @@ You'll be asked to roll your eyes, then fixate on the CENTER of the markers that
                     yield True
             yield True
             self.task_stop = time.monotonic()
-            logging.info(
-                f"calibrating on {len(self._pupils_list)} pupils and {len(self.all_refs_per_flip)} markers"
-            )
-            self.eyetracker.calibrate(self._pupils_list, self.all_refs_per_flip)
-            while True:
-                notes = getattr(self.eyetracker, '_last_calibration_notification',None)
-                if notes:
-                    calibration_success = notes['topic'].startswith("notify.calibration.successful")
-                    if not calibration_success:
-                        print('#### CALIBRATION FAILED: restart with <c> ####')
-                    break
+            if self.validation:
+                logging.info(
+                    f"validating on {len(self._pupils_list)} pupils and {len(self.all_refs_per_flip)} markers"
+                )
+            else:
+                logging.info(
+                    f"calibrating on {len(self._pupils_list)} pupils and {len(self.all_refs_per_flip)} markers"
+                )
+            if self.validation:
+                #TODO: define validate function below...
+                self.eyetracker.validate(self._fix_list, self.all_refs_per_flip)
+                calibration_success = True
+            else:
+                self.eyetracker.calibrate(self._pupils_list, self.all_refs_per_flip)
+                while True:
+                    notes = getattr(self.eyetracker, '_last_calibration_notification',None)
+                    if notes:
+                        calibration_success = notes['topic'].startswith("notify.calibration.successful")
+                        if not calibration_success:
+                            print('#### CALIBRATION FAILED: restart with <c> ####')
+                        break
 
 
     def stop(self, exp_win, ctl_win):
         self.eyetracker.unset_pupil_cb()
+        self.eyetracker.unset_gaze_cb()
+        self.eyetracker.unset_fix_cb()
         yield
 
     def _save(self):
         if hasattr(self, "_pupils_list"):
-            fname = self._generate_unique_filename("calib-data", "npz")
-            np.savez(fname, pupils=self._pupils_list, markers=self.all_refs_per_flip)
+            if self.validation:
+                fname = self._generate_unique_filename("valid-data", "npz")
+            else:
+                fname = self._generate_unique_filename("calib-data", "npz")
+            np.savez(fname, pupils=self._pupils_list,
+                            gaze=self._gaze_list,
+                            fixations=self._fix_list,
+                            markers=self.all_refs_per_flip)
+            #np.savez(fname, pupils=self._pupils_list, markers=self.all_refs_per_flip)
 
 class EyetrackerSetup(Task):
     def __init__(
@@ -311,7 +374,10 @@ class EyeTrackerClient(threading.Thread):
 
         self.pupil = None
         self.gaze = None
+        self.fixation = None
         self.unset_pupil_cb()
+        self.unset_gaze_cb()
+        self.unset_fix_cb()
 
         self.output_path = output_path
         self.output_fname_base = output_fname_base
@@ -462,7 +528,7 @@ class EyeTrackerClient(threading.Thread):
         logging.info(f"ipc_sub_port: {ipc_sub_port}")
         self.pupil_monitor = Msg_Receiver(
             self._ctx, f"tcp://localhost:{ipc_sub_port}",
-            topics=("gaze", "pupil", "notify.calibration.successful", "notify.calibration.failed", "notify.aravis")
+            topics=("gaze", "pupil", "fixation", "notify.calibration.successful", "notify.calibration.failed", "notify.aravis")
         )
         while not self.stoprequest.isSet():
             msg = self.pupil_monitor.recv()
@@ -475,6 +541,12 @@ class EyeTrackerClient(threading.Thread):
                             self._pupil_cb(tmp)
                     elif topic.startswith("gaze"):
                         self.gaze = tmp
+                        if self._gaze_cb:
+                            self._gaze_cb(tmp)
+                    elif topic.startswith("fixation"):
+                        self.fixation = tmp
+                        if self._fix_cb:
+                            self._fix_cb(tmp)
                     elif topic.startswith("notify.calibration"):
                         self._last_calibration_notification = tmp
                     elif topic.startswith("notify.aravis.start_capture"):
@@ -485,8 +557,20 @@ class EyeTrackerClient(threading.Thread):
     def set_pupil_cb(self, pupil_cb):
         self._pupil_cb = pupil_cb
 
+    def set_gaze_cb(self, gaze_cb):
+        self._gaze_cb = gaze_cb
+
+    def set_fix_cb(self, fix_cb):
+        self._fix_cb = fix_cb
+
     def unset_pupil_cb(self):
         self._pupil_cb = None
+
+    def unset_gaze_cb(self):
+        self._gaze_cb = None
+
+    def unset_fix_cb(self):
+        self._fix_cb = None
 
     def get_pupil(self):
         with nonblocking(self.lock) as locked:
@@ -499,6 +583,103 @@ class EyeTrackerClient(threading.Thread):
                 return self.gaze
 
 
+    def get_marker_dictionary(self, ref_list):
+        position_list = []
+        markers_dict = {}
+        count = 0
+
+        for i in range(len(ref_list['markers'])):
+            m = ref_list['markers'][i]
+            if not (m['norm_pos']) in position_list:
+                markers_dict[count] = {
+                    'norm_pos': m['norm_pos'],
+                    'screen_pos': m['screen_pos'],
+                    'onset': m['timestamp'],
+                    'offset': -1.0,
+                }
+                count += 1
+                position_list.append(m['norm_pos'])
+            elif m['timestamp'] > markers_dict[count-1]['offset']:
+                markers_dict[count-1]['offset'] = m['timestamp']
+
+        return markers_dict
+
+
+    def assign_fix_to_markers(self, fixation_list, markers_dict):
+        '''
+        Assign fixations to markers based on their onset.
+        A fixation is assigned to a marker if its ONSET overlaps with the time the marker is on the screen
+        '''
+        i = 0
+        for count in range(len(markers_dict.keys())):
+            marker = markers_dict[count]
+            fix_dict = {}
+
+            while fixation_list[i]['timestamp'] < marker['onset'] and i < len(fixation_list):
+                i += 1
+
+            while fixation_list[i]['timestamp'] < marker['offset'] and i < len(fixation_list):
+                fix = fixation_list[i]
+                if fix['id'] not in fix_dict:
+                    fix_dict[fix['id']] = {
+                                        'timestamps': [fix['timestamp']],
+                                        'norm_pos': [fix['norm_pos']],
+                                        'durations': [fix['duration']],
+                                        'dispersions': [fix['dispersion']],
+                    }
+                else:
+                    fix_dict[fix['id']]['timestamps'].append(fix['timestamp'])
+                    fix_dict[fix['id']]['norm_pos'].append(fix['norm_pos'])
+                    fix_dict[fix['id']]['durations'].append(fix['duration'])
+                    fix_dict[fix['id']]['dispersions'].append(fix['dispersion'])
+                i += 1
+
+            markers_dict[count]['fix_dict'] = fix_dict
+
+        return markers_dict
+
+
+    def fix_to_marker_distances(self, markers_dict):
+        '''
+        estimated eye-to-screen distance in pixels
+        based on screen dim in pixels ((1280, 1024)) and screen deg of visual angle (17.5, 14)
+        '''
+        dist_in_pix = 4164 # in pixels
+
+        print('Distance between gaze and target in degrees of visual angle')
+        print(' Good < 0.5 deg, Fair < 1.5 deg, Poor > 1.5 deg')
+
+        for count in range(len(markers_dict.keys())):
+            m = markers_dict[count]
+            print('Marker ' + str(count) + ' , Position: ' +  str(m['norm_pos']))
+
+            # transform marker's normalized position into dim = (3,) vector in pixel space
+            m_vecpos = np.concatenate(((np.array(m['norm_pos']) - 0.5)*(1280, 1024), np.array([dist_in_pix])), axis=0)
+
+            for key in m['fix_dict'].keys():
+                fix = (np.array(m['fix_dict'][key]['norm_pos']) - 0.5)*(1280, 1024)
+                fix_vecpos = np.concatenate((fix, np.repeat(dist_in_pix, len(fix)).reshape((-1, 1))), axis=1)
+
+                distances = []
+                for fix_vec in fix_vecpos:
+                    vectors = np.stack((m_vecpos, fix_vec), axis=0)
+                    distance = np.rad2deg(np.arccos(1.0 - pdist(vectors, metric='cosine')))
+
+                    distances.append(distance[0])
+
+                distances = np.array(distances)
+                markers_dict[count]['fix_dict'][key]['distances'] = distances
+
+                num_fix = len(distances)
+                good = np.sum(distances < 0.5) / num_fix
+                fair = np.sum((distances >= 0.5)*(distances < 1.5)) / num_fix
+                poor = np.sum(distances >= 1.5) / num_fix
+
+                print('Total fix:' + str(num_fix) + ' , Good:' + str(good) + ' , Fair:' + str(fair) + ' , Poor:' + str(poor))
+
+        return markers_dict
+
+
     def interleave_calibration(self, tasks):
         calibration_index=0
         for task in tasks:
@@ -508,12 +689,19 @@ class EyeTrackerClient(threading.Thread):
                     self,
                     name=f"eyeTrackercalibration-{calibration_index}"
                     )
+                yield EyetrackerCalibration(
+                    self,
+                    name=f"eyeTrackercalib-validate-{calibration_index}",
+                    validation=True
+                    )
             yield task
 
     def calibrate(self, pupil_list, ref_list):
         if len(pupil_list) < 100:
             logging.error("Calibration: not enough pupil captured for calibration")
             # return
+
+        # TODO: check num of quality pupils per fixation points, set quality threshold...
 
         calib_data = {"ref_list": ref_list, "pupil_list": pupil_list}
 
@@ -527,6 +715,12 @@ class EyeTrackerClient(threading.Thread):
             }
         )
 
+    def validate(self, fixation_list, ref_list):
+
+        markers_dict = self.get_marker_dictionary(ref_list)
+        markers_dict = self.assign_fix_to_markers(fixation_list, markers_dict)
+        markers_dict = self.fix_to_marker_distances(markers_dict)
+        # TODO : export validation distances?
 
 
 class GazeDrawer:
