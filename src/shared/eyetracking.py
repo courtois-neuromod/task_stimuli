@@ -612,14 +612,15 @@ class EyeTrackerClient(threading.Thread):
         A fixation is assigned to a marker if its ONSET overlaps with the time the marker is on the screen
         '''
         i = 0
+        print(markers_dict[0]['onset'], fixation_list[0]['timestamp'])
         for count in range(len(markers_dict.keys())):
             marker = markers_dict[count]
             fix_dict = {}
 
-            while fixation_list[i]['timestamp'] < marker['onset'] and i < len(fixation_list):
+            while i < len(fixation_list) and fixation_list[i]['timestamp'] < marker['onset']:
                 i += 1
 
-            while fixation_list[i]['timestamp'] < marker['offset'] and i < len(fixation_list):
+            while i < len(fixation_list) and fixation_list[i]['timestamp'] < marker['offset']:
                 fix = fixation_list[i]
                 if fix['id'] not in fix_dict:
                     fix_dict[fix['id']] = {
