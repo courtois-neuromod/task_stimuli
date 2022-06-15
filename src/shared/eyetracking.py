@@ -276,7 +276,7 @@ class EyetrackerCalibration(Task):
                 )
             if self.validation:
                 #TODO: debug validate function below...
-                print('Ǹumber of received fixations: ', str(len(self.all_refs_per_flip)))
+                print('Ǹumber of received fixations: ', str(len(self._fix_list)))
                 self.eyetracker.validate(self._fix_list, self.all_refs_per_flip)
                 calibration_success = True
             else:
