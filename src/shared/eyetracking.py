@@ -275,7 +275,8 @@ class EyetrackerCalibration(Task):
                     f"calibrating on {len(self._pupils_list)} pupils and {len(self.all_refs_per_flip)} markers"
                 )
             if self.validation:
-                #TODO: define validate function below...
+                #TODO: debug validate function below...
+                print('Ǹumber of received fixations: ', str(len(self.all_refs_per_flip)))
                 self.eyetracker.validate(self._fix_list, self.all_refs_per_flip)
                 calibration_success = True
             else:
@@ -528,7 +529,7 @@ class EyeTrackerClient(threading.Thread):
         logging.info(f"ipc_sub_port: {ipc_sub_port}")
         self.pupil_monitor = Msg_Receiver(
             self._ctx, f"tcp://localhost:{ipc_sub_port}",
-            topics=("gaze", "pupil", "fixation", "notify.calibration.successful", "notify.calibration.failed", "notify.aravis")
+            topics=("gaze", "pupil", "fixations", "notify.calibration.successful", "notify.calibration.failed", "notify.aravis")
         )
         while not self.stoprequest.isSet():
             msg = self.pupil_monitor.recv()
@@ -543,7 +544,7 @@ class EyeTrackerClient(threading.Thread):
                         self.gaze = tmp
                         if self._gaze_cb:
                             self._gaze_cb(tmp)
-                    elif topic.startswith("fixation"):
+                    elif topic.startswith("fixations"):
                         self.fixation = tmp
                         if self._fix_cb:
                             self._fix_cb(tmp)
@@ -588,8 +589,8 @@ class EyeTrackerClient(threading.Thread):
         markers_dict = {}
         count = 0
 
-        for i in range(len(ref_list['markers'])):
-            m = ref_list['markers'][i]
+        for i in range(len(ref_list)):
+            m = ref_list[i]
             if not (m['norm_pos']) in position_list:
                 markers_dict[count] = {
                     'norm_pos': m['norm_pos'],
@@ -647,11 +648,11 @@ class EyeTrackerClient(threading.Thread):
         dist_in_pix = 4164 # in pixels
 
         print('Distance between gaze and target in degrees of visual angle')
-        print(' Good < 0.5 deg, Fair < 1.5 deg, Poor > 1.5 deg')
+        print(' Good < 0.5 deg, Fair in [0.5, 1.5[ deg, Poor >= 1.5 deg')
 
         for count in range(len(markers_dict.keys())):
             m = markers_dict[count]
-            print('Marker ' + str(count) + ' , Position: ' +  str(m['norm_pos']))
+            print('Marker ' + str(count) + ', Position: ' +  str(m['norm_pos']))
 
             # transform marker's normalized position into dim = (3,) vector in pixel space
             m_vecpos = np.concatenate(((np.array(m['norm_pos']) - 0.5)*(1280, 1024), np.array([dist_in_pix])), axis=0)
