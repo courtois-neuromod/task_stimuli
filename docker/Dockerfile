@@ -54,6 +54,7 @@ RUN cd /src/ \
 RUN pip3 install -r /src/task_stimuli/requirements.txt
 
 COPY ./entrypoint.sh /entrypoint.sh
+COPY ./.env.docker /src/task_stimuli/.env
 RUN chmod +x /entrypoint.sh
 
 COPY pulse-client.conf /etc/pulse/client.conf
@@ -74,3 +75,9 @@ ENTRYPOINT ["/entrypoint.sh"]
 WORKDIR /src/task_stimuli/
 
 # for aravis in docker see https://github.com/AravisProject/aravis/issues/509
+
+RUN apt-get update \
+  && apt-get -y install vlc libvlc-dev \
+  && apt-get autoremove && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN pip install python-vlc==3.0.11115
