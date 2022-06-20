@@ -5,6 +5,7 @@ from .zmq_tools import *
 import msgpack
 
 import numpy as np
+from scipy.spatial.distance import pdist
 from psychopy import visual, core, data, logging, event
 from .ellipse import Ellipse
 
