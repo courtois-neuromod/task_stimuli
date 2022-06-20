@@ -613,7 +613,7 @@ class EyeTrackerClient(threading.Thread):
         A fixation is assigned to a marker if its ONSET overlaps with the time the marker is on the screen
         '''
         i = 0
-        print(markers_dict[0]['onset'], fixation_list[0]['timestamp'])
+        #print(markers_dict[0]['onset'], fixation_list[0]['timestamp'])
         for count in range(len(markers_dict.keys())):
             marker = markers_dict[count]
             fix_dict = {}
@@ -650,11 +650,11 @@ class EyeTrackerClient(threading.Thread):
         dist_in_pix = 4164 # in pixels
 
         print('Distance between gaze and target in degrees of visual angle')
-        print(' Good < 0.5 deg, Fair in [0.5, 1.5[ deg, Poor >= 1.5 deg')
+        print('Good < 0.5 deg ; Fair = [0.5, 1.5[ deg ; Poor >= 1.5 deg')
 
         for count in range(len(markers_dict.keys())):
             m = markers_dict[count]
-            print('Marker ' + str(count) + ', Position: ' +  str(m['norm_pos']))
+            print('Marker ' + str(count) + ', Normalized position: ' +  str(m['norm_pos']))
 
             # transform marker's normalized position into dim = (3,) vector in pixel space
             m_vecpos = np.concatenate(((np.array(m['norm_pos']) - 0.5)*(1280, 1024), np.array([dist_in_pix])), axis=0)
@@ -678,7 +678,7 @@ class EyeTrackerClient(threading.Thread):
                 fair = np.sum((distances >= 0.5)*(distances < 1.5)) / num_fix
                 poor = np.sum(distances >= 1.5) / num_fix
 
-                print('Total fix:' + str(num_fix) + ' , Good:' + str(good) + ' , Fair:' + str(fair) + ' , Poor:' + str(poor))
+                print('Total fixations:' + str(num_fix) + ' , Good:' + str(good) + ' , Fair:' + str(fair) + ' , Poor:' + str(poor))
 
         return markers_dict
 
