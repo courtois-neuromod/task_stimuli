@@ -13,16 +13,12 @@ from ..tasks.task_base import Task
 from . import config
 
 INSTRUCTION_DURATION = 5
-
 CALIBRATE_HOTKEY = "c"
-INSTRUCTION_DURATION = 5
 
-MARKER_SIZE = 20 # this is the radius
-#MARKER_FILL_COLOR = (0.8, 0, 0.5)
-MARKER_DURATION_FRAMES = 90 #240 # 60 fps, 4s = 240; 60fps, 1.5s = 90 frames
-'''
+MARKER_FILL_COLOR = (0.8, 0, 0.5)
+
 # 10-pt calibration
-MARKER_POSITIONS = np.asarray(
+MARKER_POSITIONS_10 = np.asarray(
     [
         (0.25, 0.5),
         (0, 0.5),
@@ -36,9 +32,9 @@ MARKER_POSITIONS = np.asarray(
         (0.75, 0.5),
     ]
 )
-'''
+
 # 9-pt calibration
-MARKER_POSITIONS = np.asarray(
+MARKER_POSITIONS_9 = np.asarray(
     [
         (0.5, 0.5),
         (0, 0.5),
@@ -52,9 +48,6 @@ MARKER_POSITIONS = np.asarray(
     ]
 )
 
-# number of frames to eliminate at start and end of marker
-CALIBRATION_LEAD_IN = 10 # 20
-CALIBRATION_LEAD_OUT = 0 #20
 
 # Pupil settings
 PUPIL_REMOTE_PORT = 50123
@@ -70,22 +63,27 @@ CAPTURE_SETTINGS = {
 }
 
 
-class EyetrackerCalibration(Task):
+class EyetrackerCalibration_targets(Task):
     def __init__(
         self,
         eyetracker,
         markers_order="random",
-        #marker_fill_color=MARKER_FILL_COLOR,
-        markers=MARKER_POSITIONS,
+        markers=MARKER_POSITIONS_9,
         use_eyetracking=True,
         validation=False,
         **kwargs,
     ):
         self.markers_order = markers_order
         self.markers = markers
-        #self.marker_fill_color = marker_fill_color
+        self.marker_size = 20
+        self.marker_duration_frames = 90 # 60 fps, 4s = 240; 60fps, 1.5s = 90 frames
         super().__init__(use_eyetracking=use_eyetracking, **kwargs)
         self.eyetracker = eyetracker
+
+        # number of frames to eliminate at start and end of marker
+        self.calibration_lead_in = 10
+        self.calibration_lead_out = 0
+
         self.validation = validation
 
     def _instructions(self, exp_win, ctl_win):
@@ -113,8 +111,7 @@ class EyetrackerCalibration(Task):
     def _setup(self, exp_win):
         self.use_fmri = False
         super()._setup(exp_win)
-        self.fixation_dot = fixation_dot(exp_win, radius=MARKER_SIZE)
-
+        self.fixation_dot = fixation_dot(exp_win, radius=self.marker_size)
 
     def _pupil_cb(self, pupil):
         if pupil["timestamp"] > self.task_stop:
@@ -170,19 +167,7 @@ class EyetrackerCalibration(Task):
                 logging.info("calibration started")
                 print("calibration started")
 
-            #window_size_frame = exp_win.size - MARKER_SIZE * 2
             window_size_frame = exp_win.size - 50 * 2 # 50 = previous MARKER_SIZE; hard-coded to maintain distance from screen edge regardless of target shape
-
-            '''
-            circle_marker = visual.Circle(
-                exp_win,
-                edges=64,
-                units="pix",
-                lineColor=None,
-                #fillColor=self.marker_fill_color,
-                autoLog=False,
-            )
-            '''
 
             markers_order = np.arange(len(self.markers))
             if self.markers_order == "random":
@@ -192,15 +177,6 @@ class EyetrackerCalibration(Task):
             self._pupils_list = []
             self._gaze_list = []
             self._fix_list = []
-
-            '''
-            radius_anim = np.hstack(
-                [
-                    np.linspace(MARKER_SIZE, 0, MARKER_DURATION_FRAMES // 2),
-                    np.linspace(0, MARKER_SIZE, MARKER_DURATION_FRAMES // 2),
-                ]
-            )
-            '''
 
             self.task_start = time.monotonic()
             self.task_stop = np.inf
@@ -224,7 +200,6 @@ class EyetrackerCalibration(Task):
             for site_id in markers_order:
                 marker_pos = self.markers[site_id]
                 pos = (marker_pos - 0.5) * window_size_frame # remove 0.5 since 0, 0 is the middle in psychopy
-                #circle_marker.pos = pos
                 for stim in self.fixation_dot:
                     stim.pos = pos
                 if self.validation:
@@ -242,19 +217,14 @@ class EyetrackerCalibration(Task):
                 exp_win.callOnFlip(
                     self._log_event, {"marker_x": pos[0], "marker_y": pos[1]}
                 )
-                #for f, r in enumerate(radius_anim):
-                for f in range(MARKER_DURATION_FRAMES):
-                    #circle_marker.radius = r
-                    #circle_marker.draw(exp_win)
-                    #circle_marker.draw(ctl_win)
+                for f in range(self.marker_duration_frames):
                     for stim in self.fixation_dot:
                         stim.draw(exp_win)
                         stim.draw(ctl_win)
 
                     if (
-                        f > CALIBRATION_LEAD_IN
-                        #and f < len(radius_anim) - CALIBRATION_LEAD_OUT
-                        and f < MARKER_DURATION_FRAMES - CALIBRATION_LEAD_OUT
+                        f > self.calibration_lead_in
+                        and f < self.marker_duration_frames - self.calibration_lead_out
                     ):
                         screen_pos = pos + exp_win.size / 2
                         norm_pos = screen_pos / exp_win.size
@@ -276,7 +246,6 @@ class EyetrackerCalibration(Task):
                     f"calibrating on {len(self._pupils_list)} pupils and {len(self.all_refs_per_flip)} markers"
                 )
             if self.validation:
-                #TODO: debug validate function below...
                 print('Ǹumber of received fixations: ', str(len(self._fix_list)))
                 self.eyetracker.validate(self._fix_list, self.all_refs_per_flip)
                 calibration_success = True
@@ -307,7 +276,174 @@ class EyetrackerCalibration(Task):
                             gaze=self._gaze_list,
                             fixations=self._fix_list,
                             markers=self.all_refs_per_flip)
-            #np.savez(fname, pupils=self._pupils_list, markers=self.all_refs_per_flip)
+
+
+class EyetrackerCalibration(Task):
+    def __init__(
+        self,
+        eyetracker,
+        markers_order="random",
+        marker_fill_color=MARKER_FILL_COLOR,
+        markers=MARKER_POSITIONS_10,
+        use_eyetracking=True,
+        **kwargs,
+    ):
+        self.markers_order = markers_order
+        self.markers = markers
+        self.marker_size = 50
+        self.marker_duration_frames = 240
+        self.marker_fill_color = marker_fill_color
+        super().__init__(use_eyetracking=use_eyetracking, **kwargs)
+        self.eyetracker = eyetracker
+
+        # number of frames to eliminate at start and end of marker
+        self.calibration_lead_in = 20
+        self.calibration_lead_out = 20
+
+    def _instructions(self, exp_win, ctl_win):
+        instruction_text = """We're going to calibrate the eyetracker.
+Please look at the markers that appear on the screen.
+While awaiting for the calibration to start you will be asked to roll your eyes."""
+        screen_text = visual.TextStim(
+            exp_win,
+            text=instruction_text,
+            alignText="center",
+            color="white",
+            wrapWidth=config.WRAP_WIDTH,
+        )
+
+        for frameN in range(config.FRAME_RATE * INSTRUCTION_DURATION):
+            screen_text.draw(exp_win)
+            screen_text.draw(ctl_win)
+            yield True
+
+    def _setup(self, exp_win):
+        self.use_fmri = False
+        super()._setup(exp_win)
+
+    def _pupil_cb(self, pupil):
+        if pupil["timestamp"] > self.task_stop:
+            self.eyetracker.unset_pupil_cb()
+            return
+        if pupil["timestamp"] > self.task_start:
+            self._pupils_list.append(pupil)
+
+    def _run(self, exp_win, ctl_win):
+
+        roll_eyes_text = "Please roll your eyes ~2-3 times in clockwise and counterclockwise directions"
+
+        text_roll = visual.TextStim(
+            exp_win,
+            text=roll_eyes_text,
+            alignText="center",
+            color="white",
+            wrapWidth=config.WRAP_WIDTH,
+            )
+
+        calibration_success = False
+        while not calibration_success:
+            while True:
+                allKeys = event.getKeys([CALIBRATE_HOTKEY])
+                start_calibration = False
+                for key in allKeys:
+                    if key == CALIBRATE_HOTKEY:
+                        start_calibration = True
+                if start_calibration:
+                    break
+                text_roll.draw(exp_win)
+                yield False
+            logging.info("calibration started")
+            print("calibration started")
+
+            window_size_frame = exp_win.size - self.marker_size * 2
+            circle_marker = visual.Circle(
+                exp_win,
+                edges=64,
+                units="pix",
+                lineColor=None,
+                fillColor=self.marker_fill_color,
+                autoLog=False,
+            )
+
+            markers_order = np.arange(len(self.markers))
+            if self.markers_order == "random":
+                markers_order = np.random.permutation(markers_order)
+
+            self.all_refs_per_flip = []
+            self._pupils_list = []
+
+            radius_anim = np.hstack(
+                [
+                    np.linspace(self.marker_size, 0, self.marker_duration_frames // 2),
+                    np.linspace(0, self.marker_size, self.marker_duration_frames // 2),
+                ]
+            )
+
+            self.task_start = time.monotonic()
+            self.task_stop = np.inf
+            self.eyetracker.set_pupil_cb(self._pupil_cb)
+
+            while not len(self._pupils_list):  # wait until we get at least a pupil
+                yield False
+
+            exp_win.logOnFlip(
+                level=logging.EXP,
+                msg="eyetracker_calibration: starting at %f" % time.time(),
+            )
+            for site_id in markers_order:
+                marker_pos = self.markers[site_id]
+                pos = (marker_pos - 0.5) * window_size_frame
+                circle_marker.pos = pos
+                exp_win.logOnFlip(
+                    level=logging.EXP,
+                    msg="calibrate_position,%d,%d,%d,%d"
+                    % (marker_pos[0], marker_pos[1], pos[0], pos[1]),
+                )
+                exp_win.callOnFlip(
+                    self._log_event, {"marker_x": pos[0], "marker_y": pos[1]}
+                )
+                for f, r in enumerate(radius_anim):
+                    circle_marker.radius = r
+                    circle_marker.draw(exp_win)
+                    circle_marker.draw(ctl_win)
+
+                    if (
+                        f > self.calibration_lead_in
+                        and f < len(radius_anim) - self.calibration_lead_out
+                    ):
+                        screen_pos = pos + exp_win.size / 2
+                        norm_pos = screen_pos / exp_win.size
+                        ref = {
+                            "norm_pos": norm_pos.tolist(),
+                            "screen_pos": screen_pos.tolist(),
+                            "timestamp": time.monotonic(),  # =pupil frame timestamp on same computer
+                        }
+                        self.all_refs_per_flip.append(ref)  # accumulate all refs
+                    yield True
+            yield True
+            self.task_stop = time.monotonic()
+            logging.info(
+                f"calibrating on {len(self._pupils_list)} pupils and {len(self.all_refs_per_flip)} markers"
+            )
+            self.eyetracker.calibrate(self._pupils_list, self.all_refs_per_flip)
+            while True:
+                notes = getattr(self.eyetracker, '_last_calibration_notification',None)
+                if notes:
+                    calibration_success = notes['topic'].startswith("notify.calibration.successful")
+                    if not calibration_success:
+                        print('#### CALIBRATION FAILED: restart with <c> ####')
+                    break
+
+
+    def stop(self, exp_win, ctl_win):
+        self.eyetracker.unset_pupil_cb()
+        yield
+
+    def _save(self):
+        if hasattr(self, "_pupils_list"):
+            fname = self._generate_unique_filename("calib-data", "npz")
+            np.savez(fname, pupils=self._pupils_list, markers=self.all_refs_per_flip)
+
 
 class EyetrackerSetup(Task):
     def __init__(
@@ -369,7 +505,8 @@ class EyeTrackerClient(threading.Thread):
 
     EYE = "eye0"
 
-    def __init__(self, output_path, output_fname_base, profile=False, debug=False):
+    def __init__(self, output_path, output_fname_base, profile=False,
+                 debug=False, use_targets=False, validate_calib=False):
         super(EyeTrackerClient, self).__init__()
         self.stoprequest = threading.Event()
         self.lock = threading.Lock()
@@ -380,6 +517,11 @@ class EyeTrackerClient(threading.Thread):
         self.unset_pupil_cb()
         self.unset_gaze_cb()
         self.unset_fix_cb()
+
+        self.use_targets = use_targets
+        self.validate_calib = validate_calib
+        if not self.use_targets:
+            CAPTURE_SETTINGS["exposure_time"] = 4000
 
         self.output_path = output_path
         self.output_fname_base = output_fname_base
@@ -688,15 +830,22 @@ class EyeTrackerClient(threading.Thread):
         for task in tasks:
             calibration_index+=1
             if task.use_eyetracking:
-                yield EyetrackerCalibration(
-                    self,
-                    name=f"eyeTrackercalibration-{calibration_index}"
-                    )
-                yield EyetrackerCalibration(
-                    self,
-                    name=f"eyeTrackercalib-validate-{calibration_index}",
-                    validation=True
-                    )
+                if self.use_targets:
+                    yield EyetrackerCalibration_targets(
+                        self,
+                        name=f"eyeTrackercalibration-{calibration_index}"
+                        )
+                else:
+                    yield EyetrackerCalibration(
+                        self,
+                        name=f"eyeTrackercalibration-{calibration_index}"
+                        )
+                if self.validate_calib:
+                    yield EyetrackerCalibration_targets(
+                        self,
+                        name=f"eyeTrackercalib-validate-{calibration_index}",
+                        validation=True
+                        )
             yield task
 
     def calibrate(self, pupil_list, ref_list):
