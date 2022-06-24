@@ -10,28 +10,25 @@ TR = 1.49
 STIMULI_DURATION = 4
 BASELINE_BEGIN = 6
 BASELINE_END = 9
-TRIPLET_RIGHT_KEY = "r"
-TRIPLET_LEFT_KEY = "l"
 ISI = 4*TR - STIMULI_DURATION  
-
 INSTRUCTION_DURATION = 10
 RESPONSE_DURATION=ISI
 
 
 class Triplet(Task):
 
-    DEFAULT_INSTRUCTION = """You will see three words: one at the top, two at the bottom.
+    DEFAULT_INSTRUCTION = """You will see three words - we ask you to select the one that is NOT related in meaning.
 
-We ask you to select which of the two words at the bottom is most related to the one at the top by pressing either the left or right button.
 
-Don't think too much and give the first answer that comes to mind
+Don't think too much and give the first answer that comes to mind.
 """
 
-    INSTRUCTION_WAIT_KEY = (
-        DEFAULT_INSTRUCTION + "\nWhen you're ready press <%s>" % TRIPLET_LEFT_KEY
-    )
-
-    RESPONSE_KEYS= [TRIPLET_LEFT_KEY, TRIPLET_RIGHT_KEY]
+    RESPONSE_KEYS = ['up','right','left']
+    RESPONSE_TEXT = {
+        'left':'1',
+        'up':'2',
+        'right':'3',
+    }
 
     def __init__(self, words_file, *args, **kwargs):
         self.wait_key = kwargs.pop("wait_key", False)
@@ -61,12 +58,12 @@ Don't think too much and give the first answer that comes to mind
         yield True
 
     def _setup(self, exp_win):
-        self.target_stim = visual.TextStim(
-            exp_win, text="", pos=(0, 0.50), alignText="center", color="white"
+        self.r0_stim = visual.TextStim(
+            exp_win, text="", pos=(0, 0.25), alignText="center", color="white"
         )
 
         self.r1_stim = visual.TextStim(
-            exp_win, text="", pos=(0, 0.25), alignText="center", color="white"
+            exp_win, text="", pos=(0, 0), alignText="center", color="white"
         )
 
         self.r2_stim = visual.TextStim(
@@ -83,16 +80,17 @@ Don't think too much and give the first answer that comes to mind
 
         for trial_n, trial in enumerate(self.trials):
 
-            # TO ADD HERE THE RANDOMIZATION
-            self.target_stim.text = trial["target"]
-            self.r1_stim.text = trial["choice_1"]
-            self.r2_stim.text = trial["choice_2"]
-
-            responses = [trial["choice_1"], trial["choice_2"]]
+            # randomization
+            all_stim = [trial["target"],trial["choice_1"],trial["choice_2"]]
+            from random import shuffle
+            shuffle(all_stim)
+            self.r0_stim.text = all_stim[0]
+            self.r1_stim.text = all_stim[1]
+            self.r2_stim.text = all_stim[2]
 
             exp_win.winHandle.activate()
 
-            for stim in [self.target_stim, self.r1_stim, self.r2_stim]:
+            for stim in [self.r0_stim, self.r1_stim, self.r2_stim]:
                 stim.draw(exp_win)
                 if ctl_win:
                     stim.draw(ctl_win)
@@ -110,7 +108,7 @@ Don't think too much and give the first answer that comes to mind
                 f"Trial {trial_n}:: {trial['target']}"
             )
 
-            utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] - 1 / config.FRAME_RATE)
+            utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] - 1 / config.FRAME_RAßTE)
             yield True
             trial["offset_flip"] = (
                 self._exp_win_last_flip_time - self._exp_win_first_flip_time
@@ -122,10 +120,12 @@ Don't think too much and give the first answer that comes to mind
             triplet_answer_keys = event.getKeys(self.RESPONSE_KEYS, timeStamped=self.task_timer)
             if len(triplet_answer_keys):
                 first_response = triplet_answer_keys[0]
-                response_idx = self.RESPONSE_KEYS.index(first_response[0])
+                self.trials.addData("w1", all_stim[0])
+                self.trials.addData("w2", all_stim[1])
+                self.trials.addData("w3", all_stim[2])
                 self.trials.addData("answer", first_response[0])
                 self.trials.addData("answer_onset", first_response[1])
-                self.trials.addData("response_txt", responses[response_idx])
+                self.trials.addData("response_txt",self.RESPONSE_TEXT[first_response[0]])
                 self.trials.addData("response_time", first_response[1]-trial["onset_flip"])
                 self.progress_bar.set_description(
                     f"Trial {trial_n}:: {trial['target']}: \u2705")
