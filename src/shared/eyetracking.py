@@ -167,7 +167,8 @@ class EyetrackerCalibration_targets(Task):
                 logging.info("calibration started")
                 print("calibration started")
 
-            window_size_frame = exp_win.size - 50 * 2 # 50 = previous MARKER_SIZE; hard-coded to maintain distance from screen edge regardless of target shape
+            #window_size_frame = exp_win.size - 50 * 2 # 50 = previous MARKER_SIZE; hard-coded to maintain distance from screen edge regardless of target shape
+            window_size_frame = exp_win.size - 100 * 2 # 50 = previous MARKER_SIZE; hard-coded to maintain distance from screen edge regardless of target shape
 
             markers_order = np.arange(len(self.markers))
             if self.markers_order == "random":
