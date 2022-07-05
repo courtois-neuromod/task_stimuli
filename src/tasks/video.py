@@ -154,11 +154,20 @@ and fixate the dot whenever it appears."""
                         exp_win.logOnFlip(
                             level=logging.EXP, msg="fixation onset at frame %d at %f" % (next_frame_num, time.time()) # log fix onset time
                         )
+                        self._events.append({
+                            'event_type': 'fixation',
+                            'onset_frame': next_frame_num,
+                            'onset_time': next_frame_time,
+                        })
                         fixation_on = True
                 elif fixation_on:
                     exp_win.logOnFlip(
                         level=logging.EXP, msg="fixation offset at frame %d at %f" % (next_frame_num, time.time()) # log fix offset time
                     )
+                    self._events[-1].update({
+                        'offset_frame': next_frame_num,
+                        'offset_time': next_frame_time,
+                    })
                     fixation_on = False
 
             if not self._inmovie_fixations:
