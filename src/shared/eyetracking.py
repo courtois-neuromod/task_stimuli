@@ -248,7 +248,9 @@ class EyetrackerCalibration_targets(Task):
                 )
             if self.validation:
                 print('Ǹumber of received fixations: ', str(len(self._fix_list)))
-                self.eyetracker.validate(self._fix_list, self.all_refs_per_flip)
+                val_qc = self.eyetracker.validate(self._fix_list, self.all_refs_per_flip)
+                for vqc in val_qc:
+                    self._events[vqc['marker']].update(vqc)
                 calibration_success = True
             else:
                 self.eyetracker.calibrate(self._pupils_list, self.all_refs_per_flip)
@@ -792,13 +794,13 @@ class EyeTrackerClient(threading.Thread):
         '''
         dist_in_pix = 4164 # in pixels
 
+        val_qc = []
         print('Distance between gaze and target in degrees of visual angle')
         print('Good < 0.5 deg ; Fair = [0.5, 1.5[ deg ; Poor >= 1.5 deg')
 
         for count in range(len(markers_dict.keys())):
             m = markers_dict[count]
             print('Marker ' + str(count) + ', Normalized position: ' +  str(m['norm_pos']))
-
             # transform marker's normalized position into dim = (3,) vector in pixel space
             m_vecpos = np.concatenate(((np.array(m['norm_pos']) - 0.5)*(1280, 1024), np.array([dist_in_pix])), axis=0)
 
@@ -822,8 +824,16 @@ class EyeTrackerClient(threading.Thread):
                 poor = np.sum(distances >= 1.5) / num_fix
 
                 print('Total fixations:' + str(num_fix) + ' , Good:' + str(good) + ' , Fair:' + str(fair) + ' , Poor:' + str(poor))
+                val_qc.append({
+                    'marker': count,
+                    'norm_pos': m['norm_pos'],
+                    'num_fix': num_fix,
+                    'good': good,
+                    'fair': fair,
+                    'poor': poor
+                })
 
-        return markers_dict
+        return markers_dict, val_qc
 
 
     def interleave_calibration(self, tasks):
@@ -872,9 +882,9 @@ class EyeTrackerClient(threading.Thread):
 
         markers_dict = self.get_marker_dictionary(ref_list)
         markers_dict = self.assign_fix_to_markers(fixation_list, markers_dict)
-        markers_dict = self.fix_to_marker_distances(markers_dict)
+        markers_dict, val_qc = self.fix_to_marker_distances(markers_dict)
         # TODO : export validation distances?
-
+        return val_qc
 
 class GazeDrawer:
     def __init__(self, win):
