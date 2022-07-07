@@ -558,7 +558,8 @@ def read_pl_data(fname):
 
 
 def fixation_dot(win, **kwargs):
-    radius = kwargs.pop('radius', 30)
+    #radius = kwargs.pop('radius', 30)
+    radius = kwargs.pop('radius', 20)
     kwargs = {
         'lineColor': (1,-.5,-.5),
         'fillColor': (1,1,1),
@@ -566,5 +567,6 @@ def fixation_dot(win, **kwargs):
         **kwargs
     }
     circle = visual.Circle(win, lineWidth=radius*.4, **kwargs, radius=radius)
-    dot = visual.Circle(win, units=kwargs["units"], radius=radius*.2, lineWidth=0, fillColor=(-1,-1,-1))
+    dot = visual.Circle(win, units=kwargs["units"], radius=radius*.25, lineWidth=0, fillColor=(-1,-1,-1))
+    #dot = visual.Circle(win, units=kwargs["units"], radius=radius*.2, lineWidth=0, fillColor=(-1,-1,-1))
     return (circle, dot)
