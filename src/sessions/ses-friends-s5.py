@@ -2,7 +2,7 @@ from ..tasks import video
 
 TASKS = []
 
-for episode in range(1, 23):
+for episode in range(1, 24):
     segments = "abcd" if episode in [23] else "ab"
     for segment in segments
         TASKS.append(
