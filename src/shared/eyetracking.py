@@ -87,6 +87,9 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
 
     def _setup(self, exp_win):
         self.use_fmri = False
+        self.eyetracker.stop_capture()
+        time.sleep(.1)
+        self.eyetracker.start_capture()
         super()._setup(exp_win)
 
     def _pupil_cb(self, pupil):
@@ -100,13 +103,15 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
 
         roll_eyes_text = "Please roll your eyes ~2-3 times in clockwise and counterclockwise directions"
 
-        text_roll = visual.TextStim(
+        instructions = visual.TextStim(
             exp_win,
             text=roll_eyes_text,
             alignText="center",
             color="white",
             wrapWidth=config.WRAP_WIDTH,
             )
+
+        self.eyetracker.resume()
 
         calibration_success = False
         while not calibration_success:
@@ -118,7 +123,7 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
                         start_calibration = True
                 if start_calibration:
                     break
-                text_roll.draw(exp_win)
+                instructions.draw(exp_win)
                 yield False
             logging.info("calibration started")
             print("calibration started")
@@ -151,6 +156,10 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
             self.task_stop = np.inf
             self.eyetracker.set_pupil_cb(self._pupil_cb)
 
+            instructions.text = "Waiting for pupil"
+            for _ in range(2):
+                instructions.draw(exp_win)
+                yield True
             while not len(self._pupils_list):  # wait until we get at least a pupil
                 yield False
 
@@ -201,6 +210,7 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
                     if not calibration_success:
                         print('#### CALIBRATION FAILED: restart with <c> ####')
                     break
+        self.eyetracker.pause()
 
 
     def stop(self, exp_win, ctl_win):
@@ -275,7 +285,12 @@ class EyeTrackerClient(threading.Thread):
     def __init__(self, output_path, output_fname_base, profile=False, debug=False):
         super(EyeTrackerClient, self).__init__()
         self.stoprequest = threading.Event()
+        self.paused = True
+        self.pause_cond = threading.Condition(threading.Lock())
+        self.pause_cond.acquire()
         self.lock = threading.Lock()
+
+        self.pupil_monitor = None
 
         self.pupil = None
         self.gaze = None
@@ -375,6 +390,10 @@ class EyeTrackerClient(threading.Thread):
             )
         self.start_source()
 
+        self._req_socket.send_string("SUB_PORT")
+        self._ipc_sub_port = int(self._req_socket.recv())
+        logging.info(f"ipc_sub_port: {self._ipc_sub_port}")
+
     def start_source(self):
         self.send_recv_notification(
             {
@@ -384,6 +403,24 @@ class EyeTrackerClient(threading.Thread):
                 "args": CAPTURE_SETTINGS,
             }
         )
+
+
+    def start_capture(self):
+        self.send_recv_notification(
+            {
+                "subject": "capture.should_start",
+                "target": self.EYE
+            }
+        )
+
+    def stop_capture(self):
+        self.send_recv_notification(
+            {
+                "subject": "capture.should_stop",
+                "target": self.EYE
+            }
+        )
+
 
     def send_recv_notification(self, n):
         # REQ REP requires lock step communication with multipart msg (topic,msgpack_encoded dict)
@@ -422,32 +459,44 @@ class EyeTrackerClient(threading.Thread):
         time.sleep(1 / 60.0)
         super(EyeTrackerClient, self).join(timeout)
 
+    def pause(self):
+        self.paused = True
+        self.pause_cond.acquire()
+        del self.pupil_monitor
+
+    def resume(self):
+        self.paused=False
+        self.pupil_monitor = Msg_Receiver(
+            self._ctx, f"tcp://localhost:{self._ipc_sub_port}",
+            topics=("gaze", "pupil", "notify.calibration.successful", "notify.calibration.failed", "notify.aravis")
+        )
+        self.pause_cond.notify()
+        self.pause_cond.release()
+
     def run(self):
 
         self._aravis_notification = None
-        self._req_socket.send_string("SUB_PORT")
-        ipc_sub_port = int(self._req_socket.recv())
-        logging.info(f"ipc_sub_port: {ipc_sub_port}")
-        self.pupil_monitor = Msg_Receiver(
-            self._ctx, f"tcp://localhost:{ipc_sub_port}",
-            topics=("gaze", "pupil", "notify.calibration.successful", "notify.calibration.failed", "notify.aravis")
-        )
+
         while not self.stoprequest.isSet():
-            msg = self.pupil_monitor.recv()
-            if not msg is None:
-                topic, tmp = msg
-                with self.lock:
-                    if topic.startswith("pupil"):
-                        self.pupil = tmp
-                        if self._pupil_cb:
-                            self._pupil_cb(tmp)
-                    elif topic.startswith("gaze"):
-                        self.gaze = tmp
-                    elif topic.startswith("notify.calibration"):
-                        self._last_calibration_notification = tmp
-                    elif topic.startswith("notify.aravis.start_capture"):
-                        self._aravis_notification = tmp
-            time.sleep(1e-3)
+            with self.pause_cond:
+                while self.paused:
+                    self.pause_cond.wait()
+
+                msg = self.pupil_monitor.recv()
+                if not msg is None:
+                    topic, tmp = msg
+                    with self.lock:
+                        if topic.startswith("pupil"):
+                            self.pupil = tmp
+                            if self._pupil_cb:
+                                self._pupil_cb(tmp)
+                        elif topic.startswith("gaze"):
+                            self.gaze = tmp
+                        elif topic.startswith("notify.calibration"):
+                            self._last_calibration_notification = tmp
+                        elif topic.startswith("notify.aravis.start_capture"):
+                            self._aravis_notification = tmp
+                time.sleep(1e-3)
         logging.info("eyetracker listener: stopping")
 
     def set_pupil_cb(self, pupil_cb):
@@ -470,8 +519,8 @@ class EyeTrackerClient(threading.Thread):
     def interleave_calibration(self, tasks):
         calibration_index=0
         for task in tasks:
-            calibration_index+=1
             if task.use_eyetracking:
+                calibration_index+=1
                 yield EyetrackerCalibration(
                     self,
                     name=f"eyeTrackercalibration-{calibration_index}"
