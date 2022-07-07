@@ -104,3 +104,4 @@ venv.bak/
 .mypy_cache/
 data/things/memory_designs/*
 data/*/*
+docker/*.sif
