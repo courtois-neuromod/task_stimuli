@@ -713,23 +713,23 @@ class EyeTrackerClient(threading.Thread):
         del self.pupil_monitor
 
     def resume(self):
+        if self.paused:
+            self.pupil_monitor = Msg_Receiver(
 
-        self.pupil_monitor = Msg_Receiver(
+                self._ctx, f"tcp://localhost:{self._ipc_sub_port}",
+                topics=("gaze", "pupil", "fixations", "notify.calibration.successful", "notify.calibration.failed", "notify.aravis")
 
-            self._ctx, f"tcp://localhost:{self._ipc_sub_port}",
-            topics=("gaze", "pupil", "fixations", "notify.calibration.successful", "notify.calibration.failed", "notify.aravis")
-
-        )
-        self.pause_cond.notify()
-        self.pause_cond.release()
-        self.paused=False
+            )
+            self.pause_cond.notify()
+            self.pause_cond.release()
+            self.paused=False
 
     def run(self):
 
         self._aravis_notification = None
 
         while not self.stoprequest.isSet():
-            if not self.paused:
+            with self.pause_cond:
                 msg = self.pupil_monitor.recv()
                 if not msg is None:
                     topic, tmp = msg
