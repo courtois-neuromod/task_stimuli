@@ -16,5 +16,6 @@ for episode in list(range(1, 16))+list(range(17,25)):
                 infix_freq=20,
                 infix_dur=1.5,
                 name="task-friends-s6e%d%s-fixations" % (episode, segment),
+                use_eyetracking=True,
             )
         )
