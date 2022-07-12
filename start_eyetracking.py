@@ -25,10 +25,16 @@ def start_eyetracker(args):
             "args": {
                 "fullscreen": True,
                 "marker_scale": 1.0,
-                "sample_duration": 180,
+                "sample_duration": 360,
+<<<<<<< HEAD
+                "monitor_name": "eDP-1 [1]",
+                "fixed_screen": True,
+                "selected_gazer_class_name": "3D"
+=======
                 "monitor_name": "DP-2 [1]",
                 "fixed_screen": True,
                 "selected_gazer_class_name": "Gazer2D",
+>>>>>>> eyetracking_pupil2
             },
         }
     )
@@ -38,7 +44,11 @@ def start_eyetracker(args):
             "subject": "start_plugin",
             "name": "Annotation_Capture",
             "args": {
-                "annotation_definitions": [['Trigger','T']],
+<<<<<<< HEAD
+                "annotation_definitions": [['Trigger','T'], ['Trigger5','5'], ['Trigger%','%']]
+=======
+                "annotation_definitions": [['Trigger','T'],['Trigger5','5'],['Trigger%','%']],
+>>>>>>> eyetracking_pupil2
             },
         }
     )

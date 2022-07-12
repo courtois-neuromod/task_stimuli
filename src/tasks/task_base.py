@@ -86,9 +86,10 @@ class Task(object):
             for clearBuffer in self._instructions(exp_win, ctl_win):
                 yield
                 self._flip_all_windows(exp_win, ctl_win, clearBuffer)
-        # last/only flip to clear screen
-        yield
-        self._flip_all_windows(exp_win, ctl_win, True)
+        # 2 flips to clear screen
+        for i in range(2):
+            yield
+            self._flip_all_windows(exp_win, ctl_win, True)
 
     def run(self, exp_win, ctl_win):
         # needs to be the 1rst callbacks
