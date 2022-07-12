@@ -5,7 +5,7 @@ import threading
 from psychopy import visual, core, data, logging, event, sound, constants
 from .task_base import Task
 
-from ..shared import config
+from ..shared import config, utils
 
 import retro
 
@@ -15,7 +15,7 @@ DEFAULT_GAME_NAME = "ShinobiIIIReturnOfTheNinjaMaster-Genesis"
 # KEY_SET = 'zx__udlry___'
 # KEY_SET = ['a','b','c','d','up','down','left','right','x','y','z','k']
 # KEY_SET = ['x','z','_','_','up','down','left','right','c','_','_','_']
-KEY_SET = ["y", "a", "_", "_", "u", "d", "l", "r", "b", "_", "_", "_"]
+DEFAULT_KEY_SET = ["y", "a", "_", "_", "u", "d", "l", "r", "b", "_", "_", "_"]
 
 # KEY_SET = '0123456789'
 
@@ -39,32 +39,80 @@ def _onPygletKeyRelease(symbol, modifier):
     key = pyglet.window.key.symbol_string(symbol).lower().lstrip("_").lstrip("NUM_")
     _keyReleaseBuffer.append((key, keyTime))
 
+import sounddevice
+class SoundDeviceGameBlockStream(object):
 
-class SoundDeviceBlockStream(sound.backend_sounddevice.SoundDeviceSound):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        sample_rate,
+        block_size=0,
+        channels=2,
+        dtype=sounddevice.default.dtype[1]):
+
         self.blocks = queue.Queue()
+        self.blocks.put(np.zeros((500,2), dtype=dtype))
         self.lock = threading.Lock()
+        self.output_stream = sounddevice.OutputStream(
+            samplerate=sample_rate,
+            blocksize=block_size,
+            latency=0.1,
+            device=None,
+            channels=2,
+            callback=self.callback,
+            dtype=dtype,
+            prime_output_buffers_using_stream_callback=False
+            )
+        self.current_block_idx = 0
+        self.current_block = None
+        self.status = constants.STOPPED
 
-    def add_block(self, block):
-        with self.lock:
-            self.blocks.put(block)
-
-    def flush(self):
-        with self.lock:
-            self.blocks = queue.Queue()
-
-    def _nextBlock(self):
+    def callback(self, outdata, frames, time, status):
         if self.status == constants.STOPPED:
             return
         if self.blocks.empty():
-            block = np.zeros((self.blockSize, 2), dtype=np.float)
-        else:
+            outdata.fill(0)
+            logging.debug('sound queue empty')
+            return
+        elif self.current_block is None:
             with self.lock:
-                block = self.blocks.get()
-        self.t += self.blockSize / float(self.sampleRate)
-        return block
+                self.current_block = self.blocks.get()
 
+        out_idx = 0
+        while True:
+            current_block_len = self.current_block.shape[0]
+
+            split_idx = min(current_block_len-self.current_block_idx, frames-out_idx)
+            split_end = self.current_block_idx + split_idx
+            #print(frames,  current_block_len, out_idx, split_idx, self.current_block_idx, split_end)
+            outdata[out_idx:out_idx+split_idx] = self.current_block[self.current_block_idx:split_end]
+            out_idx += split_idx
+
+            self.current_block_idx = split_end
+            if split_end == current_block_len:
+                with self.lock:
+                    try:
+                        self.current_block = self.blocks.get(timeout=.01)
+                    except queue.Empty:
+                        logging.debug('sound queue empty')
+                self.current_block_idx = 0
+            if out_idx == frames:
+                return
+
+    def put(self, block):
+        with self.lock:
+            self.blocks.put(block)
+
+    def play(self):
+        self.status = constants.PLAYING
+        self.output_stream.start()
+
+    def stop(self):
+        self.status = constants.STOPPED
+        self.output_stream.stop()
+        self.flush()
+
+    def flush(self):
+        self.blocks = queue.Queue()
 
 class VideoGameBase(Task):
 
@@ -74,7 +122,9 @@ class VideoGameBase(Task):
         state_name=None,
         scenario=None,
         repeat_scenario=True,
+        scaling=1,
         inttype=retro.data.Integrations.CUSTOM_ONLY,
+        bg_color=(0,0,0),
         *args,
         **kwargs
     ):
@@ -85,6 +135,8 @@ class VideoGameBase(Task):
         self.scenario = scenario
         self.repeat_scenario = repeat_scenario
         self.inttype = inttype
+        self._scaling = scaling
+        self._bg_color = bg_color
 
     def _setup(self, exp_win):
 
@@ -93,36 +145,37 @@ class VideoGameBase(Task):
         self._first_frame = self.emulator.reset()
         first_sound_chunk = self.emulator.em.get_audio()
         blockSize = first_sound_chunk.shape[0]
-        self.game_sound = SoundDeviceBlockStream(
-            sampleRate = self.emulator.em.get_audio_rate(),
-            stereo=(first_sound_chunk.ndim==2 & first_sound_chunk.shape[1]==2),
-            blockSize=blockSize)
+        audio_rate = self.emulator.em.get_audio_rate()
+        #blockSize = int(audio_rate / self.game_fps)
+
+        logging.exp(f"VideoGame: audio sample rate {self.emulator.em.get_audio_rate()} blocksize: {blockSize}")
+        self.game_sound = SoundDeviceGameBlockStream(
+            sample_rate=audio_rate,
+            block_size=0,
+            dtype=np.int16)
 
         min_ratio = min(
             exp_win.size[0] / self._first_frame.shape[1],
             exp_win.size[1] / self._first_frame.shape[0],
         )
-        width = int(min_ratio * self._first_frame.shape[1])
-        height = int(min_ratio * self._first_frame.shape[0])
+        width = int(min_ratio * self._first_frame.shape[1] * self._scaling)
+        height = int(min_ratio * self._first_frame.shape[0] * self._scaling)
 
         self.game_vis_stim = visual.ImageStim(
             exp_win,
             size=(width, height),
-            units="pixels",
+            units="pix",
             interpolate=False,
             flipVert=True,
             autoLog=False,
         )
-
-    def _transform_soundblock(self, sound_block):
-        return sound_block[:self.game_sound.blockSize] / float(2 ** 15)
 
     def _render_graphics_sound(self, obs, sound_block, exp_win, ctl_win):
         self.game_vis_stim.image = obs / 255.0
         self.game_vis_stim.draw(exp_win)
         if ctl_win:
             self.game_vis_stim.draw(ctl_win)
-        self.game_sound.add_block(self._transform_soundblock(sound_block))
+        self.game_sound.put(sound_block)
         if not self.game_sound.status == constants.PLAYING:
             exp_win.callOnFlip(self.game_sound.play)  # start sound only at flip
 
@@ -137,6 +190,15 @@ class VideoGameBase(Task):
     def unload(self):
         self.emulator.close()
 
+    def fixation_cross(self, exp_win):
+        from ..shared.eyetracking import fixation_dot
+        fixation = fixation_dot(exp_win)
+        for stim in fixation:
+            stim.draw(exp_win)
+        yield True
+        self._log_event({'trial_type':'fixation_dot', 'duration': self._fixation_duration}, clock='flip')
+        utils.wait_until(self.task_timer, self.task_timer.getTime()+self._fixation_duration - .9* self._retraceInterval)
+        yield True
 
 class VideoGame(VideoGameBase):
 
@@ -147,6 +209,7 @@ class VideoGame(VideoGameBase):
         max_duration=0,
         post_level_ratings=None,
         post_run_ratings=None,
+        key_set=DEFAULT_KEY_SET,
         *args,
         **kwargs
     ):
@@ -156,6 +219,7 @@ class VideoGame(VideoGameBase):
         self.duration = max_duration
         self.post_level_ratings = post_level_ratings
         self.post_run_ratings = post_run_ratings
+        self.key_set = key_set
         self._completed = False
 
     def _instructions(self, exp_win, ctl_win):
@@ -263,14 +327,12 @@ class VideoGame(VideoGameBase):
             },
         )
         yield True
-        _nextFrameT = self._retraceInterval
+        _nextFrameT = self.task_timer.getTime()
         while not _done:
             level_step += 1
-            while _nextFrameT > (self.task_timer.getTime() -
-                       self._retraceInterval/2.0):
-                time.sleep(.0001)
+            _nextFrameT += self._frameInterval
             self._handle_controller_presses(exp_win)
-            keys = [k in self.pressed_keys for k in KEY_SET]
+            keys = [k in self.pressed_keys for k in self.key_set]
             _obs, _rew, _done, self._game_info = self.emulator.step(keys)
             total_reward += _rew
             if _rew > 0:
@@ -284,11 +346,15 @@ class VideoGame(VideoGameBase):
                     msg="VideoGame %s: %s stopped at %f"
                     % (self.game_name, self.state_name, time.time()),
                 )
-            if not level_step % config.FRAME_RATE:
+            if not level_step % int(self.game_fps):
                 exp_win.logOnFlip(level=logging.EXP, msg="level step: %d" % level_step)
+            while _nextFrameT > (self.task_timer.getTime() + self._retraceInterval*.9):
+                time.sleep(.0001)
+                utils.poll_windows()
+            if _nextFrameT < self.task_timer.getTime():
+                continue # drop frame
             yield True
 
-            _nextFrameT += self._frameInterval
         self._completed = self._completed or self._game_info['lives'] > -1
         self.game_sound.flush()
         self.game_sound.stop()
@@ -309,9 +375,9 @@ class VideoGame(VideoGameBase):
 
         self._set_key_handler(exp_win)
         self._nlevels = 0
-        exp_win.setColor([-1.0] * 3, colorSpace='rgb')
+        exp_win.setColor(self._bg_color, colorSpace='rgb255')
         if ctl_win:
-            ctl_win.setColor([-1.0] * 3, colorSpace='rgb')
+            ctl_win.setColor(self._bg_color, colorSpace='rgb255')
 
         while True:
             self._nlevels += 1
@@ -329,9 +395,9 @@ class VideoGame(VideoGameBase):
                 break
             self.emulator.reset()
 
-        exp_win.setColor([0] * 3, colorSpace='rgb')
+        exp_win.setColor([0] * 3, colorSpace='rgb255')
         if ctl_win:
-            ctl_win.setColor([0] * 3, colorSpace='rgb')
+            ctl_win.setColor([0] * 3, colorSpace='rgb255')
 
     def _run_ratings(self, exp_win, ctl_win):
         for question, n_pts in self.post_level_ratings:
@@ -346,10 +412,9 @@ class VideoGame(VideoGameBase):
             yield True
 
     def _questionnaire(self, exp_win, ctl_win, questions):
-
-        exp_win.setColor([0] * 3, colorSpace='rgb')
         if questions is None:
             return
+        exp_win.setColor([0] * 3, colorSpace='rgb')
         lines = []
         bullets = []
         responses = []
@@ -365,7 +430,7 @@ class VideoGame(VideoGameBase):
         legends.append(visual.TextStim(
             exp_win,
             text = 'Disagree',
-            units="pixels",
+            units="pix",
             pos=(scales_block_x - extent*0.75, scales_block_y*1.1),
             wrapWidth= win_width * 0.5,
             height= y_spacing / 3,
@@ -376,7 +441,7 @@ class VideoGame(VideoGameBase):
         legends.append(visual.TextStim(
             exp_win,
             text = 'Agree',
-            units="pixels",
+            units="pix",
             pos=(scales_block_x + extent*1.15, scales_block_y*1.1),
             wrapWidth= win_width * 0.5,
             height= y_spacing / 3,
@@ -403,7 +468,7 @@ class VideoGame(VideoGameBase):
                     exp_win,
                     (scales_block_x - extent, y_pos),
                     (scales_block_x + extent, y_pos),
-                    units="pixels",
+                    units="pix",
                     lineWidth=6,
                     autoLog=False,
                     lineColor=(0, -1, -1) if q_n == 0 else (-1, -1, -1),
@@ -413,7 +478,7 @@ class VideoGame(VideoGameBase):
                 [
                     visual.Circle(
                         exp_win,
-                        units="pixels",
+                        units="pix",
                         radius=10,
                         pos=(
                             scales_block_x - extent + i * x_spacing,
@@ -430,7 +495,7 @@ class VideoGame(VideoGameBase):
             texts.append(visual.TextStim(
                 exp_win,
                 text = question,
-                units="pixels",
+                units="pix",
                 bold = q_n == active_question,
                 pos=(0, y_pos),
                 wrapWidth= win_width * 0.5,
@@ -506,7 +571,7 @@ class VideoGame(VideoGameBase):
             exp_win,
             (-extent, 0),
             (extent, 0),
-            units="pixels",
+            units="pix",
             lineWidth=2,
             autoLog=False,
         )
@@ -514,7 +579,7 @@ class VideoGame(VideoGameBase):
         circles = [
             visual.Circle(
                 exp_win,
-                units="pixels",
+                units="pix",
                 radius=40,
                 pos=(-extent + i * x_spacing, 0),
                 fillColor=(-1, -1, -1),
@@ -563,11 +628,17 @@ class VideoGame(VideoGameBase):
 
 
 class VideoGameMultiLevel(VideoGame):
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self, *args,
+        fixation_duration=0,
+        show_instruction_between_repetitions=True,
+        **kwargs):
 
         self._state_names = kwargs.pop("state_names")
         self._scenarii = kwargs.pop("scenarii")
         self._repeat_scenario_multilevel = kwargs.get("repeat_scenario", False)
+        self._fixation_duration = fixation_duration
+        self._show_instruction_between_repetitions = show_instruction_between_repetitions
 
         kwargs["repeat_scenario"] = False
         super().__init__(
@@ -579,6 +650,10 @@ class VideoGameMultiLevel(VideoGame):
         #exp_win.waitBlanking = False
         self._set_key_handler(exp_win)
         self._nlevels = 0
+
+        exp_win.setColor(self._bg_color, colorSpace='rgb255')
+        if ctl_win:
+            ctl_win.setColor(self._bg_color, colorSpace='rgb255')
         while True:
             for level, scenario in zip(self._state_names, self._scenarii):
                 self._nlevels += 1
@@ -589,13 +664,19 @@ class VideoGameMultiLevel(VideoGame):
                     retro.data.get_file_path(self.game_name, f"{scenario}.json", inttype=self.inttype)
                 )
                 self._first_frame = self.emulator.reset()
+
+
+
                 if self._nlevels > 1:
                     self._set_recording_file()
-                    yield from self._instructions(exp_win, ctl_win)
+                    if self._show_instruction_between_repetitions:
+                        yield from self._instructions(exp_win, ctl_win)
 
-                exp_win.setColor([-1.0] * 3, colorSpace='rgb')
-                if ctl_win:
-                    ctl_win.setColor([-1.0] * 3, colorSpace='rgb')
+                if self._fixation_duration > 0:
+                    self.progress_bar.set_description("fixation")
+                    yield from self.fixation_cross(exp_win)
+                self.progress_bar.set_description(level)
+
                 yield from super()._run_emulator(exp_win, ctl_win)
                 self.game_sound.stop()
 
@@ -610,6 +691,9 @@ class VideoGameMultiLevel(VideoGame):
                     break
             if time_exceeded or not self._repeat_scenario_multilevel:
                 break
+        if self._fixation_duration > 0:
+            self.progress_bar.set_description("fixation")
+            yield from self.fixation_cross(exp_win)
         yield from self._questionnaire(
             exp_win, ctl_win, self.post_run_ratings
         )

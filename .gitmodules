@@ -17,3 +17,16 @@
 [submodule "data/language/triplets"]
 	path = data/language/triplets
 	url = git@github.com:courtois-neuromod/triplets.stimuli.git
+[submodule "data/fLoc"]
+	path = data/fLoc
+	url = git@github.com:courtois-neuromod/floc.stimuli.git
+	datalad-id = e730eb7b-0a99-453c-a861-2e21d6c72062
+[submodule "data/videogames/mario-snes"]
+	path = data/videogames/mariostars
+	url = ./data/videogames/mario-snes
+	datalad-id = 13404e51-6050-4ed4-902b-f8bc42cded1f
+[submodule "data/videos/friends"]
+	path = data/videos/friends
+	url = git@github.com:courtois-neuromod/friends.stimuli.git
+	datalad-id = bbbf34b9-31aa-4e35-b1ed-36525c6d7ce3
+	datalad-url = git@github.com:courtois-neuromod/friends.stimuli.git
