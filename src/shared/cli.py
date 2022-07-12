@@ -109,6 +109,8 @@ def main_loop(
     enable_ptt=False,
     record_movie=False,
     skip_soundcheck=False,
+    calibration_targets=False,
+    validate_eyetrack=False,
 ):
 
     # force screen resolution to solve issues with video splitter at scanner
@@ -160,15 +162,17 @@ def main_loop(
             output_fname_base=log_name_prefix,
             profile=False,
             debug=False,
+            use_targets = calibration_targets,
+            validate_calib = validate_eyetrack,
         )
         print("starting et client")
         eyetracker_client.start()
         print("done")
 
-        #all_tasks = itertools.chain(
-        #    [eyetracking.EyetrackerSetup(eyetracker=eyetracker_client, name='eyetracker_setup'),],
-        #    all_tasks
-        #)
+        all_tasks = itertools.chain(
+            [eyetracking.EyetrackerSetup(eyetracker=eyetracker_client, name='eyetracker_setup'),],
+            all_tasks
+        )
         all_tasks = eyetracker_client.interleave_calibration(all_tasks)
 
         if show_ctl_win:

@@ -5,7 +5,8 @@ import os, sys, importlib
 import itertools
 from collections.abc import Iterable, Iterator
 
-from src.shared import parser, config, screen
+from src.shared import config
+from src.shared import parser, screen
 from src.shared.didyoumean import suggest_session_tasks
 
 
@@ -39,6 +40,8 @@ def run(parsed):
             parsed.ptt,
             parsed.record_movie,
             parsed.skip_soundcheck,
+            parsed.target_ETcalibration,
+            parsed.validate_ET,                        
             )
     finally:
         if not parsed.no_force_resolution:
