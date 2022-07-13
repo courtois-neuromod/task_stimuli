@@ -41,14 +41,14 @@ SENSORIMOTOR_FEATURES = [
     "by performing an action with your torso",
 ]
 
-def generate_design_file(subject, all_words, pilot=False):
+def generate_design_file(subject, all_words, pilot=False, sm_feat=False):
     import os
     import hashlib
     import numpy as np
 
     # sample all ISI with same seed for matching run length
     np.random.seed(0)
-    isi_set = np.random.random_sample(N_TRIALS_PER_RUN)*ISI_JITTER + TR
+    isi_set = np.random.random_sample(N_TRIALS_PER_RUN)*ISI_JITTER + ISI
     # seed numpy with subject id to have reproducible design generation
     seed = int(
         hashlib.sha1(("%s" % (subject)).encode("utf-8")).hexdigest(), 16
@@ -71,10 +71,11 @@ def generate_design_file(subject, all_words, pilot=False):
         run_words['trial_index'] = np.arange(len(run_words))
         run_words['block_index'] = run_words['trial_index']//N_TRIALS_PER_BLOCK
         run_words['isi'] = np.random.permutation(isi_set)[:len(run_words)]
-        run_words['sensorimotor_feature'] = run_sm_feats.repeat(N_TRIALS_PER_BLOCK)[:len(run_words)]
+        if sm_feat:
+            run_words['sensorimotor_feature'] = run_sm_feats.repeat(N_TRIALS_PER_BLOCK)[:len(run_words)]
         run_words['onset'] = BASELINE_BEGIN + \
-            run_words['trial_index']*STIMULI_DURATION + \
-            np.cumsum(run_words['isi']) + \
+            run_words['trial_index']*TRIAL_DURATION + \
+            np.hstack([[0],np.cumsum(run_words['isi'][:-1])]) + \
             run_words['block_index'] * (FEATURES_INSTRUCTION_DURATION + POST_FEATURES_INSTRUCTION_ISI)
         run_words['duration'] = STIMULI_DURATION
         run_words = pandas.concat(
@@ -85,9 +86,9 @@ def generate_design_file(subject, all_words, pilot=False):
                     'sensorimotor_feature': [run_words.sensorimotor_feature[block*N_TRIALS_PER_BLOCK]],
                     'block_index': [block],
                     'isi': [POST_FEATURES_INSTRUCTION_ISI],
-                    }),
+                    }) if sm_feat else None,
                   run_words[block*N_TRIALS_PER_BLOCK:(block+1)*N_TRIALS_PER_BLOCK]] \
-              for block in range(int(np.ceil(len(run_words)/25)))],[]))
+              for block in range(int(np.ceil(len(run_words)/25)))], []))
 
 
         session = run // N_RUNS_PER_SESSION + 1
@@ -114,10 +115,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--pilot", help="Use pilot set", action="store_true"
     )
+    parser.add_argument(
+        "--sm_feat", help="sensorimotor features questions", action="store_true"
+    )
 
     parsed = parser.parse_args()
     if parsed.pilot:
         all_words = pandas.read_csv(os.path.join(TRIPLET_DATA_PATH, 'pilotable_words_v2.tsv'),sep='\t')
     else:
         all_words = pandas.read_csv(os.path.join(TRIPLET_DATA_PATH, 'fMRI_unique_words.tsv'), sep='\t')
-    generate_design_file(parsed.subject, all_words, parsed.pilot)
+    generate_design_file(parsed.subject, all_words, parsed.pilot, parsed.sm_feat)
