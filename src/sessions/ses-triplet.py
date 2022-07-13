@@ -12,14 +12,14 @@ def get_tasks(parsed):
 
 TRIPLET_DATA_PATH = "data/language/triplets"
 TR=1.49
-N_TRIALS_PER_RUN = 5
+N_TRIALS_PER_RUN = 25
 N_RUNS_PER_SESSION = 2
 STIMULI_DURATION = 4
 TRIAL_DURATION = 4*TR
 BASELINE_BEGIN = 6
 BASELINE_END = 9
 ISI = TRIAL_DURATION - STIMULI_DURATION
-ISI_JITTER = 0
+ISI_JITTER = 2
 
 def generate_design_file(subject, all_triplets, pilot=False):
     import os
@@ -28,7 +28,7 @@ def generate_design_file(subject, all_triplets, pilot=False):
 
     # sample all ISI with same seed for matching run length
     np.random.seed(0)
-    isi_set = np.random.random_sample(N_TRIALS_PER_RUN)*ISI_JITTER + TR
+    isi_set = np.random.random_sample(N_TRIALS_PER_RUN)*ISI_JITTER + ISI
 
     # seed numpy with subject id to have reproducible design generation
     seed = int(
@@ -43,7 +43,9 @@ def generate_design_file(subject, all_triplets, pilot=False):
     for run in range(int(np.ceil(len(all_triplets)/N_TRIALS_PER_RUN))):
         run_triplets = all_triplets[run*N_TRIALS_PER_RUN:(run+1)*N_TRIALS_PER_RUN]
         run_triplets['isi'] = np.random.permutation(isi_set)[:len(run_triplets)]
-        run_triplets['onset'] = BASELINE_BEGIN + np.arange(len(run_triplets))*STIMULI_DURATION + np.cumsum(run_triplets['isi'])
+        run_triplets['onset'] = (BASELINE_BEGIN + \
+            np.arange(len(run_triplets))*STIMULI_DURATION +
+            np.hstack([[0],np.cumsum(run_triplets['isi'][:-1])]))
         run_triplets['duration'] = STIMULI_DURATION
 
         session = run // N_RUNS_PER_SESSION + 1
