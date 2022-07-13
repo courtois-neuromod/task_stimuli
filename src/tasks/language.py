@@ -5,12 +5,13 @@ from .task_base import Task
 from colorama import Fore
 
 from ..shared import config, utils
+from ..shared.eyetracking import fixation_dot
 
 TR = 1.49
 STIMULI_DURATION = 4
 BASELINE_BEGIN = 6
 BASELINE_END = 9
-ISI = 4*TR - STIMULI_DURATION  
+ISI = 4*TR - STIMULI_DURATION
 INSTRUCTION_DURATION = 10
 RESPONSE_DURATION=ISI
 
@@ -74,8 +75,11 @@ Don't think too much and give the first answer that comes to mind.
 
         self.duration = len(self.words_list)
         self._progress_bar_refresh_rate = 2
+        self.fixation = fixation_dot(exp_win)
 
     def _run(self, exp_win, ctl_win):
+        for stim in self.fixation:
+            stim.draw(exp_win)
         yield True
 
         for trial_n, trial in enumerate(self.trials):
@@ -88,7 +92,7 @@ Don't think too much and give the first answer that comes to mind.
             self.r1_stim.text = all_stim[1]
             self.r2_stim.text = all_stim[2]
 
-            exp_win.winHandle.activate()
+            #exp_win.winHandle.activate()
 
             for stim in [self.r0_stim, self.r1_stim, self.r2_stim]:
                 stim.draw(exp_win)
@@ -108,7 +112,9 @@ Don't think too much and give the first answer that comes to mind.
                 f"Trial {trial_n}:: {trial['target']}"
             )
 
-            utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] - 1 / config.FRAME_RAßTE)
+            for stim in self.fixation:
+                stim.draw(exp_win)
+            utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] - 1 / config.FRAME_RATE)
             yield True
             trial["offset_flip"] = (
                 self._exp_win_last_flip_time - self._exp_win_first_flip_time
@@ -211,6 +217,8 @@ Press B if you don’t know the word."""
             if ctl_win:
                 self.text.draw(ctl_win)
 
+            #force focus
+            exp_win.winHandle.activate()
             utils.wait_until(self.task_timer, trial["onset"] - 1 / config.FRAME_RATE)
             keypresses = event.getKeys(self.RESPONSE_KEYS) # flush response keys
             yield True # flip
@@ -251,7 +259,7 @@ Press B if you don’t know the word."""
 
 class WordFamiliarity(Task):
 
-    DEFAULT_INSTRUCTION = """You will be presented single words. 
+    DEFAULT_INSTRUCTION = """You will be presented single words.
     Please rate how familiar are you with that concept from 1 (unfamiliar) to 3 (familiar)"""
 
     RESPONSE_KEYS = ['up','right','left']
@@ -293,11 +301,16 @@ class WordFamiliarity(Task):
         self.duration = len(self.words_list)
         self._progress_bar_refresh_rate = 2
         self.trials = data.TrialHandler(self.words_list, 1, method="sequential")
+        self.fixation = fixation_dot(exp_win)
 
 
     def _run(self, exp_win, ctl_win):
+        for stim in self.fixation:
+            stim.draw(exp_win)
         yield True
         for trial_n, trial in enumerate(self.trials):
+            if trial['trial_type'] != 'word':
+                continue
 
             self.text.bold = False
             self.text.text = trial['word']
@@ -309,6 +322,8 @@ class WordFamiliarity(Task):
             if ctl_win:
                 self.text.draw(ctl_win)
 
+            #force focus
+            exp_win.winHandle.activate()
             utils.wait_until(self.task_timer, trial["onset"] - 1 / config.FRAME_RATE)
             keypresses = event.getKeys(self.RESPONSE_KEYS) # flush response keys
             yield True # flip
@@ -316,11 +331,14 @@ class WordFamiliarity(Task):
                 self._exp_win_last_flip_time - self._exp_win_first_flip_time
             )
 
+            for stim in self.fixation:
+                stim.draw(exp_win)
             utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] - 1 / config.FRAME_RATE)
             yield True
             trial["offset_flip"] = (
                 self._exp_win_last_flip_time - self._exp_win_first_flip_time
             )
+            trial["duration_flip"] = trial["offset_flip"] - trial["onset_flip"]
             # wait until .1s before the next trial, leaving time to prepare it
             utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] + trial['isi'] - .1)
 
@@ -337,8 +355,6 @@ class WordFamiliarity(Task):
             else:
                 for k in ['answer', 'answer_onset', 'answer_text', 'response_time']:
                     trial[k] = ''
-            self.trials.addData("all_keys", answer_keys)
-            utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] + trial['isi'] - .1)
 
         # wait for end of run baseline
         utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] + BASELINE_END)
