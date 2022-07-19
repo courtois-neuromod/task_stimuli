@@ -60,7 +60,7 @@ Don't think too much and give the first answer that comes to mind.
 
     def _setup(self, exp_win):
         self.r0_stim = visual.TextStim(
-            exp_win, text="", pos=(0, 0.25), alignText="center", color="white"
+            exp_win, text="", pos=(0, 0.5), alignText="center", color="white"
         )
 
         self.r1_stim = visual.TextStim(
@@ -68,7 +68,7 @@ Don't think too much and give the first answer that comes to mind.
         )
 
         self.r2_stim = visual.TextStim(
-            exp_win, text="", pos=(0, -0.25), alignText="center", color="white"
+            exp_win, text="", pos=(0, -0.5), alignText="center", color="white"
         )
 
         self.trials = data.TrialHandler(self.words_list, 1, method="sequential")
@@ -92,7 +92,7 @@ Don't think too much and give the first answer that comes to mind.
             self.r1_stim.text = all_stim[1]
             self.r2_stim.text = all_stim[2]
 
-            #exp_win.winHandle.activate()
+            exp_win.winHandle.activate()
 
             for stim in [self.r0_stim, self.r1_stim, self.r2_stim]:
                 stim.draw(exp_win)
