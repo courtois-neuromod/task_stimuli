@@ -3,6 +3,7 @@ import os
 def get_tasks(parsed):
     from ..tasks import language, task_base
     from psychopy import logging
+    import json
     bids_sub = "sub-%s" % parsed.subject
     savestate_path = os.path.abspath(os.path.join(parsed.output, "sourcedata", bids_sub, f"{bids_sub}_task-triplet_savestate.json"))
 
@@ -14,12 +15,14 @@ def get_tasks(parsed):
         savestate = {"session": 1}
     logging.exp(f"loading savestate: currently on session {savestate['session']:03d}")
 
+
+    print(f'savestate: {savestate}')
     #only one run of each
     run = 1
 
     task = language.WordFamiliarity(
-        f"{TRIPLET_DATA_PATH}/words_designs/sub-{parsed.subject}_ses-{savestate['session']:03d}_run-{run:02d}_design.tsv",
-        name="task-singlewords",
+        f"{TRIPLET_DATA_PATH}/words_designs/sub-{parsed.subject}_ses-{savestate['session']:03d}_task-wordsfamiliarity_run-{run:02d}_design.tsv",
+        name="task-wordsfamiliarity",
         use_eyetracking=True,
     )
     yield task
@@ -30,7 +33,7 @@ def get_tasks(parsed):
     )
 
     task = language.Triplet(
-        f"{TRIPLET_DATA_PATH}/designs/sub-{parsed.subject}_ses-{savestate['session']:03d}_run-{run:02d}_design.tsv",
+        f"{TRIPLET_DATA_PATH}/designs/sub-{parsed.subject}_ses-{savestate['session']:03d}_task-triplet_run-{run:02d}_design.tsv",
         name="task-triplets",
         use_eyetracking=True,
     )
@@ -63,7 +66,7 @@ def generate_design_file(subject, all_triplets, pilot=False):
 
     # sample all ISI with same seed for matching run length
     np.random.seed(0)
-    isi_set = np.random.random_sample(N_TRIALS_PER_RUN)*ISI_JITTER + ISI
+    isi_set = np.random.random_sample(N_TRIALS_PER_RUN)*ISI_JITTER - ISI_JITTER/2 + ISI
 
     # seed numpy with subject id to have reproducible design generation
     seed = int(
@@ -89,7 +92,7 @@ def generate_design_file(subject, all_triplets, pilot=False):
         out_fname = os.path.join(
             TRIPLET_DATA_PATH,
             "designs",
-            f"sub-{parsed.subject}_ses-{'pilot' if pilot else ''}{session:03d}_run-{run_in_session:02d}_design.tsv",
+            f"sub-{parsed.subject}_ses-{'pilot' if pilot else ''}{session:03d}_task-triplet_run-{run_in_session:02d}_design.tsv",
         )
         print(f"writing {out_fname}")
         run_triplets.to_csv(out_fname, sep="\t", index=False)

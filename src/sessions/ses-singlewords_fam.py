@@ -15,7 +15,7 @@ def get_tasks(parsed):
 TRIPLET_DATA_PATH = "data/language/triplets"
 TR=1.49
 N_BLOCKS_PER_RUN = 1
-N_TRIALS_PER_BLOCK = 120
+N_TRIALS_PER_BLOCK = 133
 N_TRIALS_PER_RUN = N_BLOCKS_PER_RUN * N_TRIALS_PER_BLOCK
 N_RUNS_PER_SESSION = 1
 STIMULI_DURATION = .5
@@ -24,8 +24,6 @@ BASELINE_BEGIN = 9
 BASELINE_END = 9
 ISI = TRIAL_DURATION - STIMULI_DURATION
 ISI_JITTER = 2
-FEATURES_INSTRUCTION_DURATION = 3*TR
-POST_FEATURES_INSTRUCTION_ISI = 1*TR
 
 def generate_design_file(subject, all_words, pilot=False):
     import os
@@ -34,7 +32,7 @@ def generate_design_file(subject, all_words, pilot=False):
 
     # sample all ISI with same seed for matching run length
     np.random.seed(0)
-    isi_set = np.random.random_sample(N_TRIALS_PER_RUN)*ISI_JITTER + TR
+    isi_set = np.random.random_sample(N_TRIALS_PER_RUN)*ISI_JITTER - ISI_JITTER/2 + ISI
     # seed numpy with subject id to have reproducible design generation
     seed = int(
         hashlib.sha1(("%s" % (subject)).encode("utf-8")).hexdigest(), 16
@@ -67,7 +65,7 @@ def generate_design_file(subject, all_words, pilot=False):
         out_fname = os.path.join(
             TRIPLET_DATA_PATH,
             "words_designs",
-            f"sub-{parsed.subject}_ses-{'pilot' if pilot else ''}{session:03d}_run-{run_in_session:02d}_design.tsv",
+            f"sub-{parsed.subject}_ses-{'pilot' if pilot else ''}{session:03d}_task-wordsfamiliarity_run-{run_in_session:02d}_design.tsv",
         )
         print(f"writing {out_fname}")
         run_words.to_csv(out_fname, sep="\t", index=False)
