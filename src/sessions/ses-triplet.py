@@ -1,19 +1,49 @@
+import os
+
 def get_tasks(parsed):
     from ..tasks import language, task_base
-    TASKS = [
-        language.Triplet(
-            f"{TRIPLET_DATA_PATH}/designs/sub-{parsed.subject}_ses-{parsed.session}_run-{run+1:02d}_design.tsv",
-            name="task-triplets",
-            use_eyetracking=True,
-        )
-        for run in range(N_RUNS_PER_SESSION)
-    ]
+    from psychopy import logging
+    bids_sub = "sub-%s" % parsed.subject
+    savestate_path = os.path.abspath(os.path.join(parsed.output, "sourcedata", bids_sub, f"{bids_sub}_task-triplet_savestate.json"))
+
+    # check for a "savestate"
+    if os.path.exists(savestate_path):
+        with open(savestate_path) as f:
+            savestate = json.load(f)
+    else:
+        savestate = {"session": 1}
+    logging.exp(f"loading savestate: currently on session {savestate['session']:03d}")
+
+    #only one run of each
+    run = 1
+
+    yield language.WordFamiliarity(
+        f"{TRIPLET_DATA_PATH}/words_designs/sub-{parsed.subject}_ses-{savestate['session']:03d}_run-{run:02d}_design.tsv",
+        name="task-singlewords",
+        use_eyetracking=True,
+    )
+    yield task_base.Pause(
+        text="You can take a short break.\n Press A when ready to continue",
+        wait_key='a',
+    )
+
+    yield language.Triplet(
+        f"{TRIPLET_DATA_PATH}/designs/sub-{parsed.subject}_ses-{savestate['session']:03d}_run-{run:02d}_design.tsv",
+        name="task-triplets",
+        use_eyetracking=True,
+    )
+
+    savestate['session'] += 1
+    logging.exp(f"saving savestate: next session {savestate['session']:03d}")
+    with open(savestate_path, 'w') as f:
+        json.dump(savestate, f)
+
     return TASKS
 
 TRIPLET_DATA_PATH = "data/language/triplets"
 TR=1.49
-N_TRIALS_PER_RUN = 25
-N_RUNS_PER_SESSION = 2
+N_TRIALS_PER_RUN = 59 # 708/59=12
+N_RUNS_PER_SESSION = 1
 STIMULI_DURATION = 4
 TRIAL_DURATION = 4*TR
 BASELINE_BEGIN = 6

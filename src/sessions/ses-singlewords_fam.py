@@ -15,7 +15,7 @@ def get_tasks(parsed):
 TRIPLET_DATA_PATH = "data/language/triplets"
 TR=1.49
 N_BLOCKS_PER_RUN = 1
-N_TRIALS_PER_BLOCK = 25
+N_TRIALS_PER_BLOCK = 120
 N_TRIALS_PER_RUN = N_BLOCKS_PER_RUN * N_TRIALS_PER_BLOCK
 N_RUNS_PER_SESSION = 1
 STIMULI_DURATION = .5
@@ -58,19 +58,8 @@ def generate_design_file(subject, all_words, pilot=False):
         run_words['isi'] = np.random.permutation(isi_set)[:len(run_words)]
         run_words['onset'] = BASELINE_BEGIN + \
             run_words['trial_index']*STIMULI_DURATION + \
-            np.cumsum(run_words['isi']) + \
-            run_words['block_index'] * (FEATURES_INSTRUCTION_DURATION + POST_FEATURES_INSTRUCTION_ISI)
+            np.hstack([[0],np.cumsum(run_words['isi'][:-1])])
         run_words['duration'] = STIMULI_DURATION
-        run_words = pandas.concat(
-            sum([[pandas.DataFrame({
-                    'trial_type': ['word'],
-                    'onset': [run_words.onset[block*N_TRIALS_PER_BLOCK] - (FEATURES_INSTRUCTION_DURATION + POST_FEATURES_INSTRUCTION_ISI)],
-                    'duration': [FEATURES_INSTRUCTION_DURATION],
-                    'block_index': [block],
-                    'isi': [POST_FEATURES_INSTRUCTION_ISI],
-                    }),
-                  run_words[block*N_TRIALS_PER_BLOCK:(block+1)*N_TRIALS_PER_BLOCK]] \
-              for block in range(int(np.ceil(len(run_words)/25)))],[]))
 
         session = run // N_RUNS_PER_SESSION + 1
         run_in_session = run % N_RUNS_PER_SESSION + 1
