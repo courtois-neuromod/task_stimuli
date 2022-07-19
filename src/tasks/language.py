@@ -24,11 +24,11 @@ class Triplet(Task):
 Don't think too much and give the first answer that comes to mind.
 """
 
-    RESPONSE_KEYS = ['up','right','left']
+    RESPONSE_KEYS = ['x','a','b']
     RESPONSE_TEXT = {
-        'left':'1',
-        'up':'2',
-        'right':'3',
+        'x':'1',
+        'a':'2',
+        'b':'3',
     }
 
     def __init__(self, words_file, *args, **kwargs):
@@ -262,11 +262,11 @@ class WordFamiliarity(Task):
     DEFAULT_INSTRUCTION = """You will be presented single words.
     Please rate how familiar are you with that concept from 1 (unfamiliar) to 3 (familiar)"""
 
-    RESPONSE_KEYS = ['up','right','left']
+    RESPONSE_KEYS = ['b','a','x']
     RESPONSE_TEXT = {
-        'left':'1',
-        'up':'2',
-        'right':'3',
+        'b':'1',
+        'a':'2',
+        'x':'3',
     }
 
     def __init__(self, words_file, *args, **kwargs):
