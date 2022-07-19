@@ -17,26 +17,31 @@ def get_tasks(parsed):
     #only one run of each
     run = 1
 
-    yield language.WordFamiliarity(
+    task = language.WordFamiliarity(
         f"{TRIPLET_DATA_PATH}/words_designs/sub-{parsed.subject}_ses-{savestate['session']:03d}_run-{run:02d}_design.tsv",
         name="task-singlewords",
         use_eyetracking=True,
     )
+    yield task
+    tasks_completed = task._task_completed
     yield task_base.Pause(
         text="You can take a short break.\n Press A when ready to continue",
         wait_key='a',
     )
 
-    yield language.Triplet(
+    task = language.Triplet(
         f"{TRIPLET_DATA_PATH}/designs/sub-{parsed.subject}_ses-{savestate['session']:03d}_run-{run:02d}_design.tsv",
         name="task-triplets",
         use_eyetracking=True,
     )
+    yield task
+    tasks_completed = tasks_completed & task._task_completed
 
-    savestate['session'] += 1
-    logging.exp(f"saving savestate: next session {savestate['session']:03d}")
-    with open(savestate_path, 'w') as f:
-        json.dump(savestate, f)
+    if tasks_completed:
+        savestate['session'] += 1
+        logging.exp(f"saving savestate: next session {savestate['session']:03d}")
+        with open(savestate_path, 'w') as f:
+            json.dump(savestate, f)
 
     return TASKS
 
