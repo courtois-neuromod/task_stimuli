@@ -1,8 +1,8 @@
 import os
 
-EMOTION_DATA_PATH = "/Users/mepicard/Documents/neuromod/data/emotion"
+EMOTION_DATA_PATH = ""
 #GIFS_PATH = os.path.join(EMOTION_DATA_PATH,"emotionvideos")
-VIDEOS_PATH = "/Volumes/LaCie/Cowen/Cowen"
+VIDEOS_PATH = ""
 
 
 def get_tasks(parsed):
