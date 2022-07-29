@@ -15,9 +15,9 @@ def get_tasks(parsed):
 TRIPLET_DATA_PATH = "data/language/triplets"
 TR=1.49
 N_BLOCKS_PER_RUN = 1
-N_TRIALS_PER_BLOCK = 133
+N_TRIALS_PER_BLOCK = 106
 N_TRIALS_PER_RUN = N_BLOCKS_PER_RUN * N_TRIALS_PER_BLOCK
-N_RUNS_PER_SESSION = 1
+N_RUNS_PER_SESSION = 3
 STIMULI_DURATION = .5
 TRIAL_DURATION = 2*TR
 BASELINE_BEGIN = 9
@@ -43,7 +43,7 @@ def generate_design_file(subject, all_words, pilot=False):
     # randomize for participant
     all_words = all_words.sample(frac=1)
 
-
+    print(int(np.ceil(len(all_words)/N_TRIALS_PER_RUN)))
     for run in range(int(np.ceil(len(all_words)/N_TRIALS_PER_RUN))):
 
         run_words = all_words[run*N_TRIALS_PER_RUN:(run+1)*N_TRIALS_PER_RUN]
@@ -60,7 +60,7 @@ def generate_design_file(subject, all_words, pilot=False):
         run_words['duration'] = STIMULI_DURATION
 
         session = run // N_RUNS_PER_SESSION + 1
-        run_in_session = run % N_RUNS_PER_SESSION + 1
+        run_in_session = run % N_RUNS_PER_SESSION  + 1
 
         out_fname = os.path.join(
             TRIPLET_DATA_PATH,
