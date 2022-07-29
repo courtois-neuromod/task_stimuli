@@ -13,6 +13,7 @@ def get_tasks(parsed):
             savestate = json.load(f)
     else:
         savestate = {"session": 1}
+    session = savestate['session']
     logging.exp(f"loading savestate: currently on session {savestate['session']:03d}")
 
 
@@ -20,25 +21,30 @@ def get_tasks(parsed):
     #only one run of each
     run = 1
 
-    task = language.WordFamiliarity(
-        f"{TRIPLET_DATA_PATH}/words_designs/sub-{parsed.subject}_ses-{savestate['session']:03d}_task-wordsfamiliarity_run-{run:02d}_design.tsv",
-        name="task-wordsfamiliarity",
-        use_eyetracking=True,
-    )
-    yield task
-    tasks_completed = task._task_completed
-    yield task_base.Pause(
-        text="You can take a short break.\n Press A when ready to continue",
-        wait_key='a',
-    )
+    word_fam_runs = [1, 2] if session == 1 else ([] if session==N_SESSIONS else [1])
+    triplet_runs =  [1, 2] if session == N_SESSIONS else ([] if session==1 else [1])
 
-    task = language.Triplet(
-        f"{TRIPLET_DATA_PATH}/designs/sub-{parsed.subject}_ses-{savestate['session']:03d}_task-triplet_run-{run:02d}_design.tsv",
-        name="task-triplets",
-        use_eyetracking=True,
-    )
-    yield task
-    tasks_completed = tasks_completed & task._task_completed
+    for run in word_fam_runs:
+        task = language.WordFamiliarity(
+            f"{TRIPLET_DATA_PATH}/words_designs/sub-{parsed.subject}_ses-{savestate['session']:03d}_task-wordsfamiliarity_run-{run:02d}_design.tsv",
+            name=f"task-wordsfamiliarity_run-{run:02d}",
+            use_eyetracking=True,
+        )
+        yield task
+        tasks_completed = task._task_completed
+        yield task_base.Pause(
+            text="You can take a short break.\n Press A when ready to continue",
+            wait_key='a',
+        )
+
+    for run in triplet_runs:
+        task = language.Triplet(
+            f"{TRIPLET_DATA_PATH}/designs/sub-{parsed.subject}_ses-{savestate['session']:03d}_task-triplet_run-{run:02d}_design.tsv",
+            name=f"task-triplets_run-{run:02d}",
+            use_eyetracking=True,
+        )
+        yield task
+        tasks_completed = tasks_completed & task._task_completed
 
     if tasks_completed:
         savestate['session'] += 1
@@ -50,8 +56,9 @@ def get_tasks(parsed):
 
 TRIPLET_DATA_PATH = "data/language/triplets"
 TR=1.49
+N_SESSIONS = 4
 N_TRIALS_PER_RUN = 59 # 708/59=12
-N_RUNS_PER_SESSION = 1
+N_RUNS_PER_SESSION = 3
 STIMULI_DURATION = 4
 TRIAL_DURATION = 4*TR
 BASELINE_BEGIN = 6
