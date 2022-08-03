@@ -520,7 +520,7 @@ class EyeTrackerClient(threading.Thread):
                  debug=False, use_targets=False, validate_calib=False):
         super(EyeTrackerClient, self).__init__()
         self.stoprequest = threading.Event()
-        self.paused = True
+        self.paused = False
         self.pause_cond = threading.Condition(threading.Lock())
         self.pause_cond.acquire()
         self.lock = threading.Lock()
@@ -692,7 +692,7 @@ class EyeTrackerClient(threading.Thread):
     def resume(self):
         self.paused=False
         self.pupil_monitor = Msg_Receiver(
-            self._ctx, f"tcp://localhost:{ipc_sub_port}",
+            self._ctx, f"tcp://localhost:{self._ipc_sub_port}",
             topics=("gaze", "pupil", "fixations", "notify.calibration.successful", "notify.calibration.failed", "notify.aravis")
         )
         self.pause_cond.notify()
@@ -705,8 +705,8 @@ class EyeTrackerClient(threading.Thread):
         while not self.stoprequest.isSet():
 
             with self.pause_cond:
-                while self.paused:
-                    self.pause_cond.wait()
+#                while self.paused:
+#                    self.pause_cond.wait()
 
                 msg = self.pupil_monitor.recv()
                 if not msg is None:
@@ -871,22 +871,11 @@ class EyeTrackerClient(threading.Thread):
         calibration_index=0
         for task in tasks:
             if task.use_eyetracking:
-                if self.use_targets:
-                    yield EyetrackerCalibration_targets(
-                        self,
-                        name=f"eyeTrackercalibration-{calibration_index}"
-                        )
-                else:
-                    yield EyetrackerCalibration(
-                        self,
-                        name=f"eyeTrackercalibration-{calibration_index}"
-                        )
-                if self.validate_calib:
-                    yield EyetrackerCalibration_targets(
-                        self,
-                        name=f"eyeTrackercalib-validate-{calibration_index}",
-                        validation=True
-                        )
+                calibration_index += 1
+                yield EyetrackerCalibration(
+                    self,
+                    name=f"eyeTrackercalibration-{calibration_index}"
+                    )
             yield task
 
     def calibrate(self, pupil_list, ref_list):
