@@ -6,7 +6,7 @@ VIDEOS_PATH = ""
 
 
 def get_tasks(parsed):
-    from ..task.emotionvideos import EmotionVideos
+    from ..tasks.emotionvideos import EmotionVideos
     import pandas as pd
     
     sub_design_filename = os.path.join(
@@ -67,7 +67,7 @@ def repeat_gifs(path_to_gifs = VIDEOS_PATH, new_path_to_gifs=EMOTION_DATA_PATH):
     
     gifs_list['repetition'] = repetition
 
-    gifs_list.to_csv(os.path.join(EMOTION_DATA_PATH, "gifs_path_fmri.csv"))
+    gifs_list.to_csv(os.path.join(EMOTION_DATA_PATH, "emotionvideos_path_fmri.csv"))
 
     for idx, row in gifs_list.iterrows():
         path_gif = os.path.join(path_to_gifs, row.Gif)
@@ -94,7 +94,7 @@ def generate_design_file(random_state):
     random.seed(0)
     
     gifs_list = pd.read_csv(
-        os.path.join(EMOTION_DATA_PATH, "gifs_path_fmri.csv")
+        os.path.join(EMOTION_DATA_PATH, "emotionvideos_path_fmri.csv")
     )
     session = 1
 
@@ -131,6 +131,7 @@ def generate_design_file(random_state):
             
         gifs_exp['onset'] = onset
         gifs_exp['iti'] = iti_n
+        gifs_exp.rename(columns = {"Gif": "videos_path"})
 
         out_fname = os.path.join(
             EMOTION_DATA_PATH,
