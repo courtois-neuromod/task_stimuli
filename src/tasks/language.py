@@ -143,7 +143,7 @@ Don't think too much and give the first answer that comes to mind.
             self.trials.addData("all_keys", triplet_answer_keys)
 
         # wait for end of run baseline
-        utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] + BASELINE_END)
+        utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] + trial['isi'] + BASELINE_END)
 
     def _save(self):
         self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
@@ -251,7 +251,7 @@ Press B if you don’t know the word."""
             utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] + trial['isi'] - .1)
 
         # wait for end of run baseline
-        utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] + BASELINE_END)
+        utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] + trial['isi'] + BASELINE_END)
 
     def _save(self):
         self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
@@ -357,7 +357,7 @@ class WordFamiliarity(Task):
                     trial[k] = ''
 
         # wait for end of run baseline
-        utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] + BASELINE_END)
+        utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] + trial['isi'] + BASELINE_END)
 
     def _save(self):
         self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
