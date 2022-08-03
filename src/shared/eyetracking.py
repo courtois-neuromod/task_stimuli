@@ -137,6 +137,8 @@ class EyetrackerCalibration_targets(Task):
 
     def _run(self, exp_win, ctl_win):
 
+        self.eyetracker.resume()
+
         roll_eyes_text = "Please roll your eyes ~2-3 times in clockwise and counterclockwise directions"
         if self.validation:
             roll_eyes_text = "Get Ready" # no need to roll eyes again
@@ -262,6 +264,7 @@ class EyetrackerCalibration_targets(Task):
                         if not calibration_success:
                             print('#### CALIBRATION FAILED: restart with <c> ####')
                         break
+        self.eyetracker.pause()
 
 
     def stop(self, exp_win, ctl_win):
@@ -323,6 +326,9 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
 
     def _setup(self, exp_win):
         self.use_fmri = False
+        self.eyetracker.stop_capture()
+        time.sleep(.1)
+        self.eyetracker.start_capture()
         super()._setup(exp_win)
 
     def _pupil_cb(self, pupil):
@@ -467,6 +473,7 @@ class EyetrackerSetup(Task):
 
     def _run(self, exp_win, ctl_win):
 
+        self.eyetracker.resume()
         con_text_str = "Trying to establish connection to the eyetracker %s"
 
         con_text = visual.TextStim(
@@ -494,8 +501,7 @@ class EyetrackerSetup(Task):
             con_text.draw(exp_win)
             yield True
             time.sleep(3)
-
-
+        self.eyetracker.pause()
 
 from subprocess import Popen
 
@@ -647,6 +653,24 @@ class EyeTrackerClient(threading.Thread):
             }
         )
 
+
+    def start_capture(self):
+        self.send_recv_notification(
+            {
+                "subject": "capture.should_start",
+                "target": self.EYE
+            }
+        )
+
+    def stop_capture(self):
+        self.send_recv_notification(
+            {
+                "subject": "capture.should_stop",
+                "target": self.EYE
+            }
+        )
+
+
     def send_recv_notification(self, n):
         # REQ REP requires lock step communication with multipart msg (topic,msgpack_encoded dict)
         self._req_socket.send_multipart(
@@ -690,24 +714,23 @@ class EyeTrackerClient(threading.Thread):
         del self.pupil_monitor
 
     def resume(self):
-        self.paused=False
-        self.pupil_monitor = Msg_Receiver(
-            self._ctx, f"tcp://localhost:{self._ipc_sub_port}",
-            topics=("gaze", "pupil", "fixations", "notify.calibration.successful", "notify.calibration.failed", "notify.aravis")
-        )
-        self.pause_cond.notify()
-        self.pause_cond.release()
+        if self.paused:
+            self.pupil_monitor = Msg_Receiver(
+
+                self._ctx, f"tcp://localhost:{self._ipc_sub_port}",
+                topics=("gaze", "pupil", "fixations", "notify.calibration.successful", "notify.calibration.failed", "notify.aravis")
+
+            )
+            self.pause_cond.notify()
+            self.pause_cond.release()
+            self.paused=False
 
     def run(self):
 
         self._aravis_notification = None
 
         while not self.stoprequest.isSet():
-
             with self.pause_cond:
-#                while self.paused:
-#                    self.pause_cond.wait()
-
                 msg = self.pupil_monitor.recv()
                 if not msg is None:
                     topic, tmp = msg
@@ -728,8 +751,7 @@ class EyeTrackerClient(threading.Thread):
                             self._last_calibration_notification = tmp
                         elif topic.startswith("notify.aravis.start_capture"):
                             self._aravis_notification = tmp
-                time.sleep(1e-3)
-
+            time.sleep(1e-3)
         logging.info("eyetracker listener: stopping")
 
     def set_pupil_cb(self, pupil_cb):
@@ -872,10 +894,22 @@ class EyeTrackerClient(threading.Thread):
         for task in tasks:
             if task.use_eyetracking:
                 calibration_index += 1
-                yield EyetrackerCalibration(
-                    self,
-                    name=f"eyeTrackercalibration-{calibration_index}"
-                    )
+                if self.use_targets:
+                    yield EyetrackerCalibration_targets(
+                        self,
+                        name=f"eyeTrackercalibration-{calibration_index}"
+                        )
+                else:
+                    yield EyetrackerCalibration(
+                        self,
+                        name=f"eyeTrackercalibration-{calibration_index}"
+                        )
+                if self.validate_calib:
+                    yield EyetrackerCalibration_targets(
+                        self,
+                        name=f"eyeTrackercalib-validate-{calibration_index}",
+                        validation=True
+                        )
             yield task
 
     def calibrate(self, pupil_list, ref_list):
