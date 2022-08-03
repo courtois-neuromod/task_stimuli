@@ -471,6 +471,9 @@ class EyetrackerSetup(Task):
         super().__init__(**kwargs)
         self.eyetracker = eyetracker
 
+    def _setup(self, exp_win):
+        self.use_fmri = False
+
     def _run(self, exp_win, ctl_win):
 
         self.eyetracker.resume()
@@ -642,6 +645,7 @@ class EyeTrackerClient(threading.Thread):
         self._req_socket.send_string("SUB_PORT")
         self._ipc_sub_port = int(self._req_socket.recv())
         logging.info(f"ipc_sub_port: {self._ipc_sub_port}")
+        self.resume()
 
     def start_source(self):
         self.send_recv_notification(
