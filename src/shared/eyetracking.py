@@ -529,7 +529,7 @@ class EyeTrackerClient(threading.Thread):
                  debug=False, use_targets=False, validate_calib=False):
         super(EyeTrackerClient, self).__init__()
         self.stoprequest = threading.Event()
-        self.paused = False
+        self.paused = True
         self.pause_cond = threading.Condition(threading.Lock())
         self.pause_cond.acquire()
         self.lock = threading.Lock()
