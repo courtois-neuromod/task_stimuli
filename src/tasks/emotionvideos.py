@@ -16,15 +16,13 @@ class EmotionVideos(Task):
     Please keep your eyes open, and fixate the cross at the beginning of each segment."""
 
     def __init__(self, design, videos_path, run, *args, **kwargs):
-        design = data.importConditions(design)
         self.run_id = run
-        self.design = [trial for trial in design if trial["run"] == run]
-        if os.path.exists(videos_path) and os.path.exists(
-            os.path.join(videos_path, self.design[0]["videos_path"])
-        ):
+        self.design = design
+        self._task_completed = False
+        if os.path.exists(videos_path):
             self.videos_path = videos_path
         else:
-            raise ValueError("Cannot find the listed images in %s " % videos_path)
+            raise ValueError("Cannot find the videos in %s " % videos_path)
 
         super().__init__(**kwargs)
 
@@ -32,17 +30,37 @@ class EmotionVideos(Task):
     def _setup(self, exp_win):
         super()._setup(exp_win)
 
+        """
+        If fixation is a cross
         self.fixation_cross = visual.ImageStim(
             exp_win,
             os.path.join("data", "emotionvideos", "pngs", "fixation_cross.png"),
             size=2,
             units='deg',
         )
+        """
+        #If fixation is a bull's eye instead of a fixation cross
+        try:
+            self.fixation_image = visual.ImageStim(
+                exp_win,
+                os.path.join("data", "emotionvideos", "pngs", "fixframe_" + str(exp_win.size[0]) + "_" + str(exp_win.size[1]) + ".jpg"),
+                size=(exp_win.size[0], exp_win.size[1]),
+                units='pix',
+            )
+        except:
+            self.fixation_image = visual.ImageStim(
+                exp_win,
+                os.path.join("data", "emotionvideos", "pngs", "fixframe.jpg"),
+                size=(exp_win.size[1]*(1280/1024), exp_win.size[1]),
+                #size=(1280, 1024),
+                units='pix',
+            )
+        
         #Preload all videos
         self._stimuli = []
-        for trial in self.design:
+        for trial in self.design.Gif:
             video = visual.MovieStim(
-                exp_win, os.path.join(self.videos_path, trial["videos_path"]),
+                exp_win, os.path.join(self.videos_path, trial),
                 units = 'pix',
             )
             width_video, height_video = video.size[0], video.size[1]
@@ -81,11 +99,7 @@ class EmotionVideos(Task):
         exp_win.logOnFlip(
             level = logging.EXP, msg = "EmotionVideos: task starting at %f" % time.time()
         )
-        self.fixation_cross.draw(exp_win)
-        if ctl_win:
-            self.fixation_cross.draw(ctl_win)
-        yield True
-
+        
         for trial_n, (trial, stimuli) in enumerate(zip(self.trials, self._stimuli)):
             exp_win.logOnFlip(
                 level = logging.EXP,
@@ -101,10 +115,11 @@ class EmotionVideos(Task):
                 self.fixation_cross.draw(ctl_win)
             #Wait onset
             utils.wait_until(self.task_timer, trial["onset"] - 1 / config.FRAME_RATE)
-            yield True #flip
-            trial["onset_flip"] = (
-                self._exp_win_last_flip_time - self._exp_win_first_flip_time
-            )
+            while stimuli.status != visual.FINISHED:
+                stimuli.draw()
+                yield True #flip
+
+        self._task_completed = True
 
 
     def _stop(self, n_trial, exp_win, ctl_win):
