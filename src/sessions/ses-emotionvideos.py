@@ -1,33 +1,42 @@
 import os
 
-EMOTION_DATA_PATH = ""
-#GIFS_PATH = os.path.join(EMOTION_DATA_PATH,"emotionvideos")
-VIDEOS_PATH = ""
-
+EMOTION_DATA_PATH = "" #TBD
+VIDEOS_PATH = "" #TBD
+OUTPUT_RUNS_PATH = "design_runs"
+OUTPUT_RUNS_ORDER_PATH = "design_runs_order"
 
 def get_tasks(parsed):
     from ..tasks.emotionvideos import EmotionVideos
     import pandas as pd
-    
+    import json
+
     sub_design_filename = os.path.join(
         EMOTION_DATA_PATH,
-        "designs_runs_order",
+        OUTPUT_RUNS_ORDER_PATH,
         f"sub-{parsed.subject}_design_run_order.tsv",
     )
 
     sub_design = pd.read_csv(sub_design_filename, dtype = {"session" : "str"}, sep="\t", index_col=0)
+    bids_sub = "sub-%s" % parsed.subject
+    savestate_path = os.path.abspath(os.path.join(parsed.output, "sourcedata",bids_sub, f"{bids_sub}_phase-stable_task-emotionvideos_savestate.json"))
 
-    """
+    # check for a "savestate"
+    if os.path.exists(savestate_path):
+        with open(savestate_path) as f:
+            savestate = json.load(f)
+    else:
+        savestate = {"index": 1}
 
-    test[test["session"]=="001"]["tsv"]
-    
-    tasks = [
-        EmotionVideos(session_design_filename, VIDEOS_PATH, run, name=f"task-emotion_run-{run}")
-        for run in range(1, n_runs_per_session +1)
-    ]
-    
-    return tasks
-    """
+    next_run = pd.read_csv(os.path.join(EMOTION_DATA_PATH,OUTPUT_RUNS_PATH,sub_design.tsv[sub_design.session==savestate['index']][0]),sep='\t')
+
+    task = EmotionVideos(next_run, VIDEOS_PATH, savestate, name=f"task-things_run-{savestate}")
+    yield task
+
+    #only increment if the task was not interrupted. If interrupted, it needs to be rescan
+    if task._task_completed:
+        savestate['index'] += 1
+        with open(savestate_path, 'w') as f:
+            json.dump(savestate, f)
     
 
 # Experiment parameters 
@@ -151,6 +160,9 @@ def generate_individual_design_file():
     import pandas as pd
     import random
 
+
+    
+    #Assign pseudo-random run order for each participant
     for sub in range(1,7):
 
         sub_randomized = list(range(1,n_runs+1))
@@ -164,7 +176,7 @@ def generate_individual_design_file():
 
         out_fname = os.path.join(
             EMOTION_DATA_PATH,
-            "designs_runs_order",
+            OUTPUT_RUNS_ORDER_PATH,
             f"sub-00{sub}_design_run_order.tsv"
         )
 
@@ -184,7 +196,9 @@ if __name__ == "__main__":
     parser.add_argument("session", type=str, help="session id")
     parsed = parser.parse_args()
 
-    generate_design_file(random_state)
-    generate_individual_design_file()
+    #generate_design_file(random_state)
+    #generate_individual_design_file()
+
+    get_tasks(parsed)
     
     
