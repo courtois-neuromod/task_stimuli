@@ -38,7 +38,7 @@ def start_eyetracker(args):
             "subject": "start_plugin",
             "name": "Annotation_Capture",
             "args": {
-                "annotation_definitions": [['Trigger','T'],['Trigger5','5'],['Trigger%','%']],
+                "annotation_definitions": [['Trigger','T'], ['Trigger5','5'], ['Trigger%','%']]
             },
         }
     )
