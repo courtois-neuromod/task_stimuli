@@ -1,7 +1,7 @@
 #!/bin/bash
 docker run \
-  --network host \ # for aravis to work
-  --device /dev/dri \
+  --network host \
+  --device=/dev/dri \
   --device=/dev/snd  \
   -v $PWD/src/tasks/videogame.py:/src/task_stimuli/src/tasks/videogame.py \
   -v /run/user/1000/pulse:/run/user/1000/pulse \
