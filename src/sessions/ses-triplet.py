@@ -1,4 +1,5 @@
 import os
+from termcolor import colored, cprint
 
 def get_tasks(parsed):
     from ..tasks import language, task_base
@@ -14,6 +15,10 @@ def get_tasks(parsed):
     else:
         savestate = {"session": 1}
     session = savestate['session']
+    if session != int(parsed.session):
+        cprint('ERROR: the savestate do not match the session ID entered on the command line.', 'red', attrs=['blink'])
+        cprint(f'modify savestate file: {savestate_path} if you know what you are doing', 'red')
+        exit(1)
     logging.exp(f"loading savestate: currently on session {savestate['session']:03d}")
 
     print(f'savestate: {savestate}')
