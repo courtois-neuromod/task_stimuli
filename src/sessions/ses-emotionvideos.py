@@ -192,8 +192,8 @@ if __name__ == "__main__":
         formatter_class=argparse.RawTextHelpFormatter,
         description="generate design files for participant / session",
     )
-    parser.add_argument("subject", type=str, help="participant id")
-    parser.add_argument("session", type=str, help="session id")
+    parser.add_argument("subject", help="participant id")
+    parser.add_argument("session", help="session id")
     parsed = parser.parse_args()
 
     #generate_design_file(random_state)
