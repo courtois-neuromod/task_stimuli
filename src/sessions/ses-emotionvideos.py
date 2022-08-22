@@ -27,7 +27,7 @@ def get_tasks(parsed):
     else:
         savestate = {"index": 1}
 
-    next_run = pd.read_csv(os.path.join(EMOTION_DATA_PATH,OUTPUT_RUNS_PATH,sub_design.tsv[sub_design.session==savestate['index']][0]),sep='\t')
+    next_run = pd.read_csv(os.path.join(EMOTION_DATA_PATH,OUTPUT_RUNS_PATH,sub_design.tsv[sub_design.session=="{}{}".format("00",savestate['index'])][0]),sep='\t')
 
     task = EmotionVideos(next_run, VIDEOS_PATH, savestate, name=f"task-things_run-{savestate}")
     yield task
