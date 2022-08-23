@@ -37,7 +37,7 @@ class EmotionVideos(Task):
         If fixation is a cross
         self.fixation_cross = visual.ImageStim(
             exp_win,
-            os.path.join("data", "emotionvideos", "pngs", "fixation_cross.png"),
+            os.path.join("data", "emotionvideos", "fixations", "fixation_cross.png"),
             size=15,
             units='deg',
         )
@@ -46,14 +46,14 @@ class EmotionVideos(Task):
         try:
             self.fixation_image = visual.ImageStim(
                 exp_win,
-                os.path.join("data", "emotionvideos", "pngs", "fixframe_" + str(exp_win.size[0]) + "_" + str(exp_win.size[1]) + ".jpg"),
+                os.path.join("data", "emotionvideos", "fixations", "fixframe_" + str(exp_win.size[0]) + "_" + str(exp_win.size[1]) + ".jpg"),
                 size=(exp_win.size[0], exp_win.size[1]),
                 units='pix',
             )
         except:
             self.fixation_image = visual.ImageStim(
                 exp_win,
-                os.path.join("data", "emotionvideos", "pngs", "fixframe.jpg"),
+                os.path.join("data", "emotionvideos", "fixations", "fixframe.jpg"),
                 size=(exp_win.size[1]*(1280/1024), exp_win.size[1]),
                 #size=(1280, 1024),
                 units='pix',
@@ -77,7 +77,7 @@ class EmotionVideos(Task):
                 video.size = (width_video * scaling, height_video * scaling)
             self._stimuli.append(video)
 
-        self.trials = data.TrialHandler(self.design, 1, method="sequential")
+        self.trials = data.TrialHandler(self.path_design, 1, method="sequential")
         self.duration = len(self.design)
         self._progress_bar_refresh_rate = 2  # 2 flips per trial
         super()._setup(exp_win)
