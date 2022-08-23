@@ -4,6 +4,7 @@ from psychopy import visual, core, data, logging, event
 from .task_base import Task
 import numpy as np
 from colorama import Fore
+import pandas as pd
 
 from ..shared import config, utils
 
@@ -17,7 +18,9 @@ class EmotionVideos(Task):
 
     def __init__(self, design, videos_path, run, *args, **kwargs):
         self.run_id = run
-        self.design = design
+        self.n_trial = 0
+        self.path_design = design
+        self.design = pd.read_csv(design, sep='\t')
         self._task_completed = False
         if os.path.exists(videos_path):
             self.videos_path = videos_path
@@ -35,7 +38,7 @@ class EmotionVideos(Task):
         self.fixation_cross = visual.ImageStim(
             exp_win,
             os.path.join("data", "emotionvideos", "pngs", "fixation_cross.png"),
-            size=2,
+            size=15,
             units='deg',
         )
         """
@@ -58,7 +61,8 @@ class EmotionVideos(Task):
         
         #Preload all videos
         self._stimuli = []
-        for trial in self.design.Gif:
+        for idx, trial in enumerate(self.design.Gif):
+            self.n_trial = idx
             video = visual.MovieStim(
                 exp_win, os.path.join(self.videos_path, trial),
                 units = 'pix',
@@ -113,6 +117,7 @@ class EmotionVideos(Task):
             self.fixation_cross.draw(exp_win)
             if ctl_win:
                 self.fixation_cross.draw(ctl_win)
+            yield True #flip
             #Wait onset
             utils.wait_until(self.task_timer, trial["onset"] - 1 / config.FRAME_RATE)
             while stimuli.status != visual.FINISHED:
@@ -122,8 +127,8 @@ class EmotionVideos(Task):
         self._task_completed = True
 
 
-    def _stop(self, n_trial, exp_win, ctl_win):
-        self._stimuli[n_trial].stop()
+    def _stop(self, exp_win, ctl_win):
+        self._stimuli[self.n_trial].stop()
         for frameN in range(config.FRAME_RATE * FADE_TO_GREY_DURATION):
             grey = [float(frameN) / config.FRAME_RATE / FADE_TO_GREY_DURATION - 1] * 3
             exp_win.setColor(grey, colorSpace='rgb')
