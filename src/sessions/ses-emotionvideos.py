@@ -28,7 +28,7 @@ def get_tasks(parsed):
         savestate = {"index": 1}
 
     #load design file for the run according to each participant predefine runs order
-    next_run = os.path.join(EMOTION_DATA_PATH,OUTPUT_RUNS_PATH,sub_design.tsv[sub_design.session=="{}{}".format("00",savestate['index'])][0])
+    next_run = os.path.join(EMOTION_DATA_PATH,OUTPUT_RUNS_PATH,sub_design.tsv[sub_design.session=="{}{}".format("00",savestate['index'])].iloc[0])
 
     task = EmotionVideos(next_run, VIDEOS_PATH, savestate, name=f"task-things_run-{savestate}")
     yield task
