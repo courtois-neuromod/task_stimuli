@@ -114,6 +114,7 @@ class EmotionVideos(Task):
             )
 
             #Draw to backbuffer
+            #------------------ADD CODE TO DISPLAY THE FIXATION AT A PREDETERMINED ONSET (trial["onset_fixation"])--------------
             self.fixation_cross.draw(exp_win)
             if ctl_win:
                 self.fixation_cross.draw(ctl_win)
