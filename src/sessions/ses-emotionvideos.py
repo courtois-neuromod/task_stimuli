@@ -20,6 +20,7 @@ def get_tasks(parsed):
     bids_sub = "sub-%s" % parsed.subject
     savestate_path = os.path.abspath(os.path.join(parsed.output, "sourcedata",bids_sub, f"{bids_sub}_phase-stable_task-emotionvideos_savestate.json"))
 
+    #-----------------------TO DO: ADD LOOP TO RUN MORE THAN ONE RUN----------------------------
     # check for a "savestate"
     if os.path.exists(savestate_path):
         with open(savestate_path) as f:
@@ -29,7 +30,7 @@ def get_tasks(parsed):
 
     #load design file for the run according to each participant predefine runs order
     next_run = os.path.join(EMOTION_DATA_PATH,OUTPUT_RUNS_PATH,sub_design.tsv[sub_design.session=="{}{}".format("00",savestate['index'])].iloc[0])
-
+    
     task = EmotionVideos(next_run, VIDEOS_PATH, savestate, name=f"task-things_run-{savestate}")
     yield task
 
@@ -142,6 +143,8 @@ def generate_design_file(random_state):
         gifs_exp['onset'] = onset
         gifs_exp['iti'] = iti_n
         gifs_exp.rename(columns = {"Gif": "videos_path"})
+
+        #---------------TO DO: ADD A COLUMN (gifs_exp['onset_fixation']) IN DESIGN FILES FOR THE FIXATION ONSET (FIXATION starting 2s BEFORE EACH TRIAL)---------------
 
         out_fname = os.path.join(
             EMOTION_DATA_PATH,
