@@ -14,9 +14,10 @@ def selected_levels():
         [(4, f"Level{lev}") for lev in range(1,4)] + [(4, 'Fortress1')]+[(4, f"Level{lev}") for lev in range(4,7)] + [(4, 'Fortress2'), (4, 'Airship')] +
         [(5, f"Level{lev}") for lev in range(1,4)] + [(5, 'Fortress1'), (5, 'Tower')]+[(5, f"Level{lev}") for lev in range(4,8)] + [(5, 'Fortress2')] + [(5, f"Level{lev}") for lev in range(8,10)]  + [(5, 'Airship')] +
         [(6, f"Level{lev}") for lev in range(1,4)] + [(6, 'Fortress1')]+[(6, f"Level{lev}") for lev in range(4,8)] + [(6, 'Fortress2')] + [(6, f"Level{lev}") for lev in range(8,11)]  + [(6, 'Fortress3'), (6, 'Airship')] +
-        [(7, f"Level{lev}") for lev in range(1,6)] + [(7, 'Piranha1'), (7, 'Fortress1')]+[(7, f"Level{lev}") for lev in range(6,10)] + [(7, 'Fortress2'), (7, 'Piranha2'), (7, 'Airship')] +
+        [(7, f"Level{lev}") for lev in range(1,6)] + [(7, 'PiranhaPlant1'), (7, 'Fortress1')]+[(7, f"Level{lev}") for lev in range(6,10)] + [(7, 'Fortress2'), (7, 'PiranhaPlant2'), (7, 'Airship')] +
         [(8, f"Level{lev}") for lev in range(1,3)] + [(8, 'Fortress')])
-    return [lev for lev in all_levels if not 'Piranha' in lev[1]]
+    return all_levels
+    #return [lev for lev in all_levels if not 'Piranha' in lev[1]]
 
 worlds = 1
 levels = 1
