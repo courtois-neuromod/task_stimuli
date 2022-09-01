@@ -114,12 +114,13 @@ class EmotionVideos(Task):
             )
 
             #Draw to backbuffer
-            #------------------ADD CODE TO DISPLAY THE FIXATION AT A PREDETERMINED ONSET (trial["onset_fixation"])--------------
             self.fixation_cross.draw(exp_win)
             if ctl_win:
                 self.fixation_cross.draw(ctl_win)
+            #Wait onset for fixation
+            utils.wait_until(self.task_timer, trial["onset_fixation"] - 1 / config.FRAME_RATE)
             yield True #flip
-            #Wait onset
+            #Wait onset for videos
             utils.wait_until(self.task_timer, trial["onset"] - 1 / config.FRAME_RATE)
             while stimuli.status != visual.FINISHED:
                 stimuli.draw()
