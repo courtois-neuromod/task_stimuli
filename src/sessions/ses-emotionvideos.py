@@ -1,6 +1,6 @@
 import os
 
-EMOTION_DATA_PATH = "/Users/mepicard/Documents/neuromod/data/emotion" #TBD
+EMOTION_DATA_PATH = "" #TBD
 VIDEOS_PATH = "" #TBD
 OUTPUT_RUNS_PATH = "design_runs"
 OUTPUT_RUNS_ORDER_PATH = "design_runs_order"
@@ -190,7 +190,6 @@ def generate_individual_design_file():
 
     
 if __name__ == "__main__":
-    """
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -200,11 +199,10 @@ if __name__ == "__main__":
     parser.add_argument("subject", help="participant id")
     parser.add_argument("session", help="session id")
     parsed = parser.parse_args()
-    """
 
-    generate_design_file(random_state)
+    #generate_design_file(random_state)
     #generate_individual_design_file()
 
-    #get_tasks(parsed)
+    get_tasks(parsed)
     
     
