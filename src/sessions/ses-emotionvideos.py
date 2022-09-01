@@ -1,6 +1,6 @@
 import os
 
-EMOTION_DATA_PATH = "" #TBD
+EMOTION_DATA_PATH = "/Users/mepicard/Documents/neuromod/data/emotion" #TBD
 VIDEOS_PATH = "" #TBD
 OUTPUT_RUNS_PATH = "design_runs"
 OUTPUT_RUNS_ORDER_PATH = "design_runs_order"
@@ -47,6 +47,7 @@ n_runs = 33
 n_runs_per_session = 2
 initial_wait = 5
 final_wait = 5
+fixation_duration = 2 #seconds
 
 #trial
 run_min_duration = 345 #seconds of Gifs (doesn't include the ITI)
@@ -63,7 +64,7 @@ def repeat_gifs(path_to_gifs = VIDEOS_PATH, new_path_to_gifs=EMOTION_DATA_PATH):
     import shutil 
 
     gifs_list = pd.read_csv(
-        os.path.join(EMOTION_DATA_PATH, "gifs_path_fmri.csv")
+        os.path.join(EMOTION_DATA_PATH, "emotionvideos_path_fmri.csv")
     )
 
     repetition = []
@@ -141,10 +142,9 @@ def generate_design_file(random_state):
             i_temp = i
             
         gifs_exp['onset'] = onset
+        gifs_exp['onset_fixation'] = [i - fixation_duration for i in onset]
         gifs_exp['iti'] = iti_n
         gifs_exp.rename(columns = {"Gif": "videos_path"})
-
-        #---------------TO DO: ADD A COLUMN (gifs_exp['onset_fixation']) IN DESIGN FILES FOR THE FIXATION ONSET (FIXATION starting 2s BEFORE EACH TRIAL)---------------
 
         out_fname = os.path.join(
             EMOTION_DATA_PATH,
@@ -190,6 +190,7 @@ def generate_individual_design_file():
 
     
 if __name__ == "__main__":
+    """
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -199,10 +200,11 @@ if __name__ == "__main__":
     parser.add_argument("subject", help="participant id")
     parser.add_argument("session", help="session id")
     parsed = parser.parse_args()
+    """
 
-    #generate_design_file(random_state)
+    generate_design_file(random_state)
     #generate_individual_design_file()
 
-    get_tasks(parsed)
+    #get_tasks(parsed)
     
     
