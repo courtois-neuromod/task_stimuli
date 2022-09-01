@@ -1,7 +1,8 @@
 import os
 
-EMOTION_DATA_PATH = "" #TBD
-VIDEOS_PATH = "" #TBD
+EMOTION_DATA_PATH = "/home/user/Documents/emotionvideos" #TBD
+VIDEOS_PATH = "/home/user/Documents/emotionvideos/cowengif" #TBD
+REPEATED_VIDEOS_PATH = "/home/user/Documents/emotionvideos/repeated_gifs" #TBD
 OUTPUT_RUNS_PATH = "design_runs"
 OUTPUT_RUNS_ORDER_PATH = "design_runs_order"
 
@@ -31,7 +32,7 @@ def get_tasks(parsed):
     #load design file for the run according to each participant predefine runs order
     next_run = os.path.join(EMOTION_DATA_PATH,OUTPUT_RUNS_PATH,sub_design.tsv[sub_design.session=="{}{}".format("00",savestate['index'])].iloc[0])
     
-    task = EmotionVideos(next_run, VIDEOS_PATH, savestate, name=f"task-things_run-{savestate}")
+    task = EmotionVideos(next_run, REPEATED_VIDEOS_PATH, savestate, name=f"task-things_run-{savestate}")
     yield task
 
     #only increment if the task was not interrupted. If interrupted, it needs to be rescan
@@ -47,7 +48,7 @@ n_runs = 33
 n_runs_per_session = 2
 initial_wait = 5
 final_wait = 5
-fixation_duration = 2 #seconds
+fixation_duration = 1.5 #seconds
 
 #trial
 run_min_duration = 345 #seconds of Gifs (doesn't include the ITI)
@@ -59,7 +60,7 @@ time_to_repeat = 3
 duration_min = 1
 
 
-def repeat_gifs(path_to_gifs = VIDEOS_PATH, new_path_to_gifs=EMOTION_DATA_PATH):
+def repeat_gifs(path_to_gifs = VIDEOS_PATH, new_path_to_gifs=REPEATED_VIDEOS_PATH):
     import pandas as pd
     import shutil 
 
@@ -79,7 +80,7 @@ def repeat_gifs(path_to_gifs = VIDEOS_PATH, new_path_to_gifs=EMOTION_DATA_PATH):
     
     gifs_list['repetition'] = repetition
 
-    gifs_list.to_csv(os.path.join(EMOTION_DATA_PATH, "emotionvideos_path_fmri.csv"))
+    gifs_list.to_csv(os.path.join(EMOTION_DATA_PATH, "emotionvideos_path_fmri.csv"), index=False)
 
     for idx, row in gifs_list.iterrows():
         path_gif = os.path.join(path_to_gifs, row.Gif)
@@ -89,7 +90,7 @@ def repeat_gifs(path_to_gifs = VIDEOS_PATH, new_path_to_gifs=EMOTION_DATA_PATH):
                 os.system("ffmpeg -stream_loop {0} -i {1} -c copy {2}".format(row.repetition, path_gif, new_path_gif))
         else :
             if os.path.isfile(path_gif):
-                shutil.copy(path_gif, new_path_gif)
+                shutil.copy(path_gif, new_path_gif) 
 
 
 def generate_design_file(random_state):
@@ -144,15 +145,18 @@ def generate_design_file(random_state):
         gifs_exp['onset'] = onset
         gifs_exp['onset_fixation'] = [i - fixation_duration for i in onset]
         gifs_exp['iti'] = iti_n
-        gifs_exp.rename(columns = {"Gif": "videos_path"})
+
+        #Create directory
+        if not os.path.exists(os.path.join(EMOTION_DATA_PATH,OUTPUT_RUNS_PATH)):
+            os.makedirs(os.path.join(EMOTION_DATA_PATH,OUTPUT_RUNS_PATH))
 
         out_fname = os.path.join(
             EMOTION_DATA_PATH,
-            "designs_runs",
+            OUTPUT_RUNS_PATH,
             f"run-{session}_design.tsv"
         )
                 
-        gifs_exp.to_csv(out_fname, sep="\t")
+        gifs_exp.to_csv(out_fname, sep="\t", index=False)
 
         session += 1
 
@@ -178,6 +182,10 @@ def generate_individual_design_file():
 
         sub_dict = {"session": session,"tsv":tsv_files}
 
+        #Create directory
+        if not os.path.exists(os.path.join(EMOTION_DATA_PATH,OUTPUT_RUNS_ORDER_PATH)):
+            os.makedirs(os.path.join(EMOTION_DATA_PATH,OUTPUT_RUNS_ORDER_PATH))
+
         out_fname = os.path.join(
             EMOTION_DATA_PATH,
             OUTPUT_RUNS_ORDER_PATH,
@@ -190,6 +198,7 @@ def generate_individual_design_file():
 
     
 if __name__ == "__main__":
+    """
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -199,10 +208,11 @@ if __name__ == "__main__":
     parser.add_argument("subject", help="participant id")
     parser.add_argument("session", help="session id")
     parsed = parser.parse_args()
+    """
 
-    #generate_design_file(random_state)
+    generate_design_file(random_state)
     #generate_individual_design_file()
 
-    get_tasks(parsed)
+    #get_tasks(parsed)
     
     

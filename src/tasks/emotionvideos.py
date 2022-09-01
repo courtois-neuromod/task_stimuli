@@ -34,8 +34,8 @@ class EmotionVideos(Task):
         super()._setup(exp_win)
 
         """
-        If fixation is a cross
-        self.fixation_cross = visual.ImageStim(
+        #If fixation is a cross
+        self.fixation_image = visual.ImageStim(
             exp_win,
             os.path.join("data", "emotionvideos", "fixations", "fixation_cross.png"),
             size=15,
@@ -107,17 +107,18 @@ class EmotionVideos(Task):
         for trial_n, (trial, stimuli) in enumerate(zip(self.trials, self._stimuli)):
             exp_win.logOnFlip(
                 level = logging.EXP,
-                msg = f"videos: {trial['videos_path']}",
+                msg = f"videos: {trial['Gif']}",
             )
             self.progress_bar.set_description(
-                f"Trial {trial_n}: {trial['videos_path']}"
+                f"Trial {trial_n}: {trial['Gif']}"
             )
 
             #Draw to backbuffer
-            self.fixation_cross.draw(exp_win)
+            self.fixation_image.draw(exp_win)
             if ctl_win:
-                self.fixation_cross.draw(ctl_win)
+                self.fixation_image.draw(ctl_win)
             #Wait onset for fixation
+            print(trial)
             utils.wait_until(self.task_timer, trial["onset_fixation"] - 1 / config.FRAME_RATE)
             yield True #flip
             #Wait onset for videos
@@ -125,6 +126,7 @@ class EmotionVideos(Task):
             while stimuli.status != visual.FINISHED:
                 stimuli.draw()
                 yield True #flip
+            yield True
 
         self._task_completed = True
 
