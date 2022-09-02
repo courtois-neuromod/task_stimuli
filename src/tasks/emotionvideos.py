@@ -42,6 +42,7 @@ class EmotionVideos(Task):
             units='deg',
         )
         """
+
         #If fixation is a bull's eye instead of a fixation cross
         try:
             self.fixation_image = visual.ImageStim(
@@ -118,7 +119,6 @@ class EmotionVideos(Task):
             if ctl_win:
                 self.fixation_image.draw(ctl_win)
             #Wait onset for fixation
-            print(trial)
             utils.wait_until(self.task_timer, trial["onset_fixation"] - 1 / config.FRAME_RATE)
             yield True #flip
             #Wait onset for videos

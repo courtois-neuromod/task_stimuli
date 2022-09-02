@@ -8,6 +8,7 @@ OUTPUT_RUNS_ORDER_PATH = "design_runs_order"
 
 def get_tasks(parsed):
     from ..tasks.emotionvideos import EmotionVideos
+    from ..tasks import task_base
     import pandas as pd
     import json
 
@@ -21,7 +22,6 @@ def get_tasks(parsed):
     bids_sub = "sub-%s" % parsed.subject
     savestate_path = os.path.abspath(os.path.join(parsed.output, "sourcedata",bids_sub, f"{bids_sub}_phase-stable_task-emotionvideos_savestate.json"))
 
-    #-----------------------TO DO: ADD LOOP TO RUN MORE THAN ONE RUN----------------------------
     # check for a "savestate"
     if os.path.exists(savestate_path):
         with open(savestate_path) as f:
@@ -29,17 +29,18 @@ def get_tasks(parsed):
     else:
         savestate = {"index": 1}
 
-    #load design file for the run according to each participant predefine runs order
-    next_run = os.path.join(EMOTION_DATA_PATH,OUTPUT_RUNS_PATH,sub_design.tsv[sub_design.session=="{}{}".format("00",savestate['index'])].iloc[0])
+    for run in range(1,33):
+        #load design file for the run according to each participant predefine runs order
+        next_run = os.path.join(EMOTION_DATA_PATH,OUTPUT_RUNS_PATH,sub_design.tsv[sub_design.session=="{}{}".format("00",savestate['index'])].iloc[0])
     
-    task = EmotionVideos(next_run, REPEATED_VIDEOS_PATH, savestate, name=f"task-things_run-{savestate}")
-    yield task
+        task = EmotionVideos(next_run, REPEATED_VIDEOS_PATH, savestate, name=f"task-emotionvideos_run-{savestate}")
+        yield task
 
-    #only increment if the task was not interrupted. If interrupted, it needs to be rescan
-    if task._task_completed:
-        savestate['index'] += 1
-        with open(savestate_path, 'w') as f:
-            json.dump(savestate, f)
+        #only increment if the task was not interrupted. If interrupted, it needs to be rescan
+        if task._task_completed:
+            savestate['index'] += 1
+            with open(savestate_path, 'w') as f:
+                json.dump(savestate, f)
     
 
 # Experiment parameters 
@@ -211,7 +212,7 @@ if __name__ == "__main__":
     """
 
     generate_design_file(random_state)
-    #generate_individual_design_file()
+    generate_individual_design_file()
 
     #get_tasks(parsed)
     
