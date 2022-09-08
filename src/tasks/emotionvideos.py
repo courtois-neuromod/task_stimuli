@@ -31,6 +31,9 @@ class EmotionVideos(Task):
 
 
     def _setup(self, exp_win):
+
+        exp_win.colorSpace='rgb255'
+        exp_win.color = [54,69,79]
         super()._setup(exp_win)
 
         """
@@ -44,21 +47,12 @@ class EmotionVideos(Task):
         """
 
         #If fixation is a bull's eye instead of a fixation cross
-        try:
-            self.fixation_image = visual.ImageStim(
-                exp_win,
-                os.path.join("data", "emotionvideos", "fixations", "fixframe_" + str(exp_win.size[0]) + "_" + str(exp_win.size[1]) + ".jpg"),
-                size=(exp_win.size[0], exp_win.size[1]),
-                units='pix',
-            )
-        except:
-            self.fixation_image = visual.ImageStim(
-                exp_win,
-                os.path.join("data", "emotionvideos", "fixations", "fixframe.jpg"),
-                size=(exp_win.size[1]*(1280/1024), exp_win.size[1]),
-                #size=(1280, 1024),
-                units='pix',
-            )
+        self.fixation_image = visual.ImageStim(
+            exp_win,
+            os.path.join("data", "emotionvideos", "fixations", "fixation.png"),
+            size=(40,40),
+            units='pix',
+        )
         
         #Preload all videos
         self._stimuli = []
