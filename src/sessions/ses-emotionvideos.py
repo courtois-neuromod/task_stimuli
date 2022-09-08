@@ -45,13 +45,12 @@ def get_tasks(parsed):
 
 # Experiment parameters 
 random_state = 0
-n_runs = 33
-n_runs_per_session = 2
+n_runs = 2
 initial_wait = 5
 final_wait = 5
 fixation_duration = 1.5 #seconds
 
-#trial
+#Run
 run_min_duration = 345 #seconds of Gifs (doesn't include the ITI)
 run_max_duration = 450 #seconds of Gifs (doesn't include the ITI)
 iti_min = 3
@@ -129,10 +128,10 @@ def generate_design_file(random_state):
         gifs_exp = gifs_list[gifs_list.Gif.isin(gifs_id)]
         gifs_list = gifs_list.drop(gifs_list.index[gifs_list.Gif.isin(gifs_exp.Gif)],axis=0)
         gifs_exp = gifs_exp.reset_index()
-                
-        iti = geom.rvs(0.5, iti_min-1, size=1000, random_state=random_state)
+
+        iti = geom.rvs(0.5, iti_min-1, size=5000, random_state=random_state)
         iti_n = random.sample(iti[iti<=iti_max].tolist(),len(gifs_exp))
-        
+
         onset = []
         i_temp = 0
 
@@ -142,7 +141,7 @@ def generate_design_file(random_state):
             else:
                 onset.append(gifs_exp.duration[i_temp]+onset[i_temp]+iti_n[i_temp])
             i_temp = i
-            
+ 
         gifs_exp['onset'] = onset
         gifs_exp['onset_fixation'] = [i - fixation_duration for i in onset]
         gifs_exp['iti'] = iti_n
@@ -169,8 +168,6 @@ def generate_individual_design_file():
     import pandas as pd
     import random
 
-
-    
     #Assign pseudo-random run order for each participant
     for sub in range(1,7):
 
@@ -210,9 +207,8 @@ if __name__ == "__main__":
     parser.add_argument("session", help="session id")
     parsed = parser.parse_args()
     """
-
     generate_design_file(random_state)
-    generate_individual_design_file()
+    #generate_individual_design_file()
 
     #get_tasks(parsed)
     
