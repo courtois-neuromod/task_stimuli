@@ -6,14 +6,14 @@ import numpy as np
 from colorama import Fore
 import pandas as pd
 
-from ..shared import config, utils
+from ..shared import config, utils, eyetracking
 
 FADE_TO_GREY_DURATION = 2
 SCALING_EMOTION_VIDEOS = 600 #pix
 
 class EmotionVideos(Task):
 
-    DEFAULT_INSTRUCTION = """You will see short videos on screen. 
+    DEFAULT_INSTRUCTION = """You will see short videos on screen.
     Please keep your eyes open, and fixate the cross at the beginning of each segment."""
 
     def __init__(self, design, videos_path, run, *args, **kwargs):
@@ -47,13 +47,15 @@ class EmotionVideos(Task):
         """
 
         #If fixation is a bull's eye instead of a fixation cross
+        """
         self.fixation_image = visual.ImageStim(
             exp_win,
             os.path.join("data", "emotionvideos", "fixations", "fixation.png"),
             size=(40,40),
             units='pix',
-        )
-        
+        )"""
+        self.fixation = eyetracking.fixation_dot(exp_win)
+
         #Preload all videos
         self._stimuli = []
         for idx, trial in enumerate(self.design.Gif):
@@ -74,7 +76,7 @@ class EmotionVideos(Task):
 
         self.trials = data.TrialHandler(self.path_design, 1, method="sequential")
         self.duration = len(self.design)
-        self._progress_bar_refresh_rate = 2  # 2 flips per trial
+        self._progress_bar_refresh_rate = 0  # 2 flips per trial
         super()._setup(exp_win)
 
 
@@ -98,8 +100,10 @@ class EmotionVideos(Task):
         exp_win.logOnFlip(
             level = logging.EXP, msg = "EmotionVideos: task starting at %f" % time.time()
         )
-        
+
         for trial_n, (trial, stimuli) in enumerate(zip(self.trials, self._stimuli)):
+            self.n_trial = trial_n
+
             exp_win.logOnFlip(
                 level = logging.EXP,
                 msg = f"videos: {trial['Gif']}",
@@ -109,18 +113,26 @@ class EmotionVideos(Task):
             )
 
             #Draw to backbuffer
-            self.fixation_image.draw(exp_win)
-            if ctl_win:
-                self.fixation_image.draw(ctl_win)
+            for stim in self.fixation:
+                stim.draw(exp_win)
+                if ctl_win:
+                    stim.draw(ctl_win)
             #Wait onset for fixation
             utils.wait_until(self.task_timer, trial["onset_fixation"] - 1 / config.FRAME_RATE)
             yield True #flip
+
             #Wait onset for videos
             utils.wait_until(self.task_timer, trial["onset"] - 1 / config.FRAME_RATE)
+            if stimuli.pts != 0:
+                stimuli.replay()
+            else:
+                stimuli.play()
             while stimuli.status != visual.FINISHED:
                 stimuli.draw()
-                yield True #flip
+                yield False #flip
             yield True
+            yield True
+            self.progress_bar.update(1)
 
         self._task_completed = True
 
