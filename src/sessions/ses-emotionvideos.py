@@ -1,8 +1,8 @@
 import os
 
-EMOTION_DATA_PATH = "/home/user/Documents/emotionvideos" #TBD
-VIDEOS_PATH = "/home/user/Documents/emotionvideos/cowengif" #TBD
-REPEATED_VIDEOS_PATH = "/home/user/Documents/emotionvideos/repeated_gifs" #TBD
+EMOTION_DATA_PATH = "data/emotions" #TBD
+VIDEOS_PATH = "data/emotions/clips" #TBD
+REPEATED_VIDEOS_PATH = "data/emotions/clips_repeated" #TBD
 OUTPUT_RUNS_PATH = "design_runs"
 OUTPUT_RUNS_ORDER_PATH = "design_runs_order"
 
@@ -32,8 +32,14 @@ def get_tasks(parsed):
     for run in range(1,33):
         #load design file for the run according to each participant predefine runs order
         next_run = os.path.join(EMOTION_DATA_PATH,OUTPUT_RUNS_PATH,sub_design.tsv[sub_design.session=="{}{}".format("00",savestate['index'])].iloc[0])
-    
-        task = EmotionVideos(next_run, REPEATED_VIDEOS_PATH, savestate, name=f"task-emotionvideos_run-{savestate}")
+
+        task = EmotionVideos(
+            next_run,
+            REPEATED_VIDEOS_PATH,
+            savestate,
+            name=f"task-emotionvideos_run-{savestate['index']:02d}",
+            use_eyetracking=True,
+        )
         yield task
 
         #only increment if the task was not interrupted. If interrupted, it needs to be rescan
@@ -41,9 +47,9 @@ def get_tasks(parsed):
             savestate['index'] += 1
             with open(savestate_path, 'w') as f:
                 json.dump(savestate, f)
-    
 
-# Experiment parameters 
+
+# Experiment parameters
 random_state = 0
 n_runs = 2
 initial_wait = 5
@@ -62,7 +68,7 @@ duration_min = 1
 
 def repeat_gifs(path_to_gifs = VIDEOS_PATH, new_path_to_gifs=REPEATED_VIDEOS_PATH):
     import pandas as pd
-    import shutil 
+    import shutil
 
     gifs_list = pd.read_csv(
         os.path.join(EMOTION_DATA_PATH, "emotionvideos_path_fmri.csv")
@@ -77,7 +83,7 @@ def repeat_gifs(path_to_gifs = VIDEOS_PATH, new_path_to_gifs=REPEATED_VIDEOS_PAT
                 repetition.append(duration_min//row.duration)
         elif row.duration >= duration_min:
             repetition.append(0)
-    
+
     gifs_list['repetition'] = repetition
 
     gifs_list.to_csv(os.path.join(EMOTION_DATA_PATH, "emotionvideos_path_fmri.csv"), index=False)
@@ -90,7 +96,7 @@ def repeat_gifs(path_to_gifs = VIDEOS_PATH, new_path_to_gifs=REPEATED_VIDEOS_PAT
                 os.system("ffmpeg -stream_loop {0} -i {1} -c copy {2}".format(row.repetition, path_gif, new_path_gif))
         else :
             if os.path.isfile(path_gif):
-                shutil.copy(path_gif, new_path_gif) 
+                shutil.copy(path_gif, new_path_gif, follow_symlinks=False)
 
 
 def generate_design_file(random_state):
@@ -103,13 +109,13 @@ def generate_design_file(random_state):
     import random
     import math
     from scipy.stats import geom
-    
+
     random.seed(0)
-    
+
     gifs_list = pd.read_csv(
         os.path.join(EMOTION_DATA_PATH, "emotionvideos_path_fmri.csv")
     )
-    session = 1
+    run = 1
 
     while not gifs_list.empty:
 
@@ -124,7 +130,7 @@ def generate_design_file(random_state):
                 if (total_duration + row.duration) < run_min_duration:
                     total_duration += row.duration
                     gifs_id.append(row.Gif)
-                
+
         gifs_exp = gifs_list[gifs_list.Gif.isin(gifs_id)]
         gifs_list = gifs_list.drop(gifs_list.index[gifs_list.Gif.isin(gifs_exp.Gif)],axis=0)
         gifs_exp = gifs_exp.reset_index()
@@ -141,7 +147,7 @@ def generate_design_file(random_state):
             else:
                 onset.append(gifs_exp.duration[i_temp]+onset[i_temp]+iti_n[i_temp])
             i_temp = i
- 
+
         gifs_exp['onset'] = onset
         gifs_exp['onset_fixation'] = [i - fixation_duration for i in onset]
         gifs_exp['iti'] = iti_n
@@ -153,12 +159,12 @@ def generate_design_file(random_state):
         out_fname = os.path.join(
             EMOTION_DATA_PATH,
             OUTPUT_RUNS_PATH,
-            f"run-{session}_design.tsv"
+            f"run-{run:02d}_design.tsv"
         )
-                
+
         gifs_exp.to_csv(out_fname, sep="\t", index=False)
 
-        session += 1
+        run += 1
 
 
 def generate_individual_design_file():
@@ -175,7 +181,7 @@ def generate_individual_design_file():
         random.seed(sub)
         random.shuffle(sub_randomized)
 
-        tsv_files = [f"run-{filename}_design.tsv" for filename in sub_randomized]
+        tsv_files = [f"run-{filename:02d}_design.tsv" for filename in sub_randomized]
         session = [str(item).zfill(3) for item in list(range(1,n_runs+1))]
 
         sub_dict = {"session": session,"tsv":tsv_files}
@@ -187,14 +193,14 @@ def generate_individual_design_file():
         out_fname = os.path.join(
             EMOTION_DATA_PATH,
             OUTPUT_RUNS_ORDER_PATH,
-            f"sub-00{sub}_design_run_order.tsv"
+            f"sub-{sub:02d}_design_run_order.tsv"
         )
 
         gifs_sub = pd.DataFrame(sub_dict)
 
         gifs_sub.to_csv(out_fname, sep="\t")
 
-    
+
 if __name__ == "__main__":
     """
     import argparse
@@ -207,9 +213,8 @@ if __name__ == "__main__":
     parser.add_argument("session", help="session id")
     parsed = parser.parse_args()
     """
+    #repeat_gifs()
     generate_design_file(random_state)
-    #generate_individual_design_file()
+    generate_individual_design_file()
 
     #get_tasks(parsed)
-    
-    
