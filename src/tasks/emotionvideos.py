@@ -16,10 +16,11 @@ class EmotionVideos(Task):
     DEFAULT_INSTRUCTION = """You will see short videos on screen.
     Please keep your eyes open, and fixate the cross at the beginning of each segment."""
 
-    def __init__(self, design, videos_path, run, *args, **kwargs):
+    def __init__(self, design, videos_path, run, final_wait=9, **kwargs):
         self.run_id = run
         self.n_trial = 0
         self.path_design = design
+        self.final_wait = final_wait
         self.design = pd.read_csv(design, sep='\t')
         self._task_completed = False
         if os.path.exists(videos_path):
@@ -32,8 +33,6 @@ class EmotionVideos(Task):
 
     def _setup(self, exp_win):
 
-        exp_win.colorSpace='rgb255'
-        exp_win.color = [54,69,79]
         super()._setup(exp_win)
 
         """
@@ -97,9 +96,13 @@ class EmotionVideos(Task):
 
 
     def _run(self, exp_win, ctl_win):
+        exp_win.colorSpace='rgb255'
+        exp_win.color = [54,69,79]
+
         exp_win.logOnFlip(
             level = logging.EXP, msg = "EmotionVideos: task starting at %f" % time.time()
         )
+        yield True
 
         for trial_n, (trial, stimuli) in enumerate(zip(self.trials, self._stimuli)):
             self.n_trial = trial_n
@@ -111,6 +114,7 @@ class EmotionVideos(Task):
             self.progress_bar.set_description(
                 f"Trial {trial_n}: {trial['Gif']}"
             )
+            self.progress_bar.update(1)
 
             #Draw to backbuffer
             for stim in self.fixation:
@@ -120,6 +124,7 @@ class EmotionVideos(Task):
             #Wait onset for fixation
             utils.wait_until(self.task_timer, trial["onset_fixation"] - 1 / config.FRAME_RATE)
             yield True #flip
+            trial['onset_fixation_flip'] = self._exp_win_last_flip_time - self._exp_win_first_flip_time
 
             #Wait onset for videos
             utils.wait_until(self.task_timer, trial["onset"] - 1 / config.FRAME_RATE)
@@ -127,18 +132,26 @@ class EmotionVideos(Task):
                 stimuli.replay()
             else:
                 stimuli.play()
+            # separate draw to log precise flip start
+            stimuli.draw()
+            yield True
+            trial['onset_video_flip'] = self._exp_win_last_flip_time - self._exp_win_first_flip_time
             while stimuli.status != visual.FINISHED:
                 stimuli.draw()
-                yield False #flip
+                yield False #flip without clearing buffer for perfs
+            # clear screen and back buffer
             yield True
             yield True
-            self.progress_bar.update(1)
+            stimuli.stop()
 
+        utils.wait_until(self.task_timer, trial["onset"] + trial["onset"] + self.final_wait)
         self._task_completed = True
 
 
+    def _restart(self):
+        self.trials = data.TrialHandler(self.path_design, 1, method="sequential")
+
     def _stop(self, exp_win, ctl_win):
-        self._stimuli[self.n_trial].stop()
         for frameN in range(config.FRAME_RATE * FADE_TO_GREY_DURATION):
             grey = [float(frameN) / config.FRAME_RATE / FADE_TO_GREY_DURATION - 1] * 3
             exp_win.setColor(grey, colorSpace='rgb')
@@ -146,6 +159,8 @@ class EmotionVideos(Task):
                 ctl_win.setColor(grey)
             yield True
 
+    def _save(self):
+        self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
 
     def unload(self):
         del self._stimuli

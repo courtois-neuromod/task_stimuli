@@ -39,6 +39,7 @@ def get_tasks(parsed):
             savestate,
             name=f"task-emotionvideos_run-{savestate['index']:02d}",
             use_eyetracking=True,
+            final_wait=final_wait,
         )
         yield task
 
@@ -52,8 +53,8 @@ def get_tasks(parsed):
 # Experiment parameters
 random_state = 0
 n_runs = 2
-initial_wait = 5
-final_wait = 5
+initial_wait = 6
+final_wait = 9
 fixation_duration = 1.5 #seconds
 
 #Run
@@ -149,6 +150,7 @@ def generate_design_file(random_state):
             i_temp = i
 
         gifs_exp['onset'] = onset
+        gifs_exp['onset'] = initial_wait + np.cumsum([0] + gifs_exp.duration[:-1]) + np.cumsum([0] + iti_n)
         gifs_exp['onset_fixation'] = [i - fixation_duration for i in onset]
         gifs_exp['iti'] = iti_n
 
