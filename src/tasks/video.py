@@ -135,6 +135,7 @@ and fixate the dot whenever it appears."""
         while self.movie_stim.status != visual.FINISHED:
         #while self.movie_stim.getCurrentFrameNumber() < 200:
             #exp_win.clearBuffer(color=True, depth=True)
+
             self.movie_stim.draw(exp_win)
             next_frame_time = self.movie_stim.getCurrentFrameTime()
             # MovieStim3: https://github.com/psychopy/versions/blob/3327a7215c08e8390237f2e6c08259735ef093aa/psychopy/visual/movie3.py#L346
@@ -156,6 +157,7 @@ and fixate the dot whenever it appears."""
                     #exp_win.clearBuffer(color=True, depth=True)
                     #for stim in self.fixation_dot:
                     #    stim.draw(exp_win)
+                    fixation_on = True
             elif self._inmovie_fixations:
                 if (next_frame_time % self._infix_freq < self._infix_dur):
                     '''
