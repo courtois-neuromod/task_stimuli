@@ -4,7 +4,7 @@ TASKS = []
 
 
 # de-comment line 7 when done piloting
-#for episode in list(range(1, 4)): # to test, just not to download the entire season for local tests
+#for episode in list(range(1, 2)): # to test, just not to download the entire season for local tests
 for episode in list(range(1, 16))+list(range(17,25)):
     segments = "abcd" if episode in (15,24) else "ab"
     for segment in segments:
@@ -17,5 +17,6 @@ for episode in list(range(1, 16))+list(range(17,25)):
                 infix_freq=20,
                 infix_dur=1.5,
                 name="task-friends-s6e%d%s-fixations" % (episode, segment),
+                use_eyetracking=True,
             )
         )
