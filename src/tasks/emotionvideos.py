@@ -16,11 +16,11 @@ class EmotionVideos(Task):
     DEFAULT_INSTRUCTION = """You will see short videos on screen.
     Please keep your eyes open, and fixate the dot at the beginning of each segment."""
 
-    def __init__(self, design, videos_path, run, final_wait=9, **kwargs):
+    def __init__(self, design, videos_path, run, target_duration, **kwargs):
         self.run_id = run
         self.n_trial = 0
         self.path_design = design
-        self.final_wait = final_wait
+        self.target_duration = target_duration
         self.design = pd.read_csv(design, sep='\t')[:2]
         self._task_completed = False
         if os.path.exists(videos_path):
@@ -145,7 +145,7 @@ class EmotionVideos(Task):
             yield True
             stimuli._player.unload() #stop+cleanup
 
-        utils.wait_until(self.task_timer, trial["onset"] + trial["onset"] + self.final_wait)
+        utils.wait_until(self.task_timer, self.target_duration)
         self._task_completed = True
 
 
