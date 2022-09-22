@@ -14,7 +14,7 @@ SCALING_EMOTION_VIDEOS = 600 #pix
 class EmotionVideos(Task):
 
     DEFAULT_INSTRUCTION = """You will see short videos on screen.
-    Please keep your eyes open, and fixate the cross at the beginning of each segment."""
+    Please keep your eyes open, and fixate the dot at the beginning of each segment."""
 
     def __init__(self, design, videos_path, run, final_wait=9, **kwargs):
         self.run_id = run
