@@ -63,7 +63,7 @@ class EmotionVideos(Task):
                 exp_win, os.path.join(self.videos_path, trial),
                 units = 'pix',
             )
-            width_video, height_video = video.size[0], video.size[1]
+            width_video, height_video = video.videoSize
             #Rescale videos if needed
             if width_video >= height_video:
                 scaling = SCALING_EMOTION_VIDEOS / width_video
