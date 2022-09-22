@@ -21,7 +21,7 @@ class EmotionVideos(Task):
         self.n_trial = 0
         self.path_design = design
         self.final_wait = final_wait
-        self.design = pd.read_csv(design, sep='\t')
+        self.design = pd.read_csv(design, sep='\t')[:2]
         self._task_completed = False
         if os.path.exists(videos_path):
             self.videos_path = videos_path
@@ -92,7 +92,7 @@ class EmotionVideos(Task):
             screen_text.draw(exp_win)
             if ctl_win:
                 screen_text.draw(ctl_win)
-            yield ()
+            yield
 
 
     def _run(self, exp_win, ctl_win):
@@ -102,6 +102,7 @@ class EmotionVideos(Task):
         exp_win.logOnFlip(
             level = logging.EXP, msg = "EmotionVideos: task starting at %f" % time.time()
         )
+        yield True
         yield True
 
         for trial_n, (trial, stimuli) in enumerate(zip(self.trials, self._stimuli)):
@@ -142,7 +143,7 @@ class EmotionVideos(Task):
             # clear screen and back buffer
             yield True
             yield True
-            stimuli.stop()
+            stimuli._player.unload() #stop+cleanup
 
         utils.wait_until(self.task_timer, trial["onset"] + trial["onset"] + self.final_wait)
         self._task_completed = True
