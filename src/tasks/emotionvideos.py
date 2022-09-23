@@ -21,7 +21,7 @@ class EmotionVideos(Task):
         self.n_trial = 0
         self.path_design = design
         self.target_duration = target_duration
-        self.design = pd.read_csv(design, sep='\t')[:2]
+        self.design = pd.read_csv(design, sep='\t')
         self._task_completed = False
         if os.path.exists(videos_path):
             self.videos_path = videos_path
