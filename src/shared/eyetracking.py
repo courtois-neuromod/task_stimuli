@@ -59,7 +59,7 @@ CAPTURE_SETTINGS = {
     "global_gain": 1,
     "gev_packet_size": 1400,
     "uid": "Aravis-Fake-GV01",  # for test purposes
-    #"uid": "MRC Systems GmbH-GVRD-MRC HighSpeed-MR_CAM_HS_0019",
+    # "uid": "MRC Systems GmbH-GVRD-MRC HighSpeed-MR_CAM_HS_0014",
 }
 
 
@@ -448,12 +448,11 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
                     if not calibration_success:
                         print('#### CALIBRATION FAILED: restart with <c> ####')
                     break
-
+        self.eyetracker.pause()
 
 
     def stop(self, exp_win, ctl_win):
         self.eyetracker.unset_pupil_cb()
-        self.eyetracker.pause()
         yield
 
     def _save(self):
@@ -470,9 +469,6 @@ class EyetrackerSetup(Task):
     ):
         super().__init__(**kwargs)
         self.eyetracker = eyetracker
-
-    def _setup(self, exp_win):
-        self.use_fmri = False
 
     def _run(self, exp_win, ctl_win):
 
@@ -491,6 +487,7 @@ class EyetrackerSetup(Task):
 
         while True:
             notif = self.eyetracker._aravis_notification
+            print(notif)
             if (
                 notif and
                 notif["subject"] == "aravis.start_capture.successful" and
@@ -712,31 +709,26 @@ class EyeTrackerClient(threading.Thread):
 
     def pause(self):
         self.paused = True
-        print('pause eyetracking coms')
         self.pause_cond.acquire()
         del self.pupil_monitor
 
     def resume(self):
         if self.paused:
-            print('resume eyetracking coms')
             self.pupil_monitor = Msg_Receiver(
 
                 self._ctx, f"tcp://localhost:{self._ipc_sub_port}",
                 topics=("gaze", "pupil", "fixations", "notify.calibration.successful", "notify.calibration.failed", "notify.aravis")
 
             )
-            self.paused = False
             self.pause_cond.notify()
             self.pause_cond.release()
+            self.paused=False
 
     def run(self):
 
         self._aravis_notification = None
 
         while not self.stoprequest.isSet():
-            if self.paused:
-                time.sleep(1e-3)
-                continue
             with self.pause_cond:
                 msg = self.pupil_monitor.recv()
                 if not msg is None:
@@ -758,6 +750,7 @@ class EyeTrackerClient(threading.Thread):
                             self._last_calibration_notification = tmp
                         elif topic.startswith("notify.aravis.start_capture"):
                             self._aravis_notification = tmp
+            time.sleep(1e-3)
         logging.info("eyetracker listener: stopping")
 
     def set_pupil_cb(self, pupil_cb):
