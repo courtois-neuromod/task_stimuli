@@ -1,0 +1,7 @@
+,stim_a,loc_a,stim_b,action_b,loc_b,stim_c,action_c,loc_c,stim_d,action_d,loc_d,stim_e,action_e,loc_e,stim_f,action_f,loc_f
+0,973,0,974,True,0,975,True,0,975,True,0,974,True,0,974,True,0
+1,973,0,973,True,0,975,True,0,974,True,0,974,True,0,975,True,0
+2,973,0,140,False,0,140,True,0,140,True,0,975,False,0,973,True,0
+3,973,0,975,True,0,140,False,0,973,False,0,974,True,0,973,True,0
+4,974,0,140,False,0,975,False,0,140,False,0,974,False,0,140,False,0
+5,974,0,973,True,0,974,True,0,975,True,0,973,True,0,973,True,0
