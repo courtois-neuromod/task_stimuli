@@ -41,7 +41,7 @@ def run(parsed):
             parsed.record_movie,
             parsed.skip_soundcheck,
             parsed.target_ETcalibration,
-            parsed.validate_ET,                        
+            parsed.validate_ET,
             )
     finally:
         if not parsed.no_force_resolution:
