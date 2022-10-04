@@ -24,6 +24,8 @@ BASELINE_BEGIN = 9
 BASELINE_END = 9
 ISI = TRIAL_DURATION - STIMULI_DURATION
 ISI_JITTER = 2
+N_REPEAT_WORDS = 3
+N_TRIPLETS_SESSIONS = 4
 
 def generate_design_file(subject, all_words, pilot=False):
     import os
@@ -40,35 +42,39 @@ def generate_design_file(subject, all_words, pilot=False):
     print("seed", seed)
     np.random.seed(seed)
 
-    # randomize for participant
-    all_words = all_words.sample(frac=1)
 
-    print(int(np.ceil(len(all_words)/N_TRIALS_PER_RUN)))
-    for run in range(int(np.ceil(len(all_words)/N_TRIALS_PER_RUN))):
+    for repeat in range(N_REPEAT_WORDS):
+        # randomize for participant
+        all_words = all_words.sample(frac=1)
 
-        run_words = all_words[run*N_TRIALS_PER_RUN:(run+1)*N_TRIALS_PER_RUN]
-        if 'triple_ids' in run_words:
-            del run_words['triple_ids']
-        run_words = run_words.reset_index(drop=True)
-        run_words['trial_type'] = 'word'
-        run_words['trial_index'] = np.arange(len(run_words))
-        run_words['block_index'] = run_words['trial_index']//N_TRIALS_PER_BLOCK
-        run_words['isi'] = np.random.permutation(isi_set)[:len(run_words)]
-        run_words['onset'] = BASELINE_BEGIN + \
-            run_words['trial_index']*STIMULI_DURATION + \
-            np.hstack([[0],np.cumsum(run_words['isi'][:-1])])
-        run_words['duration'] = STIMULI_DURATION
+        n_runs = int(np.ceil(len(all_words)/N_TRIALS_PER_RUN))
+        print(repeat)
+        for run in range(n_runs):
 
-        session = run // N_RUNS_PER_SESSION + 1
-        run_in_session = run % N_RUNS_PER_SESSION  + 1
+            run_words = all_words[run*N_TRIALS_PER_RUN:(run+1)*N_TRIALS_PER_RUN]
+            if 'triple_ids' in run_words:
+                del run_words['triple_ids']
+            run_words = run_words.reset_index(drop=True)
+            run_words['trial_type'] = 'word'
+            run_words['trial_index'] = np.arange(len(run_words))
+            run_words['block_index'] = run_words['trial_index']//N_TRIALS_PER_BLOCK
+            run_words['isi'] = np.random.permutation(isi_set)[:len(run_words)]
+            run_words['onset'] = BASELINE_BEGIN + \
+                run_words['trial_index']*STIMULI_DURATION + \
+                np.hstack([[0],np.cumsum(run_words['isi'][:-1])])
+            run_words['duration'] = STIMULI_DURATION
+            run_words['repeat'] = repeat+1
 
-        out_fname = os.path.join(
-            TRIPLET_DATA_PATH,
-            "words_designs",
-            f"sub-{parsed.subject}_ses-{'pilot' if pilot else ''}{session:03d}_task-wordsfamiliarity_run-{run_in_session:02d}_design.tsv",
-        )
-        print(f"writing {out_fname}")
-        run_words.to_csv(out_fname, sep="\t", index=False)
+            session = run // N_RUNS_PER_SESSION + 1 + (repeat * n_runs) // N_RUNS_PER_SESSION + repeat * N_TRIPLETS_SESSIONS
+            run_in_session = run % N_RUNS_PER_SESSION  + 1
+
+            out_fname = os.path.join(
+                TRIPLET_DATA_PATH,
+                "words_designs",
+                f"sub-{parsed.subject}_ses-{'pilot' if pilot else ''}{session:03d}_task-wordsfamiliarity_run-{run_in_session:02d}_design.tsv",
+            )
+            print(f"writing {out_fname}")
+            run_words.to_csv(out_fname, sep="\t", index=False)
 
 if __name__ == "__main__":
     import argparse
