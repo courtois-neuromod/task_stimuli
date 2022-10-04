@@ -103,7 +103,8 @@ venv.bak/
 # mypy
 .mypy_cache/
 data/things/memory_designs/*
+<<<<<<< HEAD
 
 data/gamepad/designs/*
-data/*/*
+#data/*/
 docker/*.sif
