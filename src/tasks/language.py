@@ -122,13 +122,13 @@ Don't think too much and give the first answer that comes to mind.
             # wait until .1s before the next trial, leaving time to prepare it
             utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] + trial['isi'] - .1)
 
+            self.trials.addData("w1", all_stim[0])
+            self.trials.addData("w2", all_stim[1])
+            self.trials.addData("w3", all_stim[2])
             # record keypresses
             triplet_answer_keys = event.getKeys(self.RESPONSE_KEYS, timeStamped=self.task_timer)
             if len(triplet_answer_keys):
                 first_response = triplet_answer_keys[0]
-                self.trials.addData("w1", all_stim[0])
-                self.trials.addData("w2", all_stim[1])
-                self.trials.addData("w3", all_stim[2])
                 self.trials.addData("answer", first_response[0])
                 self.trials.addData("answer_onset", first_response[1])
                 self.trials.addData("response_txt",self.RESPONSE_TEXT[first_response[0]])
