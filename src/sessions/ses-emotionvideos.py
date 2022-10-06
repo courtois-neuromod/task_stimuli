@@ -183,60 +183,6 @@ def generate_design_file(random_state):
         start=split+1
         last_split = csum[split]
 
-
-    return
-
-    while not gifs_list.empty:
-
-        gifs_id = []
-        total_duration = 0
-        #Make sure there's no run with just a few Gifs in it
-        if gifs_list.duration.sum() < run_max_duration:
-            gifs_id = gifs_list.Gif
-        else:
-            for i, row in gifs_list.sample(frac=1, random_state=random_state).iterrows():
-                #Select Gifs until the total duration reach more than trial_duration
-                if (total_duration + row.duration) < run_min_duration:
-                    total_duration += row.duration
-                    gifs_id.append(row.Gif)
-
-        gifs_exp = gifs_list[gifs_list.Gif.isin(gifs_id)]
-        gifs_list = gifs_list.drop(gifs_list.index[gifs_list.Gif.isin(gifs_exp.Gif)],axis=0)
-        gifs_exp = gifs_exp.reset_index()
-
-        iti = geom.rvs(0.5, iti_min-1, size=5000, random_state=random_state)
-        iti_n = random.sample(iti[iti<=iti_max].tolist(),len(gifs_exp))
-
-        onset = []
-        i_temp = 0
-
-        for i, row in gifs_exp.iterrows():
-            if i == 0:
-                onset.append(initial_wait)
-            else:
-                onset.append(gifs_exp.duration[i_temp]+onset[i_temp]+iti_n[i_temp])
-            i_temp = i
-
-        gifs_exp['onset'] = onset
-        gifs_exp['onset'] = initial_wait + np.cumsum([0] + gifs_exp.duration[:-1]) + np.cumsum([0] + iti_n)
-        gifs_exp['onset_fixation'] = [i - fixation_duration for i in onset]
-        gifs_exp['iti'] = iti_n
-
-        #Create directory
-        if not os.path.exists(os.path.join(EMOTION_DATA_PATH,OUTPUT_RUNS_PATH)):
-            os.makedirs(os.path.join(EMOTION_DATA_PATH,OUTPUT_RUNS_PATH))
-
-        out_fname = os.path.join(
-            EMOTION_DATA_PATH,
-            OUTPUT_RUNS_PATH,
-            f"run-{run:02d}_design.tsv"
-        )
-
-        gifs_exp.to_csv(out_fname, sep="\t", index=False)
-
-        run += 1
-
-
 def generate_individual_design_file():
     """
     Generate individual design file including the randomized run order for each subject
