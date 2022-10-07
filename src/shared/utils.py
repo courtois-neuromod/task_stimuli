@@ -50,6 +50,6 @@ def get_subject_soundcheck_video(subject):
                 "data",
                 "videos",
                 "subject_setup_videos",
-                "sub-default_setup_video.mp4",
+                "sub-default_setup_video.mkv",
             )
     return setup_video_path[0]
