@@ -97,7 +97,7 @@ def get_tasks(parsed):
     else:
         savestate = {"index": 0}
 
-    for run in range(10):
+    for run in range(parsed.skip_n_tasks, 10):
 
         next_levels = [f"1Player.World{world}.{level}" for idx,(world,level) in design[savestate['index']:savestate['index']+20].iterrows()]
         if len(next_levels) < 5:

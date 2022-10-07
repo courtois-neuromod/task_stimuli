@@ -56,8 +56,8 @@ PUPIL_REMOTE_PORT = 50123
 CAPTURE_SETTINGS = {
     "frame_size": [640, 480],
     "frame_rate": 250,
-    "exposure_time": 1500,
-    #"exposure_time": 4000,
+    #"exposure_time": 1500,
+    "exposure_time": 4000,
     "global_gain": 1,
     "gev_packet_size": 1400,
     "uid": "Aravis-Fake-GV01",  # for test purposes

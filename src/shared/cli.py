@@ -22,7 +22,7 @@ from ..tasks import task_base, video
 
 def listen_shortcuts():
     if any([k[1] & event.MOD_CTRL for k in event._keyBuffer]):
-        allKeys = event.getKeys(["n", "c", "q"], modifiers=True)
+        allKeys = event.getKeys(["n", "k", "q"], modifiers=True)
         ctrl_pressed = any([k[1]["ctrl"] for k in allKeys])
         all_keys_only = [k[0] for k in allKeys]
         if len(allKeys) and ctrl_pressed:
@@ -133,12 +133,6 @@ def main_loop(
 
     # get tasks subset
     all_tasks = session_module.get_tasks(parsed)
-    if parsed.skip_n_tasks:
-        if isinstance(tasks, Iterator):
-            all_tasks = itertools.islice(all_tasks, parsed.skip_n_tasks, None)
-        else:
-            all_tasks = tasks[parsed.skip_n_tasks:]
-
 
     # setup output and filename templates
     if not parsed.output:
@@ -173,22 +167,20 @@ def main_loop(
         ptt = PushToTalk()
 
     if parsed.fmri:
-        if not parsed.skip_soundcheck:
-            setup_video_path = utils.get_subject_soundcheck_video(parsed.subject)
-            all_tasks = itertools.chain([
-                task_base.Pause(
-                    """Setup: we will soon run a soundcheck to check that the sensimetrics is adequately setup."""
-                ),
-                video.VideoAudioCheckLoop(setup_video_path, name="setup_soundcheck_video",)],
-                all_tasks,
-            )
+        setup_video_path = utils.get_subject_soundcheck_video(parsed.subject)
 
-        all_tasks = itertools.chain(
-            [task_base.Pause(
-                """We are completing the setup and initializing the scanner.
+        setup_tasks = [
+        video.VideoAudioCheckLoop(
+            setup_video_path,
+            name="setup_soundcheck_video",) if not parsed.skip_soundcheck else None,
+        task_base.Pause(
+            """We are completing the setup and initializing the scanner.
 We will start the tasks in a few minutes.
 Please remain still."""
-            )],
+        )]
+
+        all_tasks = itertools.chain(
+            filter(bool,setup_tasks),
             all_tasks,
             [task_base.Pause(
                 """We are done for today.
