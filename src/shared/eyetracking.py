@@ -12,7 +12,9 @@ from .ellipse import Ellipse
 from ..tasks.task_base import Task
 from . import config
 
-INSTRUCTION_DURATION = 5
+INSTRUCTION_DURATION = 4
+STARTCUE_DURATION = 2
+FEEDBACK_DURATION = 3
 CALIBRATE_HOTKEY = "c"
 
 MARKER_FILL_COLOR = (0.8, 0, 0.5)
@@ -91,11 +93,11 @@ class EyetrackerCalibration_targets(Task):
         if self.validation:
             instruction_text = """Eyetracker Validation.
 
-    Once again, please fixate on the CENTER of the markers that appear on the screen."""
+    Please fixate on the CENTER of the markers."""
         else:
             instruction_text = """Eyetracker Calibration.
 
-    You'll be asked to roll your eyes, then fixate on the CENTER of the markers that appear on the screen."""
+    Roll your eyes, then fixate on the CENTER of the markers that appear on the screen."""
         screen_text = visual.TextStim(
             exp_win,
             text=instruction_text,
@@ -104,7 +106,11 @@ class EyetrackerCalibration_targets(Task):
             wrapWidth=config.WRAP_WIDTH,
         )
 
+        # screen fades to dark during instructions, dark screen during calibration
         for frameN in range(config.FRAME_RATE * INSTRUCTION_DURATION):
+            grey = [-float(frameN) / config.FRAME_RATE / INSTRUCTION_DURATION] * 3
+            exp_win.setColor(grey, colorSpace='rgb')
+            #ctl_win.setColor(grey, colorSpace='rgb')
             screen_text.draw(exp_win)
             screen_text.draw(ctl_win)
             yield True
@@ -113,6 +119,7 @@ class EyetrackerCalibration_targets(Task):
         self.use_fmri = False
         super()._setup(exp_win)
         self.fixation_dot = fixation_dot(exp_win, radius=self.marker_size)
+        self.startcue = visual.Circle(exp_win, units='pix', pos=(0,0), radius=self.marker_size*0.5, lineWidth=0, fillColor=(1, 1, 1))
 
     def _pupil_cb(self, pupil):
         if pupil["timestamp"] > self.task_stop:
@@ -138,10 +145,7 @@ class EyetrackerCalibration_targets(Task):
     def _run(self, exp_win, ctl_win):
 
         self.eyetracker.resume()
-
-        roll_eyes_text = "Please roll your eyes ~2-3 times in clockwise and counterclockwise directions"
-        if self.validation:
-            roll_eyes_text = "Get Ready" # no need to roll eyes again
+        roll_eyes_text = "Roll your eyes"
 
         text_roll = visual.TextStim(
             exp_win,
@@ -153,14 +157,12 @@ class EyetrackerCalibration_targets(Task):
 
         calibration_success = False
         while not calibration_success:
-            while True:
+            start_calibration = self.validation
+            while not start_calibration:
                 allKeys = event.getKeys([CALIBRATE_HOTKEY])
-                start_calibration = False
                 for key in allKeys:
                     if key == CALIBRATE_HOTKEY:
                         start_calibration = True
-                if start_calibration:
-                    break
                 text_roll.draw(exp_win)
                 yield False
             if self.validation:
@@ -201,6 +203,12 @@ class EyetrackerCalibration_targets(Task):
                     level=logging.EXP,
                     msg="eyetracker_calibration: starting at %f" % time.time(),
                 )
+
+            for frameN in range(config.FRAME_RATE * STARTCUE_DURATION):
+                self.startcue.draw(exp_win)
+                self.startcue.draw(ctl_win)
+                yield True
+
             for site_id in markers_order:
                 marker_pos = self.markers[site_id]
                 pos = (marker_pos - 0.5) * window_size_frame # remove 0.5 since 0, 0 is the middle in psychopy
@@ -241,21 +249,60 @@ class EyetrackerCalibration_targets(Task):
                     yield True
             yield True
             self.task_stop = time.monotonic()
+
             if self.validation:
                 logging.info(
                     f"validating on {len(self._pupils_list)} pupils and {len(self.all_refs_per_flip)} markers"
                 )
+
+                print('Ǹumber of received fixations: ', str(len(self._fix_list)))
+                val_qc = self.eyetracker.validate(self._fix_list, self.all_refs_per_flip)
+
+                # Display calib results on screen
+                dot_colors = [(-0.5, 1, -0.5), (1, 1, -0.5), (1, -0.5, -0.5)]
+                qc_dots = []
+
+                for vqc in val_qc:
+                    self._events[vqc['marker']].update(vqc)
+                    pos = (np.array(vqc['norm_pos']) - 0.5) * window_size_frame
+                    if 'good' in vqc:
+                        fill_col = dot_colors[np.argmax([vqc['good'], vqc['fair'], vqc['poor']])]
+                    else:
+                        fill_col = (1, 1, 1) # white means no fixations reccorded for that marker
+                    qc_dots.append(visual.Circle(exp_win, units='pix', pos=pos, radius=self.marker_size*0.8,
+                                                 lineWidth=0, fillColor=fill_col))
+
+                for frameN in range(config.FRAME_RATE * FEEDBACK_DURATION):
+                    for qc_dot in qc_dots:
+                        qc_dot.draw(exp_win)
+                        qc_dot.draw(ctl_win)
+                    yield True
+
+                #exp_win.clearBuffer(color=True, depth=True)
+                black_bgd = visual.Rect(exp_win, size=exp_win.size, lineWidth=0,
+                                        colorSpace='rgb', fillColor=(-1, -1, -1))
+
+                for frameN in range(5):
+                    black_bgd.draw(exp_win)
+                    black_bgd.draw(ctl_win)
+                    yield True
+
+                calibration_success = True
+
             else:
                 logging.info(
                     f"calibrating on {len(self._pupils_list)} pupils and {len(self.all_refs_per_flip)} markers"
                 )
-            if self.validation:
-                print('Ǹumber of received fixations: ', str(len(self._fix_list)))
-                val_qc = self.eyetracker.validate(self._fix_list, self.all_refs_per_flip)
-                for vqc in val_qc:
-                    self._events[vqc['marker']].update(vqc)
-                calibration_success = True
-            else:
+
+                #exp_win.clearBuffer(color=True, depth=True)
+                black_bgd = visual.Rect(exp_win, size=exp_win.size, lineWidth=0,
+                                        colorSpace='rgb', fillColor=(-1, -1, -1))
+
+                for frameN in range(5):
+                    black_bgd.draw(exp_win)
+                    black_bgd.draw(ctl_win)
+                    yield True
+
                 self.eyetracker.calibrate(self._pupils_list, self.all_refs_per_flip)
                 while True:
                     notes = getattr(self.eyetracker, '_last_calibration_notification',None)
@@ -865,33 +912,41 @@ class EyeTrackerClient(threading.Thread):
             # transform marker's normalized position into dim = (3,) vector in pixel space
             m_vecpos = np.concatenate(((np.array(m['norm_pos']) - 0.5)*(1280, 1024), np.array([dist_in_pix])), axis=0)
 
-            for key in m['fix_dict'].keys():
-                fix = (np.array(m['fix_dict'][key]['norm_pos']) - 0.5)*(1280, 1024)
-                fix_vecpos = np.concatenate((fix, np.repeat(dist_in_pix, len(fix)).reshape((-1, 1))), axis=1)
+            if len(m['fix_dict'].keys()) > 0:
+                #print(len(m['fix_dict'].keys()))
+                for key in m['fix_dict'].keys():
+                    fix = (np.array(m['fix_dict'][key]['norm_pos']) - 0.5)*(1280, 1024)
+                    fix_vecpos = np.concatenate((fix, np.repeat(dist_in_pix, len(fix)).reshape((-1, 1))), axis=1)
 
-                distances = []
-                for fix_vec in fix_vecpos:
-                    vectors = np.stack((m_vecpos, fix_vec), axis=0)
-                    distance = np.rad2deg(np.arccos(1.0 - pdist(vectors, metric='cosine')))
+                    distances = []
+                    for fix_vec in fix_vecpos:
+                        vectors = np.stack((m_vecpos, fix_vec), axis=0)
+                        distance = np.rad2deg(np.arccos(1.0 - pdist(vectors, metric='cosine')))
 
-                    distances.append(distance[0])
+                        distances.append(distance[0])
 
-                distances = np.array(distances)
-                markers_dict[count]['fix_dict'][key]['distances'] = distances
+                    distances = np.array(distances)
+                    markers_dict[count]['fix_dict'][key]['distances'] = distances
 
-                num_fix = len(distances)
-                good = np.sum(distances < 0.5) / num_fix
-                fair = np.sum((distances >= 0.5)*(distances < 1.5)) / num_fix
-                poor = np.sum(distances >= 1.5) / num_fix
+                    num_fix = len(distances)
+                    good = np.sum(distances < 0.5) / num_fix
+                    fair = np.sum((distances >= 0.5)*(distances < 1.5)) / num_fix
+                    poor = np.sum(distances >= 1.5) / num_fix
 
-                print('Total fixations:' + str(num_fix) + ' , Good:' + str(good) + ' , Fair:' + str(fair) + ' , Poor:' + str(poor))
+                    print('Total fixations:' + str(num_fix) + ' , Good:' + str(good) + ' , Fair:' + str(fair) + ' , Poor:' + str(poor))
+                    val_qc.append({
+                        'marker': count,
+                        'norm_pos': m['norm_pos'],
+                        'num_fix': num_fix,
+                        'good': good,
+                        'fair': fair,
+                        'poor': poor
+                    })
+            else:
                 val_qc.append({
                     'marker': count,
                     'norm_pos': m['norm_pos'],
-                    'num_fix': num_fix,
-                    'good': good,
-                    'fair': fair,
-                    'poor': poor
+                    'num_fix': 0
                 })
 
         return markers_dict, val_qc
