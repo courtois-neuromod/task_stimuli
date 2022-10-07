@@ -56,8 +56,8 @@ PUPIL_REMOTE_PORT = 50123
 CAPTURE_SETTINGS = {
     "frame_size": [640, 480],
     "frame_rate": 250,
-    "exposure_time": 1500,
-    #"exposure_time": 4000,
+    #"exposure_time": 1500,
+    "exposure_time": 4000,
     "global_gain": 1,
     "gev_packet_size": 1400,
     "uid": "Aravis-Fake-GV01",  # for test purposes
@@ -78,12 +78,12 @@ class EyetrackerCalibration_targets(Task):
         self.markers_order = markers_order
         self.markers = markers
         self.marker_size = 20
-        self.marker_duration_frames = 90 # 60 fps, 4s = 240; 60fps, 1.5s = 90 frames
+        self.marker_duration_frames = 120 # 60 fps, 4s = 240; 60fps, 1.5s = 90 frames, 2s = 120
         super().__init__(use_eyetracking=use_eyetracking, **kwargs)
         self.eyetracker = eyetracker
 
         # number of frames to eliminate at start and end of marker
-        self.calibration_lead_in = 10
+        self.calibration_lead_in = 20
         self.calibration_lead_out = 0
 
         self.validation = validation
@@ -582,8 +582,8 @@ class EyeTrackerClient(threading.Thread):
 
         self.use_targets = use_targets
         self.validate_calib = validate_calib
-        if not self.use_targets:
-            CAPTURE_SETTINGS["exposure_time"] = 4000
+
+        CAPTURE_SETTINGS["exposure_time"] = 4000
 
         self.output_path = output_path
         self.output_fname_base = output_fname_base
