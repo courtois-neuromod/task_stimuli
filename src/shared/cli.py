@@ -1,6 +1,8 @@
 # CLI: command line interface options and main loop
 
 import os, datetime, traceback, glob, time
+import itertools
+from termcolor import colored, cprint
 from collections.abc import Iterable, Iterator
 from psychopy import core, visual, logging, event
 import itertools
@@ -97,87 +99,89 @@ def run_task(
 
 
 def main_loop(
-    all_tasks,
-    subject,
-    session,
-    output_ds,
-    enable_eyetracker=False,
-    use_fmri=False,
-    use_meg=False,
-    show_ctl_win=False,
-    allow_run_on_battery=False,
-    enable_ptt=False,
-    record_movie=False,
-    skip_soundcheck=False,
-    calibration_targets=False,
-    validate_eyetrack=False,
+    session_module,
+    parsed,
 ):
+    """    subject,
+        output_ds,
+        eyetracker=False,
+        use_fmri=False,
+        use_meg=False,
+        show_ctl_win=False,
+        allow_run_on_battery=False,
+        enable_ptt=False,
+        record_movie=False,
+        skip_soundcheck=False,
+        calibration_targets=False,
+        validate_eyetrack=False,
+        **kwargs
+    ):"""
 
-    # force screen resolution to solve issues with video splitter at scanner
-    """xrandr = Popen([
-        'xrandr',
-        '--output', 'eDP-1',
-        '--mode', '%dx%d'%config.EXP_WINDOW['size'],
-        '--rate', str(config.FRAME_RATE)])
-    time.sleep(5)"""
-
+    # check power source, for laptop setup
     if not utils.check_power_plugged():
-        print("*" * 25 + "WARNING: the power cord is not connected" + "*" * 25)
-        if not allow_run_on_battery:
+        cprint("*" * 25 + "WARNING: the power cord is not connected" + "*" * 25, 'red', attrs=['blink'])
+        if not parsed.run_on_battery:
             return
 
-    bids_sub_ses = ("sub-%s" % subject, "ses-%s" % session)
-    log_path = os.path.abspath(os.path.join(output_ds, "sourcedata", *bids_sub_ses))
+    # get session specific config
+    if hasattr(session_module, 'get_config'):
+        session_config = session_module.get_config(parsed)
+        #override some config parameters from the command line
+        session_config.update({k:v for k,v in vars(parsed).items() if v})
+        print(session_config)
+
+
+    # get tasks subset
+    all_tasks = session_module.get_tasks(parsed)
+    if parsed.skip_n_tasks:
+        if isinstance(tasks, Iterator):
+            all_tasks = itertools.islice(all_tasks, parsed.skip_n_tasks, None)
+        else:
+            all_tasks = tasks[parsed.skip_n_tasks:]
+
+
+    # setup output and filename templates
+    if not parsed.output:
+        parsed.output = os.path.join(os.environ["OUTPUT_PATH"], session_config['output_dataset'])
+
+    print(f'outputs will be saved in {parsed.output}')
+    bids_sub_ses = ("sub-%s" % parsed.subject, "ses-%s" % parsed.session)
+    log_path = os.path.abspath(os.path.join(parsed.output, "sourcedata", *bids_sub_ses))
     if not os.path.exists(log_path):
         os.makedirs(log_path, exist_ok=True)
     log_name_prefix = "sub-%s_ses-%s_%s" % (
-        subject,
-        session,
+        parsed.subject,
+        parsed.session,
         datetime.datetime.now().strftime("%Y%m%d-%H%M%S"),
     )
     logfile_path = os.path.join(log_path, log_name_prefix + ".log")
     log_file = logging.LogFile(logfile_path, level=logging.INFO, filemode="w")
 
+    # create windows for stimuli
     exp_win = visual.Window(**config.EXP_WINDOW, monitor=config.EXP_MONITOR)
     exp_win.mouseVisible = False
-
-    if show_ctl_win:
+    if parsed.control_window:
         ctl_win = visual.Window(**config.CTL_WINDOW)
         ctl_win.name = "Stimuli"
     else:
         ctl_win = None
 
+    # Create push-to-talk "controller"
     ptt = None
-    if enable_ptt:
+    if parsed.ptt:
         from .ptt import PushToTalk
-
         ptt = PushToTalk()
 
-    eyetracker_client = None
-    gaze_drawer = None
-    if enable_eyetracker:
-        print("creating et client")
-        eyetracker_client = eyetracking.EyeTrackerClient(
-            output_path=log_path,
-            output_fname_base=log_name_prefix,
-            profile=False,
-            debug=False,
-            use_targets = calibration_targets,
-            validate_calib = validate_eyetrack,
-        )
-        print("starting et client")
-        eyetracker_client.start()
-        print("done")
-
-        all_tasks = itertools.chain(
-            [eyetracking.EyetrackerSetup(eyetracker=eyetracker_client, name='eyetracker_setup'),],
-            all_tasks
-        )
-        all_tasks = eyetracker_client.interleave_calibration(all_tasks)
-
-        if show_ctl_win:
-            gaze_drawer = eyetracking.GazeDrawer(ctl_win)
-    if use_fmri:
+    if parsed.fmri:
+        if not parsed.skip_soundcheck:
+            setup_video_path = utils.get_subject_soundcheck_video(parsed.subject)
+            all_tasks = itertools.chain([
+                task_base.Pause(
+                    """Setup: we will soon run a soundcheck to check that the sensimetrics is adequately setup."""
+                ),
+                video.VideoAudioCheckLoop(setup_video_path, name="setup_soundcheck_video",)],
+                all_tasks,
+            )
 
         all_tasks = itertools.chain(
             [task_base.Pause(
@@ -194,16 +198,31 @@ We are coming to get you out of the scanner shortly."""
             )],
         )
 
-        if not skip_soundcheck:
-            setup_video_path = utils.get_subject_soundcheck_video(subject)
-            all_tasks = itertools.chain([
-                task_base.Pause(
-                    """Setup: we will soon run a soundcheck to check that the sensimetrics is adequately setup."""
-                ),
-                video.VideoAudioCheckLoop(setup_video_path, name="setup_soundcheck_video",)],
-                all_tasks,
+    # Initiliaze eyetracker client and start thread.
+    eyetracker_client = None
+    gaze_drawer = None
+    if parsed.eyetracking:
+        eyetracker_client = eyetracking.EyeTrackerClient(
+            output_path=log_path,
+            output_fname_base=log_name_prefix,
+            profile=False,
+            debug=False,
+        )
+        eyetracker_client.start()
+
+        # append the eyetracker setup and all calibration/validations
+        all_tasks = itertools.chain(
+            [eyetracking.EyetrackerSetup(eyetracker=eyetracker_client, name='eyetracker_setup'),],
+            all_tasks
+        )
+        all_tasks = eyetracker_client.interleave_calibration(
+            all_tasks,
+            calibration_version=session_config['eyetracking_calibration_version'],
+            validation=session_config['eyetracking_validation'],
             )
 
+        if parsed.control_window:
+            gaze_drawer = eyetracking.GazeDrawer(ctl_win)
 
     else:
         all_tasks = itertools.chain(
@@ -230,7 +249,7 @@ Thanks for your participation!"""
             event.clearEvents()
 
             use_eyetracking = False
-            if enable_eyetracker and task.use_eyetracking:
+            if parsed.eyetracking and task.use_eyetracking:
                 use_eyetracking = True
 
             # setup task files (eg. video)
@@ -238,8 +257,8 @@ Thanks for your participation!"""
                 exp_win,
                 log_path,
                 log_name_prefix,
-                use_fmri=use_fmri,
-                use_meg=use_meg,
+                use_fmri=parsed.fmri,
+                use_meg=parsed.meg,
             )
             print("READY")
 
@@ -254,7 +273,7 @@ Thanks for your participation!"""
                     ctl_win,
                     eyetracker_client,
                     gaze_drawer,
-                    record_movie=record_movie,
+                    record_movie=parsed.record_movie,
                 )
 
                 if shortcut_evt == "n":
@@ -272,7 +291,7 @@ Thanks for your participation!"""
                     break
 
                 logging.flush()
-            if record_movie:
+            if parsed.record_movie:
                 out_fname = os.path.join(
                     task.output_path, "%s_%s.mp4" % (task.output_fname_base, task.name)
                 )
@@ -299,5 +318,5 @@ Thanks for your participation!"""
         logging.exp(msg="user killing the program")
         print("you killing me!")
     finally:
-        if enable_eyetracker:
+        if parsed.eyetracking:
             eyetracker_client.join(TIMEOUT)

@@ -140,3 +140,11 @@ if __name__ == "__main__":
     else:
         all_triplets = pandas.read_csv(os.path.join(TRIPLET_DATA_PATH, 'fMRI_triplets.csv'))
     generate_design_file(parsed.subject, all_triplets, parsed.pilot)
+
+
+def get_config(parsed):
+    return {
+        'eyetracking_calibration_version': 1,
+        'eyetracking_validation': True,
+        'output_dataset': 'triplets',
+    }

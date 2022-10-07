@@ -73,3 +73,11 @@ def get_tasks(parsed):
     import importlib
     phase2 = importlib.import_module('src.sessions.ses-mario-phase2')
     yield from phase2.get_tasks(parsed)
+
+
+def get_config(parsed):
+    return {
+        'eyetracking_calibration_version': 1,
+        'eyetracking_validation': True,
+        'output_dataset': 'mario',
+    }

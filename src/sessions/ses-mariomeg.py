@@ -79,3 +79,11 @@ def get_tasks(parsed):
             text="You can take a short break.\n Press A when ready to continue",
             wait_key='a',
         )
+
+def get_config(parsed):
+    return {
+        'eyetracking_calibration_version': 1,
+        'eyetracking_validation': True,
+        'output_dataset': 'mariomeg',
+        'meg': True,
+    }

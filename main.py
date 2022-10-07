@@ -2,7 +2,6 @@
 from subprocess import Popen
 
 import os, sys, importlib
-import itertools
 from collections.abc import Iterable, Iterator
 
 from src.shared import config
@@ -21,13 +20,9 @@ def run(parsed):
         suggestion = suggest_session_tasks(parsed.tasks)
         raise(ValueError('session tasks file cannot be found for %s. Did you mean %s ?'%(parsed.tasks, suggestion)))
     from src.shared import cli
-    if parsed.skip_n_tasks:
-        if isinstance(tasks, Iterator):
-            tasks = itertools.islice(tasks, parsed.skip_n_tasks, None)
-        else:
-            tasks = tasks[parsed.skip_n_tasks:]
+
     try:
-        cli.main_loop(
+        """cli.main_loop(
             tasks,
             parsed.subject,
             parsed.session,
@@ -42,7 +37,12 @@ def run(parsed):
             parsed.skip_soundcheck,
             parsed.target_ETcalibration,
             parsed.validate_ET,
-            )
+            )"""
+
+        cli.main_loop(
+            ses_mod,
+            parsed
+        )
     finally:
         if not parsed.no_force_resolution:
             screen.reset_exp_screen()

@@ -549,7 +549,7 @@ class EyetrackerSetup(Task):
             con_text.text = con_text_str % 'failed, retrying'
             con_text.draw(exp_win)
             yield True
-            time.sleep(3)
+            time.sleep(2)
         self.eyetracker.pause()
 
 from subprocess import Popen
@@ -572,7 +572,7 @@ class EyeTrackerClient(threading.Thread):
     EYE = "eye0"
 
     def __init__(self, output_path, output_fname_base, profile=False,
-                 debug=False, use_targets=False, validate_calib=False):
+                 debug=False):
         super(EyeTrackerClient, self).__init__()
         self.stoprequest = threading.Event()
         self.paused = True
@@ -588,11 +588,6 @@ class EyeTrackerClient(threading.Thread):
         self.unset_pupil_cb()
         self.unset_gaze_cb()
         self.unset_fix_cb()
-
-        self.use_targets = use_targets
-        self.validate_calib = validate_calib
-        if not self.use_targets:
-            CAPTURE_SETTINGS["exposure_time"] = 4000
 
         self.output_path = output_path
         self.output_fname_base = output_fname_base
@@ -950,12 +945,12 @@ class EyeTrackerClient(threading.Thread):
         return markers_dict, val_qc
 
 
-    def interleave_calibration(self, tasks):
+    def interleave_calibration(self, tasks, calibration_version=2, validation=False):
         calibration_index=0
         for task in tasks:
             if task.use_eyetracking:
                 calibration_index += 1
-                if self.use_targets:
+                if calibration_version == 2:
                     yield EyetrackerCalibration_targets(
                         self,
                         name=f"eyeTrackercalibration-{calibration_index}"
@@ -965,7 +960,7 @@ class EyeTrackerClient(threading.Thread):
                         self,
                         name=f"eyeTrackercalibration-{calibration_index}"
                         )
-                if self.validate_calib:
+                if validation:
                     yield EyetrackerCalibration_targets(
                         self,
                         name=f"eyeTrackercalib-validate-{calibration_index}",
