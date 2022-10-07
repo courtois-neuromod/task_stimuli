@@ -134,6 +134,12 @@ def main_loop(
     # get tasks subset
     all_tasks = session_module.get_tasks(parsed)
 
+    if parsed.skip_n_tasks:
+        if isinstance(all_tasks, Iterator):
+            all_tasks = itertools.islice(all_tasks, parsed.skip_n_tasks, None)
+        else:
+            all_tasks = tasks[parsed.skip_n_tasks:]
+
     # setup output and filename templates
     if not parsed.output:
         parsed.output = os.path.join(os.environ["OUTPUT_PATH"], session_config['output_dataset'])
@@ -209,8 +215,9 @@ We are coming to get you out of the scanner shortly."""
         )
         all_tasks = eyetracker_client.interleave_calibration(
             all_tasks,
-            calibration_version=session_config['eyetracking_calibration_version'],
-            validation=session_config['eyetracking_validation'],
+            calibration_version = session_config.get('eyetracking_calibration_version', 1),
+            validation = session_config.get('eyetracking_validation',False),
+            add_pauses = session_config.get('add_pauses', False),
             )
 
         if parsed.control_window:

@@ -9,7 +9,7 @@ from scipy.spatial.distance import pdist
 from psychopy import visual, core, data, logging, event
 from .ellipse import Ellipse
 
-from ..tasks.task_base import Task
+from ..tasks.task_base import Task, Pause
 from . import config
 
 INSTRUCTION_DURATION = 4
@@ -56,7 +56,7 @@ PUPIL_REMOTE_PORT = 50123
 CAPTURE_SETTINGS = {
     "frame_size": [640, 480],
     "frame_rate": 250,
-    #"exposure_time": 1500,
+    #   "exposure_time": 1500,
     "exposure_time": 4000,
     "global_gain": 1,
     "gev_packet_size": 1400,
@@ -945,10 +945,16 @@ class EyeTrackerClient(threading.Thread):
         return markers_dict, val_qc
 
 
-    def interleave_calibration(self, tasks, calibration_version=2, validation=False):
+    def interleave_calibration(self, tasks, calibration_version=2, validation=False, add_pauses=False):
         calibration_index=0
         for task in tasks:
             if task.use_eyetracking:
+                if calibration_index > 0 and add_pauses:
+                    yield Pause(
+                        text="You can take a short break.\n Press A when ready to continue",
+                        wait_key='a',
+                    )
+
                 calibration_index += 1
                 if calibration_version == 2:
                     yield EyetrackerCalibration_targets(

@@ -97,12 +97,9 @@ def get_tasks(parsed):
     else:
         savestate = {"index": 0}
 
-    for run in range(parsed.skip_n_tasks, 10):
+    for run in range(10):
 
         next_levels = [f"1Player.World{world}.{level}" for idx,(world,level) in design[savestate['index']:savestate['index']+20].iterrows()]
-        if len(next_levels) < 5:
-            print('Stable phase completed, no more levels to play')
-            return []
 
         task = videogame.VideoGameMultiLevel(
             game_name='SuperMarioBros3-Nes',
@@ -125,19 +122,15 @@ def get_tasks(parsed):
 
         #only increment if the task was not interrupted, if interrupted, it needs to be rescan
         if task._task_completed:
+            print('saving savestate')
             savestate['index'] += task._nlevels
             with open(savestate_path, 'w') as f:
                 json.dump(savestate, f)
-
-        yield task_base.Pause(
-            text="You can take a short break.\n Press A when ready to continue",
-            wait_key='a',
-        )
-
 
 def get_config(parsed):
     return {
         'eyetracking_calibration_version': 2,
         'eyetracking_validation': True,
+        'add_pauses': True,
         'output_dataset': 'mario3',
     }
