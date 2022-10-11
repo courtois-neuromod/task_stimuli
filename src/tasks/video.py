@@ -2,6 +2,7 @@ import os, sys, time
 
 #import psychopy
 #psychopy.prefs.hardware['audioLib'] = ['PTB', 'sounddevice', 'pyo','pygame'] # for local dev (laptop)
+import numpy as np
 from psychopy import visual, core, data, logging
 from .task_base import Task
 
@@ -79,6 +80,22 @@ and fixate the dot whenever it appears."""
                                         colorSpace='rgb', fillColor=(-.58, -.58, -.58)) # (54, 54, 54) on 0-255 scale
             self.black_bgd = visual.Rect(exp_win, size=exp_win.size, lineWidth=0,
                                         colorSpace='rgb', fillColor=(-1, -1, -1))
+            self.startcue = visual.Circle(exp_win, units='pix', pos=(0,0), radius=10, lineWidth=0, fillColor=(1, 1, 1))
+            self.markers = np.asarray(
+                [
+                    (0.5, 0.5),
+                    (0, 0.5),
+                    (0.0, 1.0),
+                    (0.5, 1.0),
+                    (1.0, 1.0),
+                    (1.0, 0.5),
+                    (1.0, 0.0),
+                    (0.5, 0.0),
+                    (0.0, 0.0),
+                ]
+            )
+            self.markers_order = np.random.permutation(np.arange(len(self.markers)))
+            self.marker_duration = 1.5 # 60 fps, 4s = 240; 60fps, 1.5s = 90 frames
 
         #self.movie_stim = visual.MovieStim3(exp_win, self.filepath, units="pix")
         self.movie_stim = visual.MovieStim2(exp_win, self.filepath, units="pix")
@@ -114,8 +131,11 @@ and fixate the dot whenever it appears."""
         mv_FPS = self.movie_stim.getFPS()
         fixation_on = False  # "switch" to determine fixation onset/offset time for logs
         self.movie_stim.play()
+
         while self.movie_stim.status != visual.FINISHED:
+        #while self.movie_stim.getCurrentFrameNumber() < 200:
             #exp_win.clearBuffer(color=True, depth=True)
+
             self.movie_stim.draw(exp_win)
             next_frame_time = self.movie_stim.getCurrentFrameTime()
             # MovieStim3: https://github.com/psychopy/versions/blob/3327a7215c08e8390237f2e6c08259735ef093aa/psychopy/visual/movie3.py#L346
@@ -137,6 +157,7 @@ and fixate the dot whenever it appears."""
                     #exp_win.clearBuffer(color=True, depth=True)
                     #for stim in self.fixation_dot:
                     #    stim.draw(exp_win)
+                    fixation_on = True
             elif self._inmovie_fixations:
                 if (next_frame_time % self._infix_freq < self._infix_dur):
                     '''
@@ -178,8 +199,61 @@ and fixate the dot whenever it appears."""
 
             yield False
 
+        self.movie_stim.pause()
+
+        if self._inmovie_fixations:
+            window_size_frame = exp_win.size - 100 * 2
+            instruction_text = """Eyetracker Validation"""
+            screen_text = visual.TextStim(
+                exp_win,
+                text=instruction_text,
+                alignText="center",
+                color="white",
+                wrapWidth=config.WRAP_WIDTH,
+            )
+            for frameN in range(config.FRAME_RATE * 2):
+                screen_text.draw(exp_win)
+                if ctl_win:
+                    screen_text.draw(ctl_win)
+                yield True
+
+            exp_win.logOnFlip(
+                level=logging.EXP, msg=" gaze validation: starting at %f" % time.time())
+
+            for frameN in range(config.FRAME_RATE * 1):
+                self.startcue.draw(exp_win)
+                if ctl_win:
+                    self.startcue.draw(ctl_win)
+                yield True
+
+            for site_id in self.markers_order:
+                marker_pos = self.markers[site_id]
+                pos = (marker_pos - 0.5) * window_size_frame # remove 0.5 since 0, 0 is the middle in psychopy
+
+                for stim in self.fixation_dot:
+                    stim.pos = pos
+
+                exp_win.logOnFlip(
+                    level=logging.EXP,
+                    msg="marker position,%f,%f,%d,%d starting at %f"
+                    % (marker_pos[0], marker_pos[1], pos[0], pos[1], time.time()))
+
+                for f in range(int(config.FRAME_RATE * self.marker_duration)):
+                    for stim in self.fixation_dot:
+                        stim.draw(exp_win)
+                        if ctl_win:
+                            stim.draw(ctl_win)
+                    yield True
+
+                exp_win.logOnFlip(
+                    level=logging.EXP,
+                    msg="marker position,%f,%f,%d,%d ending at %f"
+                    % (marker_pos[0], marker_pos[1], pos[0], pos[1], time.time()))
+
+
     def _stop(self, exp_win, ctl_win):
         self.movie_stim.stop()
+
         for frameN in range(config.FRAME_RATE * FADE_TO_GREY_DURATION):
             grey = [float(frameN) / config.FRAME_RATE / FADE_TO_GREY_DURATION - 1] * 3
             exp_win.setColor(grey, colorSpace='rgb')
