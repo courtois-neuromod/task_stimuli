@@ -56,6 +56,10 @@ PUPIL_REMOTE_PORT = 50123
 CAPTURE_SETTINGS = {
     "frame_size": [640, 480],
     "frame_rate": 250,
+<<<<<<< HEAD
+=======
+    #"exposure_time": 1500,
+>>>>>>> 76eac0999ca457a7db33267731ee8ab6c97199c0
     "exposure_time": 4000,
     "global_gain": 1,
     "auto_noise_suppression": True,
