@@ -196,6 +196,7 @@ class VideoGameBase(Task):
         for stim in fixation:
             stim.draw(exp_win)
         yield True
+        self._log_event({'trial_type':'fixation_dot', 'duration': self._fixation_duration}, clock='flip')
         utils.wait_until(self.task_timer, self.task_timer.getTime()+self._fixation_duration - .9* self._retraceInterval)
         yield True
 
@@ -690,6 +691,9 @@ class VideoGameMultiLevel(VideoGame):
                     break
             if time_exceeded or not self._repeat_scenario_multilevel:
                 break
+        if self._fixation_duration > 0:
+            self.progress_bar.set_description("fixation")
+            yield from self.fixation_cross(exp_win)
         yield from self._questionnaire(
             exp_win, ctl_win, self.post_run_ratings
         )

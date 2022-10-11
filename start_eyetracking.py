@@ -15,7 +15,7 @@ def start_eyetracker(args):
         output_path=output_path,
         output_fname_base=basename,
         profile=False,
-        debug=False,
+        debug=True,
     )
 
     eyetracker_client.send_recv_notification(
@@ -26,9 +26,15 @@ def start_eyetracker(args):
                 "fullscreen": True,
                 "marker_scale": 1.0,
                 "sample_duration": 360,
+<<<<<<< HEAD
                 "monitor_name": "eDP-1 [1]",
                 "fixed_screen": True,
                 "selected_gazer_class_name": "3D"
+=======
+                "monitor_name": "DP-2 [1]",
+                "fixed_screen": True,
+                "selected_gazer_class_name": "Gazer2D",
+>>>>>>> eyetracking_pupil2
             },
         }
     )
@@ -38,7 +44,11 @@ def start_eyetracker(args):
             "subject": "start_plugin",
             "name": "Annotation_Capture",
             "args": {
+<<<<<<< HEAD
                 "annotation_definitions": [['Trigger','T'], ['Trigger5','5'], ['Trigger%','%']]
+=======
+                "annotation_definitions": [['Trigger','T'],['Trigger5','5'],['Trigger%','%']],
+>>>>>>> eyetracking_pupil2
             },
         }
     )
