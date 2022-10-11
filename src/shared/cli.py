@@ -8,7 +8,7 @@ import itertools
 visual.window.reportNDroppedFrames = 10e10
 
 TIMEOUT = 5
-DELAY_BETWEEN_TASK = 5
+DELAY_BETWEEN_TASK = 2
 
 globalClock = core.MonotonicClock(0)
 logging.setDefaultClock(globalClock)
@@ -169,10 +169,10 @@ def main_loop(
         eyetracker_client.start()
         print("done")
 
-        #all_tasks = itertools.chain(
-        #    [eyetracking.EyetrackerSetup(eyetracker=eyetracker_client, name='eyetracker_setup'),],
-        #    all_tasks
-        #)
+        all_tasks = itertools.chain(
+            [eyetracking.EyetrackerSetup(eyetracker=eyetracker_client, name='eyetracker_setup'),],
+            all_tasks
+        )
         all_tasks = eyetracker_client.interleave_calibration(all_tasks)
 
         if show_ctl_win:
