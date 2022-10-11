@@ -56,8 +56,7 @@ PUPIL_REMOTE_PORT = 50123
 CAPTURE_SETTINGS = {
     "frame_size": [640, 480],
     "frame_rate": 250,
-    "exposure_time": 1500,
-    #"exposure_time": 4000,
+    "exposure_time": 4000,
     "global_gain": 1,
     "auto_noise_suppression": True,
     #"gev_packet_size": 9140,
@@ -74,30 +73,30 @@ class EyetrackerCalibration_targets(Task):
         markers=MARKER_POSITIONS_9,
         use_eyetracking=True,
         validation=False,
+        feedback=False,
         **kwargs,
     ):
         self.markers_order = markers_order
         self.markers = markers
         self.marker_size = 20
-        self.marker_duration_frames = 90 # 60 fps, 4s = 240; 60fps, 1.5s = 90 frames
+        self.marker_duration_frames = 120 # 60 fps, 4s = 240; 60fps, 1.5s = 90 frames, 2s = 120
         super().__init__(use_eyetracking=use_eyetracking, **kwargs)
         self.eyetracker = eyetracker
 
         # number of frames to eliminate at start and end of marker
-        self.calibration_lead_in = 10
+        self.calibration_lead_in = 20
         self.calibration_lead_out = 0
 
         self.validation = validation
+        self.feedback = feedback
 
     def _instructions(self, exp_win, ctl_win):
         if self.validation:
-            instruction_text = """Eyetracker Validation.
-
-    Please fixate on the CENTER of the markers."""
+            instruction_text = """Eyetracker Validation"""
         else:
-            instruction_text = """Eyetracker Calibration.
+            instruction_text = """Eyetracker Calibration
 
-    Roll your eyes, then fixate on the CENTER of the markers that appear on the screen."""
+    Roll your eyes, then fixate on the CENTER of the markers"""
         screen_text = visual.TextStim(
             exp_win,
             text=instruction_text,
@@ -135,13 +134,6 @@ class EyetrackerCalibration_targets(Task):
         if gaze["timestamp"] > self.task_start:
             self._gaze_list.append(gaze)
 
-    def _fix_cb(self, fixation):
-        if fixation["timestamp"] > self.task_stop:
-            self.eyetracker.unset_fix_cb()
-            return
-        if fixation["timestamp"] > self.task_start:
-            self._fix_list.append(fixation)
-
     def _run(self, exp_win, ctl_win):
 
         self.eyetracker.resume()
@@ -172,7 +164,6 @@ class EyetrackerCalibration_targets(Task):
                 logging.info("calibration started")
                 print("calibration started")
 
-            #window_size_frame = exp_win.size - 50 * 2 # 50 = previous MARKER_SIZE; hard-coded to maintain distance from screen edge regardless of target shape
             window_size_frame = exp_win.size - 100 * 2 # 50 = previous MARKER_SIZE; hard-coded to maintain distance from screen edge regardless of target shape
 
             markers_order = np.arange(len(self.markers))
@@ -182,13 +173,11 @@ class EyetrackerCalibration_targets(Task):
             self.all_refs_per_flip = []
             self._pupils_list = []
             self._gaze_list = []
-            self._fix_list = []
 
             self.task_start = time.monotonic()
             self.task_stop = np.inf
             self.eyetracker.set_pupil_cb(self._pupil_cb)
             self.eyetracker.set_gaze_cb(self._gaze_cb)
-            self.eyetracker.set_fix_cb(self._fix_cb)
 
             while not len(self._pupils_list):  # wait until we get at least a pupil
                 yield False
@@ -255,28 +244,31 @@ class EyetrackerCalibration_targets(Task):
                     f"validating on {len(self._pupils_list)} pupils and {len(self.all_refs_per_flip)} markers"
                 )
 
-                print('Ǹumber of received fixations: ', str(len(self._fix_list)))
-                val_qc = self.eyetracker.validate(self._fix_list, self.all_refs_per_flip)
+                print('Ǹumber of received gaze: ', str(len(self._gaze_list)))
+                val_qc = self.eyetracker.validate(self._gaze_list, self.all_refs_per_flip)
 
-                # Display calib results on screen
-                dot_colors = [(-0.5, 1, -0.5), (1, 1, -0.5), (1, -0.5, -0.5)]
-                qc_dots = []
+                # If self.feedback = True, display calib results on screen
+                if self.feedback:
+                    dot_colors = [(-0.5, 1, -0.5), (1, 1, -0.5), (1, -0.5, -0.5)]
+                    qc_dots = []
 
                 for vqc in val_qc:
                     self._events[vqc['marker']].update(vqc)
-                    pos = (np.array(vqc['norm_pos']) - 0.5) * window_size_frame
-                    if 'good' in vqc:
-                        fill_col = dot_colors[np.argmax([vqc['good'], vqc['fair'], vqc['poor']])]
-                    else:
-                        fill_col = (1, 1, 1) # white means no fixations reccorded for that marker
-                    qc_dots.append(visual.Circle(exp_win, units='pix', pos=pos, radius=self.marker_size*0.8,
-                                                 lineWidth=0, fillColor=fill_col))
+                    if self.feedback:
+                        pos = (np.array(vqc['norm_pos']) - 0.5) * window_size_frame
+                        if 'good' in vqc:
+                            fill_col = dot_colors[np.argmax([vqc['good'], vqc['fair'], vqc['poor']])]
+                        else:
+                            fill_col = (1, 1, 1) # white indicates no fixations reccorded for that marker
+                        qc_dots.append(visual.Circle(exp_win, units='pix', pos=pos, radius=self.marker_size*0.8,
+                                                     lineWidth=0, fillColor=fill_col))
 
-                for frameN in range(config.FRAME_RATE * FEEDBACK_DURATION):
-                    for qc_dot in qc_dots:
-                        qc_dot.draw(exp_win)
-                        qc_dot.draw(ctl_win)
-                    yield True
+                if self.feedback:
+                    for frameN in range(config.FRAME_RATE * FEEDBACK_DURATION):
+                        for qc_dot in qc_dots:
+                            qc_dot.draw(exp_win)
+                            qc_dot.draw(ctl_win)
+                        yield True
 
                 #exp_win.clearBuffer(color=True, depth=True)
                 black_bgd = visual.Rect(exp_win, size=exp_win.size, lineWidth=0,
@@ -317,7 +309,6 @@ class EyetrackerCalibration_targets(Task):
     def stop(self, exp_win, ctl_win):
         self.eyetracker.unset_pupil_cb()
         self.eyetracker.unset_gaze_cb()
-        self.eyetracker.unset_fix_cb()
         yield
 
     def _save(self):
@@ -328,7 +319,6 @@ class EyetrackerCalibration_targets(Task):
                 fname = self._generate_unique_filename("calib-data", "npz")
             np.savez(fname, pupils=self._pupils_list,
                             gaze=self._gaze_list,
-                            fixations=self._fix_list,
                             markers=self.all_refs_per_flip)
 
 
@@ -580,20 +570,19 @@ class EyeTrackerClient(threading.Thread):
         self.pause_cond = threading.Condition(threading.Lock())
         self.pause_cond.acquire()
         self.lock = threading.Lock()
+        self._pupil_cb = self._gaze_cb = self._fix_cb = None
 
         self.pupil_monitor = None
 
         self.pupil = None
         self.gaze = None
-        self.fixation = None
         self.unset_pupil_cb()
         self.unset_gaze_cb()
-        self.unset_fix_cb()
 
         self.use_targets = use_targets
         self.validate_calib = validate_calib
-        if not self.use_targets:
-            CAPTURE_SETTINGS["exposure_time"] = 4000
+
+        CAPTURE_SETTINGS["exposure_time"] = 4000
 
         self.output_path = output_path
         self.output_fname_base = output_fname_base
@@ -815,17 +804,11 @@ class EyeTrackerClient(threading.Thread):
     def set_gaze_cb(self, gaze_cb):
         self._gaze_cb = gaze_cb
 
-    def set_fix_cb(self, fix_cb):
-        self._fix_cb = fix_cb
-
     def unset_pupil_cb(self):
         self._pupil_cb = None
 
     def unset_gaze_cb(self):
         self._gaze_cb = None
-
-    def unset_fix_cb(self):
-        self._fix_cb = None
 
     def get_pupil(self):
         with nonblocking(self.lock) as locked:
@@ -860,42 +843,36 @@ class EyeTrackerClient(threading.Thread):
         return markers_dict
 
 
-    def assign_fix_to_markers(self, fixation_list, markers_dict):
+    def assign_gaze_to_markers(self, gaze_list, markers_dict):
         '''
-        Assign fixations to markers based on their onset.
+        Assign gaze/fixations to markers based on their onset.
         A fixation is assigned to a marker if its ONSET overlaps with the time the marker is on the screen
         '''
         i = 0
         #print(markers_dict[0]['onset'], fixation_list[0]['timestamp'])
         for count in range(len(markers_dict.keys())):
             marker = markers_dict[count]
-            fix_dict = {}
+            gaze_data = {'timestamps': [],
+                         'norm_pos': [],
+                         'confidence': [],
+                        }
 
-            while i < len(fixation_list) and fixation_list[i]['timestamp'] < marker['onset']:
+            while i < len(gaze_list) and gaze_list[i]['timestamp'] < marker['onset']:
                 i += 1
 
-            while i < len(fixation_list) and fixation_list[i]['timestamp'] < marker['offset']:
-                fix = fixation_list[i]
-                if fix['id'] not in fix_dict:
-                    fix_dict[fix['id']] = {
-                                        'timestamps': [fix['timestamp']],
-                                        'norm_pos': [fix['norm_pos']],
-                                        'durations': [fix['duration']],
-                                        'dispersions': [fix['dispersion']],
-                    }
-                else:
-                    fix_dict[fix['id']]['timestamps'].append(fix['timestamp'])
-                    fix_dict[fix['id']]['norm_pos'].append(fix['norm_pos'])
-                    fix_dict[fix['id']]['durations'].append(fix['duration'])
-                    fix_dict[fix['id']]['dispersions'].append(fix['dispersion'])
+            while i < len(gaze_list) and gaze_list[i]['timestamp'] < marker['offset']:
+                gaze = gaze_list[i]
+                gaze_data['timestamps'].append(gaze['timestamp'])
+                gaze_data['norm_pos'].append(gaze['norm_pos'])
+                gaze_data['confidence'].append(gaze['confidence'])
                 i += 1
 
-            markers_dict[count]['fix_dict'] = fix_dict
+            markers_dict[count]['gaze_data'] = gaze_data
 
         return markers_dict
 
 
-    def fix_to_marker_distances(self, markers_dict):
+    def gaze_to_marker_distances(self, markers_dict, conf_thresh = 0.9):
         '''
         estimated eye-to-screen distance in pixels
         based on screen dim in pixels ((1280, 1024)) and screen deg of visual angle (17.5, 14)
@@ -912,41 +889,48 @@ class EyeTrackerClient(threading.Thread):
             # transform marker's normalized position into dim = (3,) vector in pixel space
             m_vecpos = np.concatenate(((np.array(m['norm_pos']) - 0.5)*(1280, 1024), np.array([dist_in_pix])), axis=0)
 
-            if len(m['fix_dict'].keys()) > 0:
-                #print(len(m['fix_dict'].keys()))
-                for key in m['fix_dict'].keys():
-                    fix = (np.array(m['fix_dict'][key]['norm_pos']) - 0.5)*(1280, 1024)
-                    fix_vecpos = np.concatenate((fix, np.repeat(dist_in_pix, len(fix)).reshape((-1, 1))), axis=1)
+            if len(m['gaze_data']['timestamps']) > 0:
+                # filtrate gaze based on confidence threshold
+                g_conf = np.array(m['gaze_data']['confidence'])
+                g_filter = g_conf > conf_thresh
 
-                    distances = []
-                    for fix_vec in fix_vecpos:
-                        vectors = np.stack((m_vecpos, fix_vec), axis=0)
-                        distance = np.rad2deg(np.arccos(1.0 - pdist(vectors, metric='cosine')))
+                g_pos = np.array(m['gaze_data']['norm_pos'])[g_filter]
+                g_times = np.array(m['gaze_data']['timestamps'])[g_filter]
 
-                        distances.append(distance[0])
+                gaze = (g_pos - 0.5)*(1280, 1024)
+                gaze_vecpos = np.concatenate((gaze, np.repeat(dist_in_pix, len(gaze)).reshape((-1, 1))), axis=1)
 
-                    distances = np.array(distances)
-                    markers_dict[count]['fix_dict'][key]['distances'] = distances
+                distances = []
+                for gz_vec in gaze_vecpos:
+                    vectors = np.stack((m_vecpos, gz_vec), axis=0)
+                    distance = np.rad2deg(np.arccos(1.0 - pdist(vectors, metric='cosine')))
+                    distances.append(distance[0])
 
-                    num_fix = len(distances)
-                    good = np.sum(distances < 0.5) / num_fix
-                    fair = np.sum((distances >= 0.5)*(distances < 1.5)) / num_fix
-                    poor = np.sum(distances >= 1.5) / num_fix
+                distances = np.array(distances)
+                assert(len(distances)==len(g_times))
+                markers_dict[count]['gaze_data']['distances'] = {'distances': distances,
+                                                                 'timestamps': g_times,
+                                                                 }
 
-                    print('Total fixations:' + str(num_fix) + ' , Good:' + str(good) + ' , Fair:' + str(fair) + ' , Poor:' + str(poor))
-                    val_qc.append({
-                        'marker': count,
-                        'norm_pos': m['norm_pos'],
-                        'num_fix': num_fix,
-                        'good': good,
-                        'fair': fair,
-                        'poor': poor
-                    })
+                num_gz = len(distances)
+                good = np.sum(distances < 0.5) / num_gz
+                fair = np.sum((distances >= 0.5)*(distances < 1.5)) / num_gz
+                poor = np.sum(distances >= 1.5) / num_gz
+
+                print('Total gaze:' + str(num_gz) + ' , Good:' + str(good) + ' , Fair:' + str(fair) + ' , Poor:' + str(poor))
+                val_qc.append({
+                    'marker': count,
+                    'norm_pos': m['norm_pos'],
+                    'num_gz': num_gz,
+                    'good': good,
+                    'fair': fair,
+                    'poor': poor
+                })
             else:
                 val_qc.append({
                     'marker': count,
                     'norm_pos': m['norm_pos'],
-                    'num_fix': 0
+                    'num_gz': 0
                 })
 
         return markers_dict, val_qc
@@ -994,12 +978,12 @@ class EyeTrackerClient(threading.Thread):
             }
         )
 
-    def validate(self, fixation_list, ref_list):
+    def validate(self, gaze_list, ref_list):
 
         markers_dict = self.get_marker_dictionary(ref_list)
-        markers_dict = self.assign_fix_to_markers(fixation_list, markers_dict)
-        markers_dict, val_qc = self.fix_to_marker_distances(markers_dict)
-        # TODO : export validation distances?
+        markers_dict = self.assign_gaze_to_markers(gaze_list, markers_dict)
+        markers_dict, val_qc = self.gaze_to_marker_distances(markers_dict, conf_thresh = 0.9)
+
         return val_qc
 
 class GazeDrawer:
@@ -1034,7 +1018,6 @@ def read_pl_data(fname):
 
 
 def fixation_dot(win, **kwargs):
-    #radius = kwargs.pop('radius', 30)
     radius = kwargs.pop('radius', 20)
     kwargs = {
         'lineColor': (1,-.5,-.5),
@@ -1044,5 +1027,4 @@ def fixation_dot(win, **kwargs):
     }
     circle = visual.Circle(win, lineWidth=radius*.4, **kwargs, radius=radius)
     dot = visual.Circle(win, units=kwargs["units"], radius=radius*.25, lineWidth=0, fillColor=(-1,-1,-1))
-    #dot = visual.Circle(win, units=kwargs["units"], radius=radius*.2, lineWidth=0, fillColor=(-1,-1,-1))
     return (circle, dot)
