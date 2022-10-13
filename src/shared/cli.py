@@ -8,7 +8,7 @@ import itertools
 visual.window.reportNDroppedFrames = 10e10
 
 TIMEOUT = 5
-DELAY_BETWEEN_TASK = 5
+DELAY_BETWEEN_TASK = 2
 
 globalClock = core.MonotonicClock(0)
 logging.setDefaultClock(globalClock)

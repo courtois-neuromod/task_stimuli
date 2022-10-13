@@ -630,6 +630,8 @@ class VideoGame(VideoGameBase):
 class VideoGameMultiLevel(VideoGame):
     def __init__(
         self, *args,
+        n_repeats_level=1,
+        completion_fn=None,
         fixation_duration=0,
         show_instruction_between_repetitions=True,
         **kwargs):
@@ -639,6 +641,8 @@ class VideoGameMultiLevel(VideoGame):
         self._repeat_scenario_multilevel = kwargs.get("repeat_scenario", False)
         self._fixation_duration = fixation_duration
         self._show_instruction_between_repetitions = show_instruction_between_repetitions
+        self._n_repeats_level = n_repeats_level
+        self.completion_fn = completion_fn
 
         kwargs["repeat_scenario"] = False
         super().__init__(
@@ -656,29 +660,35 @@ class VideoGameMultiLevel(VideoGame):
             ctl_win.setColor(self._bg_color, colorSpace='rgb255')
         while True:
             for level, scenario in zip(self._state_names, self._scenarii):
-                self._nlevels += 1
+
                 self.state_name = level
                 self.emulator.load_state(level, inttype=self.inttype)
                 self.emulator.data.load(
                     retro.data.get_file_path(self.game_name, "data.json", inttype=self.inttype),
                     retro.data.get_file_path(self.game_name, f"{scenario}.json", inttype=self.inttype)
                 )
-                self._first_frame = self.emulator.reset()
 
-
-
+                self._nlevels += 1
                 if self._nlevels > 1:
-                    self._set_recording_file()
                     if self._show_instruction_between_repetitions:
                         yield from self._instructions(exp_win, ctl_win)
 
-                if self._fixation_duration > 0:
-                    self.progress_bar.set_description("fixation")
-                    yield from self.fixation_cross(exp_win)
-                self.progress_bar.set_description(level)
+                for n_repeat in range(self._n_repeats_level):
+                    self._first_frame = self.emulator.reset()
+                    if self._nlevels > 1:
+                        self._set_recording_file()
 
-                yield from super()._run_emulator(exp_win, ctl_win)
-                self.game_sound.stop()
+                    if self._fixation_duration > 0:
+                        self.progress_bar.set_description("fixation")
+                        yield from self.fixation_cross(exp_win)
+                    self.progress_bar.set_description(level)
+
+                    yield from super()._run_emulator(exp_win, ctl_win)
+                    self.game_sound.stop()
+                    self._level_completed = self.completion_fn(self.emulator) if self.completion_fn else True
+                    if self._level_completed:
+                        self._level_completed = False
+                        break
 
                 yield from self._questionnaire(
                     exp_win, ctl_win, self.post_level_ratings
@@ -742,7 +752,7 @@ class VideoGameReplay(VideoGameBase):
         super()._setup(exp_win)
 
     def _run(self, exp_win, ctl_win):
-        # give the original size of the movie in pixels:
+        # give the original size of the movie in pix:
         # print(self.movie_stim.format.width, self.movie_stim.format.height)
         total_reward = 0
         exp_win.logOnFlip(
