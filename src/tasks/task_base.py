@@ -107,7 +107,7 @@ class Task(object):
             # yield first to allow external draw before flip
             yield
             if meg.MEG_MARKERS_ON_FLIP and self.use_meg:
-                exp_win.callOnFlip(meg.send_signal, meg.MEG_settings["TASK_FLIP"])
+                exp_win.callOnFlip(meg.set_trigger_signal)
             self._flip_all_windows(exp_win, ctl_win, clearBuffer)
             # increment the progress bar depending on task flip rate
             if self.progress_bar:
