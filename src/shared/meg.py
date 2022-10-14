@@ -31,6 +31,6 @@ def set_trigger_signal():
     global port, current_signal
     if not port:
         port = parallel.ParallelPort(address=config.PARALLEL_PORT_ADDRESS)
-    new_signal = 0 if current_signal else TASK_FLIP
+    new_signal = 0 if current_signal else MEG_settings["TASK_FLIP"]
     port.setData(new_signal)
     current_signal = new_signal
