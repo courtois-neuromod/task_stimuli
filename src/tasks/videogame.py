@@ -6,6 +6,7 @@ from psychopy import visual, core, data, logging, event, sound, constants
 from .task_base import Task
 
 from ..shared import config, utils
+from PIL import Image
 
 import retro
 
@@ -172,7 +173,9 @@ class VideoGameBase(Task):
         )
 
     def _render_graphics_sound(self, obs, sound_block, exp_win, ctl_win):
-        self.game_vis_stim.image = obs / 255.0
+        #giving a PIL image directly avoid a lot of useless rescaling/conversion
+        self.game_vis_stim.image = Image.fromarray(obs).transpose(Image.FLIP_TOP_BOTTOM)
+        #self.game_vis_stim.image = obs / 255.0
         self.game_vis_stim.draw(exp_win)
         if ctl_win:
             self.game_vis_stim.draw(ctl_win)
@@ -193,6 +196,7 @@ class VideoGameBase(Task):
 
     def fixation_cross(self, exp_win):
         from ..shared.eyetracking import fixation_dot
+        yield True
         fixation = fixation_dot(exp_win)
         for stim in fixation:
             stim.draw(exp_win)
@@ -338,6 +342,10 @@ class VideoGame(VideoGameBase):
             total_reward += _rew
             if _rew > 0:
                 exp_win.logOnFlip(level=logging.EXP, msg="Reward %f" % (total_reward))
+            if _nextFrameT < self.task_timer.getTime():
+                logging.warning(f"frame {level_step} dropped before render")
+                self.game_sound.put(self.emulator.em.get_audio())
+                continue # drop frame
             self._render_graphics_sound(
                 _obs, self.emulator.em.get_audio(), exp_win, ctl_win
             )
@@ -353,8 +361,9 @@ class VideoGame(VideoGameBase):
                 time.sleep(.0001)
                 utils.poll_windows()
             if _nextFrameT < self.task_timer.getTime():
+                logging.warning(f"frame {level_step} dropped")
                 continue # drop frame
-            yield True
+            yield False
 
         self._completed = self._completed or self._game_info['lives'] > -1
         self.game_sound.flush()
