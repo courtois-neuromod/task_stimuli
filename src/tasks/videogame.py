@@ -37,6 +37,7 @@ def _onPygletKeyRelease(symbol, modifier):
     global _keyReleaseBuffer
     keyTime = core.getTime()
     key = pyglet.window.key.symbol_string(symbol).lower().lstrip("_").lstrip("NUM_")
+    logging.data("Keyrelease: %s" % key)
     _keyReleaseBuffer.append((key, keyTime))
 
 import sounddevice
