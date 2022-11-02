@@ -19,6 +19,7 @@ class Task(object):
             self.instruction = self.__class__.DEFAULT_INSTRUCTION
         else:
             self.instruction = instruction
+        self._task_completed = False
 
     # setup large files for accurate start with other recordings (scanner, biopac...)
     def setup(
@@ -38,7 +39,7 @@ class Task(object):
         self._exp_win_first_flip_time = None
         self._exp_win_last_flip_time = None
         self._ctl_win_last_flip_time = None
-        self._task_completed = False
+
 
         self._setup(exp_win)
         # initialize a progress bar if we know the duration of the task
@@ -93,7 +94,6 @@ class Task(object):
 
     def run(self, exp_win, ctl_win):
         # needs to be the 1rst callbacks
-        print("what is going on here?")
         exp_win.timeOnFlip(self, '_exp_win_first_flip_time')
         self._flip_all_windows(exp_win, ctl_win, True)
         #sync to first screen flip
