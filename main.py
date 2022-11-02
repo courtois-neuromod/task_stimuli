@@ -41,7 +41,7 @@ def run(parsed):
             parsed.record_movie,
             parsed.skip_soundcheck,
             parsed.target_ETcalibration,
-            parsed.validate_ET,                        
+            parsed.validate_ET,
             )
     finally:
         if not parsed.no_force_resolution:
@@ -58,36 +58,8 @@ def run_profiled(parsed):
     )
 
 if __name__ == "__main__":
-    # parsed = parser.parse_args()
-    # if parsed.profile:
-    #     run_profiled(parsed)
-    # else:
-    #     run(parsed)
-
-    from src.tasks.multfs_dms import multfs_dms
-    from src.tasks.multfs_1back import multfs_1back
-    from src.tasks.multfs_ctx import multfs_ctx
-    from psychopy.visual import Window
-
-    # please change the imagefolder name in the corresponding task file
-    # dms
-    item_list = "./data/multfs/DMS_loc_4stim.csv"
-    task = multfs_dms(item_list, name = "multfs_dms_loc")
-    exp_win = Window(size=(800, 800), fullscr=False,)
-    task.setup(exp_win)
-    task.run(exp_win, ctl_win = None)
-
-    # 1back
-    # item_list = "/Users/xiaoxuanlei/Desktop/202209_MULTFS_mri/202209_MULTFS_MRI_Simple/tasks/1back_loc/1back_loc_4stim_seq6.csv"
-    # task = multfs_1back(item_list, name="multfs_1back_loc")
-    # exp_win = Window(size=(800, 800), fullscr=False, )
-    # task.setup(exp_win)
-    # task.run(exp_win, ctl_win=None)
-
-    # ctx
-    # ['col', 'olc', 'loc', 'lco']
-    # item_list = "/Users/xiaoxuanlei/Desktop/202209_MULTFS_mri/202209_MULTFS_MRI_Simple/tasks/CTX_category_object_loc_stim4.csv"
-    # task = multfs_ctx(item_list, name = "multfs_ctx_col")
-    # exp_win = Window(size=(800, 800), fullscr=False,)
-    # task.setup(exp_win)
-    # task.run(exp_win, ctl_win = None)
+    parsed = parser.parse_args()
+    if parsed.profile:
+        run_profiled(parsed)
+    else:
+        run(parsed)
