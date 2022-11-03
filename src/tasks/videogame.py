@@ -292,14 +292,20 @@ class VideoGame(VideoGameBase):
         global _keyPressBuffer, _keyReleaseBuffer
 
         for k in _keyReleaseBuffer:
-            self.pressed_keys.discard(k[0])
-            logging.data(f"Keyrelease: {k[0]}", t=k[1])
+            if k[0] in self.pressed_keys:
+                self._log_event({
+                    'trial_type': 'keypress',
+                    'key': k[0],
+                    'onset': self.pressed_keys[k[0]][1],
+                    'offset': k[1],
+                    'duration': k[1] - self.pressed_keys[k[0]][1]
+                    })
+                del self.pressed_keys[k[0]]
         _keyReleaseBuffer.clear()
         for k in _keyPressBuffer:
-            self.pressed_keys.add(k[0])
+            self.pressed_keys[k[0]] = k
         self._new_key_pressed = _keyPressBuffer[:] #copy
         _keyPressBuffer.clear()
-        return self.pressed_keys
 
     def clear_key_buffers(self):
         global _keyPressBuffer, _keyReleaseBuffer
@@ -372,9 +378,10 @@ class VideoGame(VideoGameBase):
 
     def _set_key_handler(self, exp_win):
         # activate repeat keys
+        self.pressed_keys = dict()
         exp_win.winHandle.on_key_press = _onPygletKeyPress
         exp_win.winHandle.on_key_release = _onPygletKeyRelease
-        self.pressed_keys = set()
+
 
     def _unset_key_handler(self, exp_win):
         # deactivate custom keys handling
