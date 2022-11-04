@@ -293,13 +293,15 @@ class VideoGame(VideoGameBase):
 
         for k in _keyReleaseBuffer:
             if k[0] in self.pressed_keys:
-                self._log_event({
+                event = {
                     'trial_type': 'keypress',
                     'key': k[0],
-                    'onset': self.pressed_keys[k[0]][1],
-                    'offset': k[1],
-                    'duration': k[1] - self.pressed_keys[k[0]][1]
-                    })
+                    'onset': self.pressed_keys[k[0]][1] - self.task_timer._timeAtLastReset + core.monotonicClock._timeAtLastReset,
+                    'offset': k[1] - self.task_timer._timeAtLastReset + core.monotonicClock._timeAtLastReset,
+                    'duration': k[1] - self.pressed_keys[k[0]][1],
+                    'sample': time.monotonic(),
+                    }
+                self._events.append(event)
                 del self.pressed_keys[k[0]]
         _keyReleaseBuffer.clear()
         for k in _keyPressBuffer:
@@ -338,6 +340,7 @@ class VideoGame(VideoGameBase):
             },
         )
         yield True
+        self._rep_event = self._events[-1] #save event here to later add duration...
         _nextFrameT = self.task_timer.getTime()
         while not _done:
             level_step += 1
@@ -371,6 +374,9 @@ class VideoGame(VideoGameBase):
                 continue # drop frame
             yield False
 
+        self._rep_event['nframes'] = level_step
+        self._rep_event['offset'] = self.task_timer.getTime()
+        self._rep_event['duration'] = self._rep_event['offset'] - self._rep_event['onset']
         self._completed = self._completed or self._game_info['lives'] > -1
         self.game_sound.flush()
         self.game_sound.stop()
