@@ -71,10 +71,11 @@ ENV GI_TYPELIB_PATH=/usr/local/lib/x86_64-linux-gnu/girepository-1.0/
 
 ENTRYPOINT ["/entrypoint.sh"]
 
-RUN cd /src/ \
-  && wget https://github.com/courtois-neuromod/task_stimuli/archive/refs/heads/eyetracker_desktop.zip \
-  && unzip eyetracker_desktop.zip \
-  && mv task_stimuli-* task_stimuli
+# RUN cd /src/ \
+#   && wget https://github.com/courtois-neuromod/task_stimuli/archive/refs/heads/eyetracker_desktop.zip \
+#   && unzip eyetracker_desktop.zip \
+#   && mv task_stimuli-* task_stimuli
+COPY ./ /src/task_stimuli
 RUN pip3 install -r /src/task_stimuli/requirements.txt
 COPY ./.env.docker /src/task_stimuli/.env
 
