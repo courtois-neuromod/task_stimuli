@@ -194,6 +194,135 @@ class multfs_ctx(multfs_base):
         for frameN in range(config.FRAME_RATE * BASELINE_END):
             yield ()
 
+class multfs_interdms_AABB(multfs_base):
+
+   def _run(self, exp_win, ctl_win):
+        trials = data.TrialHandler(self.item_list, 1, method="random")
+        img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="pix")
+        exp_win.logOnFlip(
+            level=logging.EXP, msg="memory: task starting at %f" % time.time()
+        )
+        for frameN in range(config.FRAME_RATE * BASELINE_BEGIN):
+            yield ()
+        for trial in trials:
+            self._flip_all_windows(exp_win, ctl_win, clearBuffer=True)
+            ISI = int(np.floor(np.random.normal(ISI_mean))) # todo: ISI has to be an integer!
+            for i in range(1,5):
+                image_path = trial["frame_obj_%d" % i]
+                img.image = IMAGES_FOLDER + "/" + str(image_path) + "/image.png"
+                img.pos = triplet_id_to_pos[trial["frame_loc_%s" % i]]
+                exp_win.logOnFlip(
+                    level=logging.EXP,
+                    msg="memory: display %s in quadrant %s"
+                    % (str(img.image), str(img.pos)),
+                )
+                for frameN in range(config.FRAME_RATE * STIMULI_DURATION):
+
+                    img.draw(exp_win)
+                    if i == 2 or i == 4:
+                        self.fixation.draw(exp_win)
+                    if ctl_win:
+                        img.draw(ctl_win)
+                    yield True
+                exp_win.logOnFlip(level=logging.EXP, msg="memory: rest")
+                if i == 2 or i == 4:
+                    for frameN in range(config.FRAME_RATE * ISI):
+                        self.fixation.draw(exp_win)
+                        yield True
+            else:
+                for frameN in range(config.FRAME_RATE * ISI_base):
+                    yield True
+
+
+        for frameN in range(config.FRAME_RATE * BASELINE_END):
+            yield ()
+
+class multfs_interdms_ABBA(multfs_base):
+
+   def _run(self, exp_win, ctl_win):
+        trials = data.TrialHandler(self.item_list, 1, method="random")
+        img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="pix")
+        exp_win.logOnFlip(
+            level=logging.EXP, msg="memory: task starting at %f" % time.time()
+        )
+        for frameN in range(config.FRAME_RATE * BASELINE_BEGIN):
+            yield ()
+        for trial in trials:
+            self._flip_all_windows(exp_win, ctl_win, clearBuffer=True)
+            ISI = int(np.floor(np.random.normal(ISI_mean))) # todo: ISI has to be an integer!
+            for i in range(1,5):
+                image_path = trial["frame_obj_%d" % i]
+                img.image = IMAGES_FOLDER + "/" + str(image_path) + "/image.png"
+                img.pos = triplet_id_to_pos[trial["frame_loc_%s" % i]]
+                exp_win.logOnFlip(
+                    level=logging.EXP,
+                    msg="memory: display %s in quadrant %s"
+                    % (str(img.image), str(img.pos)),
+                )
+                for frameN in range(config.FRAME_RATE * STIMULI_DURATION):
+
+                    img.draw(exp_win)
+                    if i == 3 or i == 4:
+                        self.fixation.draw(exp_win)
+                    if ctl_win:
+                        img.draw(ctl_win)
+                    yield True
+                exp_win.logOnFlip(level=logging.EXP, msg="memory: rest")
+                if i == 3 or i == 4:
+                    for frameN in range(config.FRAME_RATE * ISI):
+                        self.fixation.draw(exp_win)
+                        yield True
+            else:
+                for frameN in range(config.FRAME_RATE * ISI_base):
+                    yield True
+
+
+        for frameN in range(config.FRAME_RATE * BASELINE_END):
+            yield ()
+
+class multfs_interdms_ABAB(multfs_base):
+
+   def _run(self, exp_win, ctl_win):
+        trials = data.TrialHandler(self.item_list, 1, method="random")
+        img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="pix")
+        exp_win.logOnFlip(
+            level=logging.EXP, msg="memory: task starting at %f" % time.time()
+        )
+        for frameN in range(config.FRAME_RATE * BASELINE_BEGIN):
+            yield ()
+        for trial in trials:
+            self._flip_all_windows(exp_win, ctl_win, clearBuffer=True)
+            ISI = int(np.floor(np.random.normal(ISI_mean))) # todo: ISI has to be an integer!
+            for i in range(1,5):
+                image_path = trial["frame_obj_%d" % i]
+                img.image = IMAGES_FOLDER + "/" + str(image_path) + "/image.png"
+                img.pos = triplet_id_to_pos[trial["frame_loc_%s" % i]]
+                exp_win.logOnFlip(
+                    level=logging.EXP,
+                    msg="memory: display %s in quadrant %s"
+                    % (str(img.image), str(img.pos)),
+                )
+                for frameN in range(config.FRAME_RATE * STIMULI_DURATION):
+
+                    img.draw(exp_win)
+                    if i == 3 or i == 4:
+                        self.fixation.draw(exp_win)
+                    if ctl_win:
+                        img.draw(ctl_win)
+                    yield True
+                exp_win.logOnFlip(level=logging.EXP, msg="memory: rest")
+                if i == 3 or i == 4:
+                    for frameN in range(config.FRAME_RATE * ISI):
+                        self.fixation.draw(exp_win)
+                        yield True
+            else:
+                for frameN in range(config.FRAME_RATE * ISI_base):
+                    yield True
+
+
+        for frameN in range(config.FRAME_RATE * BASELINE_END):
+            yield ()
+
 def instructions_converter(task_name):
     task = task_name[5:].split('_run')[0]
     task = f"multfs_{task}"
@@ -203,6 +332,42 @@ def instructions_converter(task_name):
         "multfs_dmscat": "press LEFT if two stimulus belong to the same category, otherwise press RIGHT",
         "multfs_dmsobj": "press LEFT if two stimulus are the same object, otherwise press RIGHT",
         "multfs_dmsang": "press lEFT if two stimulus have the same angle, otherwise press RIGHT",
+        "multfs_interdmsloc_AABB": """
+                          Press LEFT on the second frame if the first and second stimuli have the same location,  otherwise press RIGHT.
+                          Press LEFT on the fourth frame if the third and fourth stimuli have the same location,  otherwise press RIGHT. 
+                          """,
+        "multfs_interdmscat_AABB": """
+                              Press LEFT on the second frame if the first and second stimuli have the same category,  otherwise press RIGHT.
+                              Press LEFT on the fourth frame if the third and fourth stimuli have the same category,  otherwise press RIGHT. 
+                              """,
+        "multfs_interdmsobj_AABB": """
+                              Press LEFT on the second frame if the first and second stimuli are the same object,  otherwise press RIGHT.
+                              Press LEFT on the fourth frame if the third and fourth stimuli are the same object,  otherwise press RIGHT. 
+                              """,
+        "multfs_interdmsloc_ABBA": """
+                              Press LEFT on the fourth frame if the first and fourth stimuli have the same location,  otherwise press RIGHT.
+                              Press LEFT on the third frame if the second and third stimuli have the same location,  otherwise press RIGHT. 
+                              """,
+        "multfs_interdmscat_ABBA": """
+                                  Press LEFT on the fourth frame if the first and fourth stimuli have the same category,  otherwise press RIGHT.
+                                  Press LEFT on the third frame if the second and third stimuli have the same category,  otherwise press RIGHT. 
+                                  """,
+        "multfs_interdmsobj_ABBA": """
+                                  Press LEFT on the fourth frame if the first and fourth stimuli are the same object,  otherwise press RIGHT.
+                                  Press LEFT on the third frame if the third and third stimuli are the same object,  otherwise press RIGHT. 
+                                  """,
+        "multfs_interdmsloc_ABAB": """
+                              Press LEFT on the third frame if the first and third stimuli have the same location,  otherwise press RIGHT.
+                              Press LEFT on the fourth frame if the second and fourth stimuli have the same location,  otherwise press RIGHT. 
+                              """,
+        "multfs_interdmscat_ABAB": """
+                                  Press LEFT on the third frame if the first and third stimuli have the same category,  otherwise press RIGHT.
+                                  Press LEFT on the fourth frame if the second and fourth stimuli have the same category,  otherwise press RIGHT. 
+                                  """,
+        "multfs_interdmsobj_ABAB": """
+                                  Press LEFT on the third frame if the first and third stimuli are the same object,  otherwise press RIGHT.
+                                  Press LEFT on the fourth frame if the second and fourth stimuli are the same object,  otherwise press RIGHT. 
+                                  """,
         "multfs_1backloc": """
                     In this task, you will see a sequence of stimulus presented one after another. Press LEFT each time the current stimulus is at the same location as the one presented just before. Otherwise press RIGHT
                     """,
