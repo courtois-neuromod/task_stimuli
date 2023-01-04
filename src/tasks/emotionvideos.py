@@ -1,5 +1,7 @@
 from calendar import c
 import os, sys, time
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
 from psychopy import visual, core, data, logging, event
 from .task_base import Task
 import numpy as np
