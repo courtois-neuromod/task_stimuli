@@ -9,7 +9,7 @@ import pandas as pd
 from ..shared import config, utils, eyetracking
 
 FADE_TO_GREY_DURATION = 2
-SCALING_EMOTION_VIDEOS = 600 #pix
+SCALING_EMOTION_VIDEOS = 900 #pix
 
 class EmotionVideos(Task):
 
