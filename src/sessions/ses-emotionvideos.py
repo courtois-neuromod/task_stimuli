@@ -42,7 +42,7 @@ def get_tasks(parsed):
             savestate,
             name=f"task-emotionvideos_run-{savestate['index']:02d}",
             use_eyetracking=True,
-            final_wait=final_wait,
+            target_duration=TARGET_GIFS_DURATION + initial_wait + final_wait,
         )
         yield task
 
@@ -59,6 +59,10 @@ n_runs = 2
 initial_wait = 6
 final_wait = 9
 fixation_duration = 1.5 #seconds
+dimensions = ['approach', 'arousal',
+   'attention', 'certainty', 'commitment', 'control', 'dominance',
+   'effort', 'fairness', 'identity', 'obstruction', 'safety', 'upswing',
+   'valence']
 
 #Run
 run_min_duration = 345 #seconds of Gifs (doesn't include the ITI)
@@ -68,6 +72,12 @@ iti_max = 6
 ls_gifs_to_repeat = ["0290.mp4", "1791.mp4"]
 time_to_repeat = 3
 duration_min = 1
+TARGET_GIFS_DURATION = 490 #slightly over the split of total duration to help the search
+TOTAL_RUN_NUMBER = 36
+RUN_DURATION_THR = 4
+
+# the seed that get the working design with constraint
+MAGIC_SEED = 45064
 
 
 def repeat_gifs(path_to_gifs = VIDEOS_PATH, new_path_to_gifs=REPEATED_VIDEOS_PATH):
@@ -104,7 +114,7 @@ def repeat_gifs(path_to_gifs = VIDEOS_PATH, new_path_to_gifs=REPEATED_VIDEOS_PAT
                 shutil.copy(path_gif, new_path_gif, follow_symlinks=False)
 
 
-def generate_design_file(random_state):
+def generate_design_file():
     """
     Generate design files comprising the content of each run
     """
@@ -113,48 +123,65 @@ def generate_design_file(random_state):
     import numpy as np
     import random
     import math
-    from scipy.stats import geom
-
-    random.seed(0)
+    from scipy.stats import geom, ks_2samp
 
     gifs_list = pd.read_csv(
         os.path.join(EMOTION_DATA_PATH, "emotionvideos_path_fmri.csv")
     )
+    # seed for ITIs
+    np.random.seed(123456789)
     gifs_list['iti'] = geom.rvs(0.8, iti_min-1, size=len(gifs_list), random_state=random_state)
+
     #split the total duration to a number close to 36, so that all runs have similar length
-    target_duration = 489
-
     tot_gif_dur = gifs_list.duration.sum() + gifs_list.iti.sum()
+    target_run_num = int(np.round(tot_gif_dur/TARGET_GIFS_DURATION))
+    print(f"total_duration {tot_gif_dur}, aiming for {target_run_num} runs of {tot_gif_dur/target_run_num}")
 
-    target_run_num = int(np.round(tot_gif_dur/target_duration))
-    # ideal splits
-    spaces = np.linspace(0, tot_gif_dur, target_run_num+1)[1:]
-    #spaces = np.arange(1,target_run_num+1)*target_duration
     # try that a bunch of times
-    for i in range(1000000):
+    for i in range(MAGIC_SEED, 1000000):
         #randomize
-        gifs_rand = gifs_list.sample(frac=1)
-        csum = (gifs_rand.total_duration + gifs_rand.iti).cumsum()
+        np.random.seed(i)
+        gifs_rand = gifs_list.sample(frac=1).reset_index()
+        csum = np.asanyarray((gifs_rand.total_duration + gifs_rand.iti).cumsum() - gifs_rand.iti)
 
         splits=[]
+        last_split = 0
         # search for splits close to ideal splits
-        for sp in spaces:
-            cond = np.abs(csum-sp)
-            if not any(cond<4):
-                # abort not found
+        fail = False
+        for sp in range(target_run_num-1):
+            cond = np.abs(csum-last_split-TARGET_GIFS_DURATION)
+            if not any(cond<RUN_DURATION_THR):
+                fail = True
                 break
             splits.append(np.argmin(cond))
-        if len(splits) != len(spaces):
+            last_split = csum[splits[-1]]
+        if fail:
             # abort not found
+            #print(f'fail {sp}')
             continue
+        # check last split
+        if np.abs(csum[-1] - last_split-TARGET_GIFS_DURATION) > RUN_DURATION_THR:
+            continue
+        splits.append(len(gifs_rand)-1)
+
+        start = 0
+        last_split = 0
+        for run_id, split in enumerate(splits):
+            gifs_run = gifs_rand[start:split+1]
+            for dimension in dimensions:
+                ks_val, ks_p = ks_2samp(gifs_run[dimension], gifs_list[dimension])
+                if ks_p < 0.05:
+                    continue
+
         print(f"found design at iteration {i}") #yeahhhh!
         break
     print(gifs_rand.shape)
     print(splits[-1])
 
     start = 0
+    last_split = 0
     for run_id, split in enumerate(splits):
-        print(start,split+1)
+
         gifs_run = gifs_rand[start:split+1]
         gifs_run['onset'] = initial_wait + np.cumsum([0] + gifs_run.duration[:-1].tolist()) + np.cumsum([0] + gifs_run.iti[:-1].tolist())
         gifs_run['onset_fixation'] = gifs_run.onset - fixation_duration
@@ -165,60 +192,10 @@ def generate_design_file(random_state):
         )
 
         gifs_run.to_csv(out_fname, sep="\t", index=False)
+
+        print(start,split, csum[split]-last_split, float(gifs_run.onset[-1:] + gifs_run.duration[-1:]) + final_wait)
         start=split+1
-
-    return
-
-    while not gifs_list.empty:
-
-        gifs_id = []
-        total_duration = 0
-        #Make sure there's no run with just a few Gifs in it
-        if gifs_list.duration.sum() < run_max_duration:
-            gifs_id = gifs_list.Gif
-        else:
-            for i, row in gifs_list.sample(frac=1, random_state=random_state).iterrows():
-                #Select Gifs until the total duration reach more than trial_duration
-                if (total_duration + row.duration) < run_min_duration:
-                    total_duration += row.duration
-                    gifs_id.append(row.Gif)
-
-        gifs_exp = gifs_list[gifs_list.Gif.isin(gifs_id)]
-        gifs_list = gifs_list.drop(gifs_list.index[gifs_list.Gif.isin(gifs_exp.Gif)],axis=0)
-        gifs_exp = gifs_exp.reset_index()
-
-        iti = geom.rvs(0.5, iti_min-1, size=5000, random_state=random_state)
-        iti_n = random.sample(iti[iti<=iti_max].tolist(),len(gifs_exp))
-
-        onset = []
-        i_temp = 0
-
-        for i, row in gifs_exp.iterrows():
-            if i == 0:
-                onset.append(initial_wait)
-            else:
-                onset.append(gifs_exp.duration[i_temp]+onset[i_temp]+iti_n[i_temp])
-            i_temp = i
-
-        gifs_exp['onset'] = onset
-        gifs_exp['onset'] = initial_wait + np.cumsum([0] + gifs_exp.duration[:-1]) + np.cumsum([0] + iti_n)
-        gifs_exp['onset_fixation'] = [i - fixation_duration for i in onset]
-        gifs_exp['iti'] = iti_n
-
-        #Create directory
-        if not os.path.exists(os.path.join(EMOTION_DATA_PATH,OUTPUT_RUNS_PATH)):
-            os.makedirs(os.path.join(EMOTION_DATA_PATH,OUTPUT_RUNS_PATH))
-
-        out_fname = os.path.join(
-            EMOTION_DATA_PATH,
-            OUTPUT_RUNS_PATH,
-            f"run-{run:02d}_design.tsv"
-        )
-
-        gifs_exp.to_csv(out_fname, sep="\t", index=False)
-
-        run += 1
-
+        last_split = csum[split]
 
 def generate_individual_design_file():
     """
@@ -230,12 +207,12 @@ def generate_individual_design_file():
     #Assign pseudo-random run order for each participant
     for sub in range(1,7):
 
-        sub_randomized = list(range(1,n_runs+1))
+        sub_randomized = list(range(1,TOTAL_RUN_NUMBER+1))
         random.seed(sub)
         random.shuffle(sub_randomized)
 
         tsv_files = [f"run-{filename:02d}_design.tsv" for filename in sub_randomized]
-        session = [str(item).zfill(3) for item in list(range(1,n_runs+1))]
+        session = [str(item).zfill(3) for item in range(1,TOTAL_RUN_NUMBER+1)]
 
         sub_dict = {"session": session,"tsv":tsv_files}
 
@@ -267,7 +244,7 @@ if __name__ == "__main__":
     parsed = parser.parse_args()
     """
     #repeat_gifs()
-    generate_design_file(random_state)
+    generate_design_file()
     generate_individual_design_file()
 
     #get_tasks(parsed)
