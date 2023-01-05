@@ -59,6 +59,10 @@ n_runs = 2
 initial_wait = 6
 final_wait = 9
 fixation_duration = 1.5 #seconds
+dimensions = ['approach', 'arousal',
+       'attention', 'certainty', 'commitment', 'control', 'dominance',
+       'effort', 'fairness', 'identity', 'obstruction', 'safety', 'upswing',
+       'valence'] 
 
 #Run
 run_min_duration = 345 #seconds of Gifs (doesn't include the ITI)
@@ -113,7 +117,7 @@ def generate_design_file(random_state):
     import numpy as np
     import random
     import math
-    from scipy.stats import geom
+    from scipy.stats import geom, ks_2samp
 
     random.seed(0)
 
@@ -163,11 +167,16 @@ def generate_design_file(random_state):
             OUTPUT_RUNS_PATH,
             f"run-{run_id+1:02d}_design.tsv"
         )
+        
+        for dimension in dimensions:
+            ks_val, ks_p = ks_2samp(gifs_run[dimension], gifs_list[dimension])
+            if ks_p < 0.05:
+                return True
 
         gifs_run.to_csv(out_fname, sep="\t", index=False)
         start=split+1
 
-    return
+    return False
 
     while not gifs_list.empty:
 
@@ -267,7 +276,8 @@ if __name__ == "__main__":
     parsed = parser.parse_args()
     """
     #repeat_gifs()
-    generate_design_file(random_state)
+    while generate_design_file(random_state):
+        generate_design_file(random_state)
     generate_individual_design_file()
 
     #get_tasks(parsed)
