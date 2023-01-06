@@ -34,7 +34,7 @@ def get_tasks(parsed):
         next_run = os.path.join(
             EMOTION_DATA_PATH,
             OUTPUT_RUNS_PATH,
-            sub_design.tsv[sub_design.session=="{}{}".format("00", design)].iloc[0])
+            sub_design.tsv[savestate['index']-1])
 
         task = EmotionVideos(
             next_run,
