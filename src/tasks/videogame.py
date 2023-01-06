@@ -6,6 +6,7 @@ from psychopy import visual, core, data, logging, event, sound, constants
 from .task_base import Task
 
 from ..shared import config, utils
+from PIL import Image
 
 import retro
 
@@ -37,6 +38,7 @@ def _onPygletKeyRelease(symbol, modifier):
     global _keyReleaseBuffer
     keyTime = core.getTime()
     key = pyglet.window.key.symbol_string(symbol).lower().lstrip("_").lstrip("NUM_")
+    logging.data("Keyrelease: %s" % key)
     _keyReleaseBuffer.append((key, keyTime))
 
 import sounddevice
@@ -171,7 +173,9 @@ class VideoGameBase(Task):
         )
 
     def _render_graphics_sound(self, obs, sound_block, exp_win, ctl_win):
-        self.game_vis_stim.image = obs / 255.0
+        #giving a PIL image directly avoid a lot of useless rescaling/conversion
+        self.game_vis_stim.image = Image.fromarray(obs).transpose(Image.FLIP_TOP_BOTTOM)
+        #self.game_vis_stim.image = obs / 255.0
         self.game_vis_stim.draw(exp_win)
         if ctl_win:
             self.game_vis_stim.draw(ctl_win)
@@ -192,6 +196,7 @@ class VideoGameBase(Task):
 
     def fixation_cross(self, exp_win):
         from ..shared.eyetracking import fixation_dot
+        yield True
         fixation = fixation_dot(exp_win)
         for stim in fixation:
             stim.draw(exp_win)
@@ -287,14 +292,22 @@ class VideoGame(VideoGameBase):
         global _keyPressBuffer, _keyReleaseBuffer
 
         for k in _keyReleaseBuffer:
-            self.pressed_keys.discard(k[0])
-            logging.data(f"Keyrelease: {k[0]}", t=k[1])
+            if k[0] in self.pressed_keys:
+                event = {
+                    'trial_type': 'keypress',
+                    'key': k[0],
+                    'onset': self.pressed_keys[k[0]][1] - self.task_timer._timeAtLastReset + core.monotonicClock._timeAtLastReset,
+                    'offset': k[1] - self.task_timer._timeAtLastReset + core.monotonicClock._timeAtLastReset,
+                    'duration': k[1] - self.pressed_keys[k[0]][1],
+                    'sample': time.monotonic(),
+                    }
+                self._events.append(event)
+                del self.pressed_keys[k[0]]
         _keyReleaseBuffer.clear()
         for k in _keyPressBuffer:
-            self.pressed_keys.add(k[0])
+            self.pressed_keys[k[0]] = k
         self._new_key_pressed = _keyPressBuffer[:] #copy
         _keyPressBuffer.clear()
-        return self.pressed_keys
 
     def clear_key_buffers(self):
         global _keyPressBuffer, _keyReleaseBuffer
@@ -327,6 +340,7 @@ class VideoGame(VideoGameBase):
             },
         )
         yield True
+        self._rep_event = self._events[-1] #save event here to later add duration...
         _nextFrameT = self.task_timer.getTime()
         while not _done:
             level_step += 1
@@ -337,6 +351,10 @@ class VideoGame(VideoGameBase):
             total_reward += _rew
             if _rew > 0:
                 exp_win.logOnFlip(level=logging.EXP, msg="Reward %f" % (total_reward))
+            if _nextFrameT < self.task_timer.getTime():
+                logging.warning(f"frame {level_step} dropped before render")
+                self.game_sound.put(self.emulator.em.get_audio())
+                continue # drop frame
             self._render_graphics_sound(
                 _obs, self.emulator.em.get_audio(), exp_win, ctl_win
             )
@@ -352,9 +370,13 @@ class VideoGame(VideoGameBase):
                 time.sleep(.0001)
                 utils.poll_windows()
             if _nextFrameT < self.task_timer.getTime():
+                logging.warning(f"frame {level_step} dropped")
                 continue # drop frame
-            yield True
+            yield False
 
+        self._rep_event['nframes'] = level_step
+        self._rep_event['offset'] = self.task_timer.getTime()
+        self._rep_event['duration'] = self._rep_event['offset'] - self._rep_event['onset']
         self._completed = self._completed or self._game_info['lives'] > -1
         self.game_sound.flush()
         self.game_sound.stop()
@@ -362,9 +384,10 @@ class VideoGame(VideoGameBase):
 
     def _set_key_handler(self, exp_win):
         # activate repeat keys
+        self.pressed_keys = dict()
         exp_win.winHandle.on_key_press = _onPygletKeyPress
         exp_win.winHandle.on_key_release = _onPygletKeyRelease
-        self.pressed_keys = set()
+
 
     def _unset_key_handler(self, exp_win):
         # deactivate custom keys handling

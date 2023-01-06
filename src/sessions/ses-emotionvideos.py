@@ -60,6 +60,10 @@ n_runs = 2
 initial_wait = 6
 final_wait = 9
 fixation_duration = 1.5 #seconds
+dimensions = ['approach', 'arousal',
+   'attention', 'certainty', 'commitment', 'control', 'dominance',
+   'effort', 'fairness', 'identity', 'obstruction', 'safety', 'upswing',
+   'valence']
 
 #Run
 run_min_duration = 345 #seconds of Gifs (doesn't include the ITI)
@@ -111,7 +115,7 @@ def repeat_gifs(path_to_gifs = VIDEOS_PATH, new_path_to_gifs=REPEATED_VIDEOS_PAT
                 shutil.copy(path_gif, new_path_gif, follow_symlinks=False)
 
 
-def generate_design_file(random_state):
+def generate_design_file():
     """
     Generate design files comprising the content of each run
     """
@@ -120,7 +124,7 @@ def generate_design_file(random_state):
     import numpy as np
     import random
     import math
-    from scipy.stats import geom
+    from scipy.stats import geom, ks_2samp
 
     gifs_list = pd.read_csv(
         os.path.join(EMOTION_DATA_PATH, "emotionvideos_path_fmri.csv")
@@ -160,6 +164,16 @@ def generate_design_file(random_state):
         if np.abs(csum[-1] - last_split-TARGET_GIFS_DURATION) > RUN_DURATION_THR:
             continue
         splits.append(len(gifs_rand)-1)
+
+        start = 0
+        last_split = 0
+        for run_id, split in enumerate(splits):
+            gifs_run = gifs_rand[start:split+1]
+            for dimension in dimensions:
+                ks_val, ks_p = ks_2samp(gifs_run[dimension], gifs_list[dimension])
+                if ks_p < 0.05:
+                    continue
+
         print(f"found design at iteration {i}") #yeahhhh!
         break
     print(gifs_rand.shape)
@@ -167,6 +181,7 @@ def generate_design_file(random_state):
 
     start = 0
     last_split = 0
+    duration_of_scan = 0
     for run_id, split in enumerate(splits):
 
         gifs_run = gifs_rand[start:split+1]
@@ -183,6 +198,9 @@ def generate_design_file(random_state):
         print(start,split, csum[split]-last_split, float(gifs_run.onset[-1:] + gifs_run.duration[-1:]) + final_wait)
         start=split+1
         last_split = csum[split]
+        duration_of_scan = max(duration_of_scan, float(gifs_run.onset[-1:] + gifs_run.duration[-1:]) + final_wait)
+
+    print(f"Duration of fMRI run = {duration_of_scan}")
 
 def generate_individual_design_file():
     """
@@ -231,7 +249,7 @@ if __name__ == "__main__":
     parsed = parser.parse_args()
     """
     #repeat_gifs()
-    generate_design_file(random_state)
+    generate_design_file()
     generate_individual_design_file()
 
     #get_tasks(parsed)
