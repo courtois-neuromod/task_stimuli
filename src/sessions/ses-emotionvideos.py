@@ -180,6 +180,7 @@ def generate_design_file():
 
     start = 0
     last_split = 0
+    duration_of_scan = 0
     for run_id, split in enumerate(splits):
 
         gifs_run = gifs_rand[start:split+1]
@@ -196,6 +197,9 @@ def generate_design_file():
         print(start,split, csum[split]-last_split, float(gifs_run.onset[-1:] + gifs_run.duration[-1:]) + final_wait)
         start=split+1
         last_split = csum[split]
+        duration_of_scan = max(duration_of_scan, float(gifs_run.onset[-1:] + gifs_run.duration[-1:]) + final_wait)
+
+    print(f"Duration of fMRI run = {duration_of_scan}")
 
 def generate_individual_design_file():
     """
