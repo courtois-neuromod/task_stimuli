@@ -172,7 +172,12 @@ def generate_design_file():
             for dimension in dimensions:
                 ks_val, ks_p = ks_2samp(gifs_run[dimension], gifs_list[dimension])
                 if ks_p < 0.05:
-                    continue
+                    print(ks_p)
+                    fail = True
+                    break
+            start=split+1
+        if fail:
+            continue
 
         print(f"found design at iteration {i}") #yeahhhh!
         break
