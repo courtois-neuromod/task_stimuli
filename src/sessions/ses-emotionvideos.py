@@ -27,20 +27,20 @@ def get_tasks(parsed):
         with open(savestate_path) as f:
             savestate = json.load(f)
     else:
-        savestate = {"index": 1}
+        savestate = {"index": 0}
 
     for run, design in enumerate(range(savestate['index'], len(sub_design))):
         #load design file for the run according to each participant predefine runs order
         next_run = os.path.join(
             EMOTION_DATA_PATH,
             OUTPUT_RUNS_PATH,
-            sub_design.tsv[sub_design.session=="{}{}".format("00", design)].iloc[0])
+            sub_design.tsv[savestate['index']])
 
         task = EmotionVideos(
             next_run,
             REPEATED_VIDEOS_PATH,
             savestate,
-            name=f"task-emotionvideos_run-{savestate['index']:02d}",
+            name=f"task-emotionvideos_run-{1+savestate['index']:02d}",
             use_eyetracking=True,
             target_duration=TARGET_GIFS_DURATION + initial_wait + final_wait,
 
@@ -172,7 +172,12 @@ def generate_design_file():
             for dimension in dimensions:
                 ks_val, ks_p = ks_2samp(gifs_run[dimension], gifs_list[dimension])
                 if ks_p < 0.05:
-                    continue
+                    print(ks_p)
+                    fail = True
+                    break
+            start=split+1
+        if fail:
+            continue
 
         print(f"found design at iteration {i}") #yeahhhh!
         break
