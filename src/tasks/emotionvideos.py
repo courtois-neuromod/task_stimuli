@@ -1,5 +1,7 @@
 from calendar import c
 import os, sys, time
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
 from psychopy import visual, core, data, logging, event
 from .task_base import Task
 import numpy as np
@@ -9,7 +11,7 @@ import pandas as pd
 from ..shared import config, utils, eyetracking
 
 FADE_TO_GREY_DURATION = 2
-SCALING_EMOTION_VIDEOS = 600 #pix
+SCALING_EMOTION_VIDEOS = 900 #pix
 
 class EmotionVideos(Task):
 
@@ -21,7 +23,7 @@ class EmotionVideos(Task):
         self.n_trial = 0
         self.path_design = design
         self.target_duration = target_duration
-        self.design = pd.read_csv(design, sep='\t')[:2]
+        self.design = pd.read_csv(design, sep='\t')
         self._task_completed = False
         if os.path.exists(videos_path):
             self.videos_path = videos_path
