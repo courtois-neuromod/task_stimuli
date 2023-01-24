@@ -106,7 +106,8 @@ class EyetrackerCalibration_targets(Task):
 
         # screen fades to dark during instructions, dark screen during calibration
         for frameN in range(config.FRAME_RATE * INSTRUCTION_DURATION):
-            grey = [-float(frameN) / config.FRAME_RATE / INSTRUCTION_DURATION] * 3
+            grey = [-float(frameN) / (config.FRAME_RATE*5) / INSTRUCTION_DURATION] * 3
+            #grey = [-float(frameN) / config.FRAME_RATE / INSTRUCTION_DURATION] * 3
             exp_win.setColor(grey, colorSpace='rgb')
             #ctl_win.setColor(grey, colorSpace='rgb')
             screen_text.draw(exp_win)
@@ -271,7 +272,8 @@ class EyetrackerCalibration_targets(Task):
 
                 #exp_win.clearBuffer(color=True, depth=True)
                 black_bgd = visual.Rect(exp_win, size=exp_win.size, lineWidth=0,
-                                        colorSpace='rgb', fillColor=(-1, -1, -1))
+                                        #colorSpace='rgb', fillColor=(-1, -1, -1))
+                                        colorSpace='rgb', fillColor=(-0.2, -0.2, -0.2))
 
                 for frameN in range(5):
                     black_bgd.draw(exp_win)
@@ -287,7 +289,8 @@ class EyetrackerCalibration_targets(Task):
 
                 #exp_win.clearBuffer(color=True, depth=True)
                 black_bgd = visual.Rect(exp_win, size=exp_win.size, lineWidth=0,
-                                        colorSpace='rgb', fillColor=(-1, -1, -1))
+                                        #colorSpace='rgb', fillColor=(-1, -1, -1))
+                                        colorSpace='rgb', fillColor=(-0.2, -0.2, -0.2))
 
                 for frameN in range(5):
                     black_bgd.draw(exp_win)
