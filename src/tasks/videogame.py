@@ -678,9 +678,11 @@ class VideoGameMultiLevel(VideoGame):
         self._set_key_handler(exp_win)
         self._nlevels = 0
 
-        exp_win.setColor(self._bg_color, colorSpace='rgb255')
-        if ctl_win:
-            ctl_win.setColor(self._bg_color, colorSpace='rgb255')
+        for i in range(2):
+            exp_win.setColor(self._bg_color, colorSpace='rgb255')
+            if ctl_win:
+                ctl_win.setColor(self._bg_color, colorSpace='rgb255')
+            yield True
         while True:
             for level, scenario in zip(self._state_names, self._scenarii):
 
