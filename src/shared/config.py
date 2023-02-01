@@ -49,4 +49,4 @@ INSTRUCTION_DURATION = 3
 WRAP_WIDTH = 2
 
 # port for meg setup
-PARALLEL_PORT_ADDRESS = "/dev/parport0"
+PARALLEL_PORT_ADDRESS = "/dev/parport1"
