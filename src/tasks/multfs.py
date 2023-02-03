@@ -186,6 +186,11 @@ class multfs_base(Task):
                     break
             yield ()
 
+    def _save(self):
+        if hasattr(self, 'trials'):
+            self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
+        return None
+
 
 class multfs_dms(multfs_base):
 
@@ -215,7 +220,7 @@ class multfs_dms(multfs_base):
                 self._flip_all_windows(exp_win, ctl_win, clearBuffer)
             # 2 flips to clear screen
             for i in range(2):
-                self._flip_all_windows(exp_win, ctl_win, True)
+                yield True
 
             img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="norm")
 
@@ -224,14 +229,14 @@ class multfs_dms(multfs_base):
                 exp_win.logOnFlip(level=logging.EXP, msg="multfs-dms_%s: block %d trial %d" % (self.feature, block, trial_idx))
                 trial_idx += 1
                 for i in range(2):
-                    self._flip_all_windows(exp_win, ctl_win, True)
+                    yield True
 
                 for n_stim in range(1, 1+self.seq_len):
                     img.image = IMAGES_FOLDER + "/" + str(trial["objmod%s" % str(n_stim)]) + "/image.png"
                     img.pos = triplet_id_to_pos[trial["loc%s" % str(n_stim)]]
 
                     for i in range(2):
-                        self._flip_all_windows(exp_win, ctl_win, True)
+                        yield True
 
                     self.trials.addData("stimulus_%d_onset" % n_stim, self.globalClock.getTime())
                     for frameN in range(int(config.FRAME_RATE * (STIMULI_DURATION + ISI_base))):
@@ -260,10 +265,10 @@ class multfs_dms(multfs_base):
 
                 for frameN in range(int(config.FRAME_RATE * ISI_base/3)):
                     self.next_trial.draw()
-                    self._flip_all_windows(exp_win, ctl_win, True)
+                    yield True
                 for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
                     self.empty_text.draw()
-                    self._flip_all_windows(exp_win, ctl_win, True)
+                    yield True
 
                 # print("current trial idx:", trial_idx)
                 # print("total number of trials:", self.n_trials)
@@ -276,10 +281,8 @@ class multfs_dms(multfs_base):
 
             for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
                 self.empty_text.draw()
-                self._flip_all_windows(exp_win, ctl_win, True)
-    def _save(self):
-        self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
-        return None
+                yield True
+
 
 
 
@@ -309,7 +312,7 @@ class multfs_1back(multfs_base):
                 self._flip_all_windows(exp_win, ctl_win, clearBuffer)
             # 2 flips to clear screen
             for i in range(2):
-                self._flip_all_windows(exp_win, ctl_win, True)
+                yield True
 
             img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="norm")
 
@@ -318,7 +321,7 @@ class multfs_1back(multfs_base):
                 exp_win.logOnFlip(level=logging.EXP, msg="multfs-1back_%s: block %d trial %d" % (self.feature, block, trial_idx))
                 trial_idx += 1
                 for i in range(2):
-                    self._flip_all_windows(exp_win, ctl_win, True)
+                    yield True
                 # print("beginning of the alignment")
                 # self._fill_in_blank(exp_win, ctl_win, task="1back")
                 curr_time = self.globalClock.getTime()
@@ -344,7 +347,7 @@ class multfs_1back(multfs_base):
                     img.pos = triplet_id_to_pos[trial["loc%s" % str(n_stim)]]
 
                     for i in range(2):
-                        self._flip_all_windows(exp_win, ctl_win, True)
+                        yield True
 
 
                     self.trials.addData("stimulus_%d_onset" % n_stim, self.globalClock.getTime())
@@ -371,14 +374,14 @@ class multfs_1back(multfs_base):
 
                         self._flip_all_windows(exp_win, ctl_win)
 
-                yield ()
+                yield True
 
                 for frameN in range(int(config.FRAME_RATE * ISI_base/3)):
                     self.next_trial.draw()
-                    self._flip_all_windows(exp_win, ctl_win, True)
+                    yield True
                 for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
                     self.empty_text.draw()
-                    self._flip_all_windows(exp_win, ctl_win, True)
+                    yield True
 
                 if trial_idx > self.n_trials:
                     self.trials.addData("trial_end", self.task_timer.getTime())
@@ -389,10 +392,7 @@ class multfs_1back(multfs_base):
 
             for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
                 self.empty_text.draw()
-                self._flip_all_windows(exp_win, ctl_win, True)
-    def _save(self):
-        self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
-        return None
+                yield True
 
 class multfs_CTXDM(multfs_base):
 
@@ -421,7 +421,7 @@ class multfs_CTXDM(multfs_base):
                 self._flip_all_windows(exp_win, ctl_win, clearBuffer)
             # 2 flips to clear screen
             for i in range(2):
-                self._flip_all_windows(exp_win, ctl_win, True)
+                yield True
 
             img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="norm")
 
@@ -430,7 +430,7 @@ class multfs_CTXDM(multfs_base):
                 exp_win.logOnFlip(level=logging.EXP, msg="multfs-ctxdm_%s: block %d trial %d" % (self.feature, block, trial_idx))
                 trial_idx += 1
                 for i in range(2):
-                    self._flip_all_windows(exp_win, ctl_win, True)
+                    yield True
 
                 thres_time = (int(self.globalClock.getTime() / config.TR) + 1) * config.TR + 0.5
                 # print("before alignment:", self.globalClock.getTime())
@@ -443,7 +443,7 @@ class multfs_CTXDM(multfs_base):
                     img.pos = triplet_id_to_pos[trial["loc%s" % str(n_stim)]]
 
                     for i in range(2):
-                        self._flip_all_windows(exp_win, ctl_win, True)
+                        yield True
 
 
                     self.trials.addData("stimulus_%d_onset" % n_stim, self.globalClock.getTime())
@@ -482,10 +482,10 @@ class multfs_CTXDM(multfs_base):
 
                 for frameN in range(int(config.FRAME_RATE * ISI_base/3)):
                     self.next_trial.draw()
-                    self._flip_all_windows(exp_win, ctl_win, True)
+                    yield True
                 for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
                     self.empty_text.draw()
-                    self._flip_all_windows(exp_win, ctl_win, True)
+                    yield True
 
                 if trial_idx > self.n_trials:
                     self.trials.addData("trial_end", self.task_timer.getTime())
@@ -496,10 +496,7 @@ class multfs_CTXDM(multfs_base):
 
             for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
                 self.empty_text.draw()
-                self._flip_all_windows(exp_win, ctl_win, True)
-    def _save(self):
-        self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
-        return None
+                yield True
 
 
 
@@ -531,7 +528,7 @@ class multfs_interdms_ABAB(multfs_base):
                 self._flip_all_windows(exp_win, ctl_win, clearBuffer)
             # 2 flips to clear screen
             for i in range(2):
-                self._flip_all_windows(exp_win, ctl_win, True)
+                yield True
 
             img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="norm")
 
@@ -540,7 +537,7 @@ class multfs_interdms_ABAB(multfs_base):
                 exp_win.logOnFlip(level=logging.EXP, msg="multfs-interdms_%s_%s: block %d trial %d" % (self.pattern, self.feature, block, trial_idx))
                 trial_idx += 1
                 for i in range(2):
-                    self._flip_all_windows(exp_win, ctl_win, True)
+                    yield True
 
                 thres_time = (int(self.globalClock.getTime() / config.TR) + 1) * config.TR + 0.5
                 # print("before alignment:", self.globalClock.getTime())
@@ -554,7 +551,7 @@ class multfs_interdms_ABAB(multfs_base):
                     img.pos = triplet_id_to_pos[trial["loc%s" % str(n_stim)]]
 
                     for i in range(2):
-                        self._flip_all_windows(exp_win, ctl_win, True)
+                        yield True
 
                     self.trials.addData("stimulus_%d_onset" % n_stim, self.globalClock.getTime())
                     if n_stim == 1:
@@ -591,10 +588,10 @@ class multfs_interdms_ABAB(multfs_base):
 
                 for frameN in range(int(config.FRAME_RATE * ISI_base/3)):
                     self.next_trial.draw()
-                    self._flip_all_windows(exp_win, ctl_win, True)
+                    yield True
                 for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
                     self.empty_text.draw()
-                    self._flip_all_windows(exp_win, ctl_win, True)
+                    yield True
 
                 if trial_idx > self.n_trials:
                     self.trials.addData("trial_end", self.task_timer.getTime())
@@ -605,10 +602,7 @@ class multfs_interdms_ABAB(multfs_base):
 
             for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
                 self.empty_text.draw()
-                self._flip_all_windows(exp_win, ctl_win, True)
-    def _save(self):
-        self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
-        return None
+                yield True
 
 
 class multfs_interdms_ABBA(multfs_base):
@@ -638,7 +632,7 @@ class multfs_interdms_ABBA(multfs_base):
                 self._flip_all_windows(exp_win, ctl_win, clearBuffer)
             # 2 flips to clear screen
             for i in range(2):
-                self._flip_all_windows(exp_win, ctl_win, True)
+                yield True
 
             img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="norm")
 
@@ -647,7 +641,7 @@ class multfs_interdms_ABBA(multfs_base):
                 exp_win.logOnFlip(level=logging.EXP, msg="multfs-interdms_%s_%s: block %d trial %d" % (self.pattern, self.feature, block, trial_idx))
                 trial_idx += 1
                 for i in range(2):
-                    self._flip_all_windows(exp_win, ctl_win, True)
+                    yield True
 
                 thres_time = (int(self.globalClock.getTime() / config.TR) + 1) * config.TR + 0.5
                 # print("before alignment:", self.globalClock.getTime())
@@ -661,7 +655,7 @@ class multfs_interdms_ABBA(multfs_base):
                     img.pos = triplet_id_to_pos[trial["loc%s" % str(n_stim)]]
 
                     for i in range(2):
-                        self._flip_all_windows(exp_win, ctl_win, True)
+                        yield True
 
 
                     self.trials.addData("stimulus_%d_onset" % n_stim, self.globalClock.getTime())
@@ -699,10 +693,10 @@ class multfs_interdms_ABBA(multfs_base):
 
                 for frameN in range(int(config.FRAME_RATE * ISI_base/3)):
                     self.next_trial.draw()
-                    self._flip_all_windows(exp_win, ctl_win, True)
+                    yield True
                 for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
                     self.empty_text.draw()
-                    self._flip_all_windows(exp_win, ctl_win, True)
+                    yield True
 
                 if trial_idx > self.n_trials:
                     self.trials.addData("trial_end", self.task_timer.getTime())
@@ -713,11 +707,7 @@ class multfs_interdms_ABBA(multfs_base):
 
             for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
                 self.empty_text.draw()
-                self._flip_all_windows(exp_win, ctl_win, True)
-    def _save(self):
-        self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
-        return None
-
+                yield True
 
 
 
@@ -740,7 +730,7 @@ class multfs_interdms_ABBA(multfs_base):
 #                 self._flip_all_windows(exp_win, ctl_win, clearBuffer)
 #             # 2 flips to clear screen
 #             for i in range(2):
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
 #
 #             img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="norm")
 #
@@ -753,7 +743,7 @@ class multfs_interdms_ABBA(multfs_base):
 #
 #                 trial_idx += 1
 #                 for i in range(2):
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
 #
 #                 # print("global time since the start of stim presentation:", self.task_timer.getTime())
 #                 self.trials.addData("trial_stim_start",self.task_timer.getTime())
@@ -766,28 +756,28 @@ class multfs_interdms_ABBA(multfs_base):
 #                     img.pos = triplet_id_to_pos_ctxdm[trial["frame_loc_%s" % str(n_stim)]]
 #
 #                 for frameN in range(int(config.FRAME_RATE * STIMULI_DURATION/3)):
-#                     self._flip_all_windows(exp_win, ctl_win, True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
+#                     yield True
 #                     img.setAutoDraw(True)
 #                     self.fixation.setAutoDraw(True)
 #                     yield()
 #
 #
 #                 img.setAutoDraw(False)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
+#                 yield True
 #
 #
 #                 self.trials.addData("trial_ISI_start", self.task_timer.getTime())
 #                 for frameN in range(int(config.FRAME_RATE * ISI_base/3)):
 #                     self.fixation.setAutoDraw(True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
+#                     yield True
 #                     yield ()
 #
 #                 self.fixation.setAutoDraw(False)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
+#                 yield True
 #
 #                 n_stim = 2
 #                 img.image = IMAGES_FOLDER + "/" + str(trial["frame_obj_%s" % str(n_stim)]) + "/image.png"
@@ -798,14 +788,14 @@ class multfs_interdms_ABBA(multfs_base):
 #
 #                 for frameN in range(int(config.FRAME_RATE * STIMULI_DURATION/3)):
 #                     img.setAutoDraw(True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
+#                     yield True
 #                     yield ()
 #
 #                 img.setAutoDraw(False)
 #                 self.fixation.setAutoDraw(False)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
+#                 yield True
 #
 #                 self.trials.addData("trial_ISI_start", self.task_timer.getTime())
 #                 for frameN in range(int(config.FRAME_RATE * ISI_base/3)):
@@ -818,8 +808,8 @@ class multfs_interdms_ABBA(multfs_base):
 #                         self.trials.addData("response", multfs_answer_keys[-1][0])
 #                         self.trials.addData("response_time", multfs_answer_keys[-1][1])
 #                         self.trials.addData("response_time_2", self.task_timer.getTime())
-#                     self._flip_all_windows(exp_win, ctl_win, True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
+#                     yield True
 #                     yield ()
 #
 #                 n_stim = 3
@@ -830,26 +820,26 @@ class multfs_interdms_ABBA(multfs_base):
 #                     img.pos = triplet_id_to_pos_ctxdm[trial["frame_loc_%s" % str(n_stim)]]
 #
 #                 for frameN in range(int(config.FRAME_RATE * STIMULI_DURATION/3)):
-#                     self._flip_all_windows(exp_win, ctl_win, True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
+#                     yield True
 #                     img.setAutoDraw(True)
 #                     self.fixation.setAutoDraw(True)
 #                     yield ()
 #
 #                 img.setAutoDraw(False)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
+#                 yield True
 #
 #                 self.trials.addData("trial_ISI_start", self.task_timer.getTime())
 #                 for frameN in range(int(config.FRAME_RATE * ISI_base/3)):
 #                     self.fixation.setAutoDraw(True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
+#                     yield True
 #                     yield ()
 #
 #                 self.fixation.setAutoDraw(False)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
+#                 yield True
 #
 #                 n_stim = 4
 #                 img.image = IMAGES_FOLDER + "/" + str(trial["frame_obj_%s" % str(n_stim)]) + "/image.png"
@@ -860,21 +850,21 @@ class multfs_interdms_ABBA(multfs_base):
 #
 #                 for frameN in range(int(config.FRAME_RATE * STIMULI_DURATION/3)):
 #                     img.setAutoDraw(True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
+#                     yield True
 #                     yield ()
 #
 #                 img.setAutoDraw(False)
 #                 self.fixation.setAutoDraw(False)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
+#                 yield True
 #
 #                 self.trials.addData("trial_ISI_start", self.task_timer.getTime())
 #                 for frameN in range(int(config.FRAME_RATE * ISI_base/3)):
 #
 #                     self.fixation.setAutoDraw(False)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
+#                     yield True
 #                     multfs_answer_keys = event.getKeys(
 #                         [MULTFS_YES_KEY, MULTFS_NO_KEY, 'space', 'A', 'Y'], timeStamped=True
 #                     )
@@ -888,14 +878,14 @@ class multfs_interdms_ABBA(multfs_base):
 #
 #                 img.setAutoDraw(False)
 #                 self.fixation.setAutoDraw(False)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
+#                 yield True
 #                 for frameN in range(int(config.FRAME_RATE * ISI_base)):
 #                     self.next_trial.draw()
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
 #                 for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
 #                     self.empty_text.draw()
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
 #
 #
 #                 if trial_idx > 3:
@@ -904,10 +894,10 @@ class multfs_interdms_ABBA(multfs_base):
 #
 #             for clearBuffer in self._block_end(exp_win, ctl_win):
 #                 self._flip_all_windows(exp_win, ctl_win, clearBuffer)
-#             self._flip_all_windows(exp_win, ctl_win, True)
+#             yield True
 #             for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
 #                 self.empty_text.draw()
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
 #     def _save(self):
 #         self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
 #         return False
@@ -932,7 +922,7 @@ class multfs_interdms_ABBA(multfs_base):
 #                 self._flip_all_windows(exp_win, ctl_win, clearBuffer)
 #             # 2 flips to clear screen
 #             for i in range(2):
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
 #
 #             img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="norm")
 #
@@ -946,7 +936,7 @@ class multfs_interdms_ABBA(multfs_base):
 #
 #                 trial_idx += 1
 #                 for i in range(2):
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
 #
 #                 # print("global time since the start of stim presentation:", self.task_timer.getTime())
 #                 self.trials.addData("trial_stim_start",self.task_timer.getTime())
@@ -959,28 +949,28 @@ class multfs_interdms_ABBA(multfs_base):
 #                     img.pos = triplet_id_to_pos_ctxdm[trial["frame_loc_%s" % str(n_stim)]]
 #
 #                 for frameN in range(int(config.FRAME_RATE * STIMULI_DURATION/2)):
-#                     self._flip_all_windows(exp_win, ctl_win, True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
+#                     yield True
 #                     img.setAutoDraw(True)
 #                     self.fixation.setAutoDraw(True)
 #                     yield()
 #
 #
 #                 img.setAutoDraw(False)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
+#                 yield True
 #
 #
 #                 self.trials.addData("trial_ISI_start", self.task_timer.getTime())
 #                 for frameN in range(int(config.FRAME_RATE * ISI_base/2)):
 #                     self.fixation.setAutoDraw(True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
+#                     yield True
 #                     yield ()
 #
 #                 self.fixation.setAutoDraw(False)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
+#                 yield True
 #
 #                 n_stim = 2
 #                 img.image = IMAGES_FOLDER + "/" + str(trial["frame_obj_%s" % str(n_stim)]) + "/image.png"
@@ -990,26 +980,26 @@ class multfs_interdms_ABBA(multfs_base):
 #                     img.pos = triplet_id_to_pos_ctxdm[trial["frame_loc_%s" % str(n_stim)]]
 #
 #                 for frameN in range(int(config.FRAME_RATE * STIMULI_DURATION / 2)):
-#                     self._flip_all_windows(exp_win, ctl_win, True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
+#                     yield True
 #                     img.setAutoDraw(True)
 #                     self.fixation.setAutoDraw(True)
 #                     yield ()
 #
 #                 img.setAutoDraw(False)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
+#                 yield True
 #
 #                 self.trials.addData("trial_ISI_start", self.task_timer.getTime())
 #                 for frameN in range(int(config.FRAME_RATE * ISI_base / 2)):
 #                     self.fixation.setAutoDraw(True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
+#                     yield True
 #                     yield ()
 #
 #                 self.fixation.setAutoDraw(False)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
+#                 yield True
 #
 #                 n_stim = 3
 #                 img.image = IMAGES_FOLDER + "/" + str(trial["frame_obj_%s" % str(n_stim)]) + "/image.png"
@@ -1020,14 +1010,14 @@ class multfs_interdms_ABBA(multfs_base):
 #
 #                 for frameN in range(int(config.FRAME_RATE * STIMULI_DURATION/2)):
 #                     img.setAutoDraw(True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
+#                     yield True
 #                     yield ()
 #
 #                 img.setAutoDraw(False)
 #                 self.fixation.setAutoDraw(False)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
+#                 yield True
 #
 #                 self.trials.addData("trial_ISI_start", self.task_timer.getTime())
 #                 for frameN in range(int(config.FRAME_RATE * ISI_base/2)):
@@ -1040,8 +1030,8 @@ class multfs_interdms_ABBA(multfs_base):
 #                         self.trials.addData("response", multfs_answer_keys[-1][0])
 #                         self.trials.addData("response_time", multfs_answer_keys[-1][1])
 #                         self.trials.addData("response_time_2", self.task_timer.getTime())
-#                     self._flip_all_windows(exp_win, ctl_win, True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
+#                     yield True
 #                     yield ()
 #
 #
@@ -1054,21 +1044,21 @@ class multfs_interdms_ABBA(multfs_base):
 #
 #                 for frameN in range(int(config.FRAME_RATE * STIMULI_DURATION/2)):
 #                     img.setAutoDraw(True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
+#                     yield True
 #                     yield ()
 #
 #                 img.setAutoDraw(False)
 #                 self.fixation.setAutoDraw(False)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
+#                 yield True
 #
 #                 self.trials.addData("trial_ISI_start", self.task_timer.getTime())
 #                 for frameN in range(int(config.FRAME_RATE * ISI_base/2)):
 #
 #                     self.fixation.setAutoDraw(False)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
+#                     yield True
 #                     multfs_answer_keys = event.getKeys(
 #                         [MULTFS_YES_KEY, MULTFS_NO_KEY, 'space', 'A', 'Y'], timeStamped=True
 #                     )
@@ -1082,14 +1072,14 @@ class multfs_interdms_ABBA(multfs_base):
 #
 #                 img.setAutoDraw(False)
 #                 self.fixation.setAutoDraw(False)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
+#                 yield True
 #                 for frameN in range(int(config.FRAME_RATE * ISI_base)):
 #                     self.next_trial.draw()
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
 #                 for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
 #                     self.empty_text.draw()
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
 #
 #
 #                 if trial_idx > 3:
@@ -1098,10 +1088,10 @@ class multfs_interdms_ABBA(multfs_base):
 #
 #             for clearBuffer in self._block_end(exp_win, ctl_win):
 #                 self._flip_all_windows(exp_win, ctl_win, clearBuffer)
-#             self._flip_all_windows(exp_win, ctl_win, True)
+#             yield True
 #             for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
 #                 self.empty_text.draw()
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
 #     def _save(self):
 #         self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
 #         return False
@@ -1125,7 +1115,7 @@ class multfs_interdms_ABBA(multfs_base):
 #                 self._flip_all_windows(exp_win, ctl_win, clearBuffer)
 #             # 2 flips to clear screen
 #             for i in range(2):
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
 #
 #             img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="norm")
 #
@@ -1139,7 +1129,7 @@ class multfs_interdms_ABBA(multfs_base):
 #
 #                 trial_idx += 1
 #                 for i in range(2):
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
 #
 #                 # print("global time since the start of stim presentation:", self.task_timer.getTime())
 #                 self.trials.addData("trial_stim_start",self.task_timer.getTime())
@@ -1152,28 +1142,28 @@ class multfs_interdms_ABBA(multfs_base):
 #                     img.pos = triplet_id_to_pos_ctxdm[trial["frame_loc_%s" % str(n_stim)]]
 #
 #                 for frameN in range(int(config.FRAME_RATE * STIMULI_DURATION/2)):
-#                     self._flip_all_windows(exp_win, ctl_win, True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
+#                     yield True
 #                     img.setAutoDraw(True)
 #                     self.fixation.setAutoDraw(True)
 #                     yield()
 #
 #
 #                 img.setAutoDraw(False)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
+#                 yield True
 #
 #
 #                 self.trials.addData("trial_ISI_start", self.task_timer.getTime())
 #                 for frameN in range(int(config.FRAME_RATE * ISI_base/2)):
 #                     self.fixation.setAutoDraw(True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
+#                     yield True
 #                     yield ()
 #
 #                 self.fixation.setAutoDraw(False)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
+#                 yield True
 #
 #                 n_stim = 2
 #                 img.image = IMAGES_FOLDER + "/" + str(trial["frame_obj_%s" % str(n_stim)]) + "/image.png"
@@ -1183,26 +1173,26 @@ class multfs_interdms_ABBA(multfs_base):
 #                     img.pos = triplet_id_to_pos_ctxdm[trial["frame_loc_%s" % str(n_stim)]]
 #
 #                 for frameN in range(int(config.FRAME_RATE * STIMULI_DURATION / 2)):
-#                     self._flip_all_windows(exp_win, ctl_win, True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
+#                     yield True
 #                     img.setAutoDraw(True)
 #                     self.fixation.setAutoDraw(True)
 #                     yield ()
 #
 #                 img.setAutoDraw(False)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
+#                 yield True
 #
 #                 self.trials.addData("trial_ISI_start", self.task_timer.getTime())
 #                 for frameN in range(int(config.FRAME_RATE * ISI_base / 2)):
 #                     self.fixation.setAutoDraw(True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
+#                     yield True
 #                     yield ()
 #
 #                 self.fixation.setAutoDraw(False)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
+#                 yield True
 #
 #                 n_stim = 3
 #                 img.image = IMAGES_FOLDER + "/" + str(trial["frame_obj_%s" % str(n_stim)]) + "/image.png"
@@ -1213,14 +1203,14 @@ class multfs_interdms_ABBA(multfs_base):
 #
 #                 for frameN in range(int(config.FRAME_RATE * STIMULI_DURATION/2)):
 #                     img.setAutoDraw(True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
+#                     yield True
 #                     yield ()
 #
 #                 img.setAutoDraw(False)
 #                 self.fixation.setAutoDraw(False)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
+#                 yield True
 #
 #                 self.trials.addData("trial_ISI_start", self.task_timer.getTime())
 #                 for frameN in range(int(config.FRAME_RATE * ISI_base/2)):
@@ -1233,8 +1223,8 @@ class multfs_interdms_ABBA(multfs_base):
 #                         self.trials.addData("response", multfs_answer_keys[-1][0])
 #                         self.trials.addData("response_time", multfs_answer_keys[-1][1])
 #                         self.trials.addData("response_time_2", self.task_timer.getTime())
-#                     self._flip_all_windows(exp_win, ctl_win, True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
+#                     yield True
 #                     yield ()
 #
 #
@@ -1247,21 +1237,21 @@ class multfs_interdms_ABBA(multfs_base):
 #
 #                 for frameN in range(int(config.FRAME_RATE * STIMULI_DURATION/2)):
 #                     img.setAutoDraw(True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
+#                     yield True
 #                     yield ()
 #
 #                 img.setAutoDraw(False)
 #                 self.fixation.setAutoDraw(False)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
+#                 yield True
 #
 #                 self.trials.addData("trial_ISI_start", self.task_timer.getTime())
 #                 for frameN in range(int(config.FRAME_RATE * ISI_base/2)):
 #
 #                     self.fixation.setAutoDraw(False)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
+#                     yield True
 #                     multfs_answer_keys = event.getKeys(
 #                         [MULTFS_YES_KEY, MULTFS_NO_KEY, 'space', 'A', 'Y'], timeStamped=True
 #                     )
@@ -1275,14 +1265,14 @@ class multfs_interdms_ABBA(multfs_base):
 #
 #                 img.setAutoDraw(False)
 #                 self.fixation.setAutoDraw(False)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
+#                 yield True
 #                 for frameN in range(int(config.FRAME_RATE * ISI_base)):
 #                     self.next_trial.draw()
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
 #                 for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
 #                     self.empty_text.draw()
-#                     self._flip_all_windows(exp_win, ctl_win, True)
+#                     yield True
 #
 #
 #                 if trial_idx > 3:
@@ -1291,10 +1281,10 @@ class multfs_interdms_ABBA(multfs_base):
 #
 #             for clearBuffer in self._block_end(exp_win, ctl_win):
 #                 self._flip_all_windows(exp_win, ctl_win, clearBuffer)
-#             self._flip_all_windows(exp_win, ctl_win, True)
+#             yield True
 #             for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
 #                 self.empty_text.draw()
-#                 self._flip_all_windows(exp_win, ctl_win, True)
+#                 yield True
 #     def _save(self):
 #         self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
 #         return Fals
@@ -1305,73 +1295,73 @@ def instructions_converter(task_name):
 
     ins_dict = {
         "multfs_dmsloc": """Press X if two stimulus are at the same location, otherwise press B/\n
-                          Press A to continue""",
+Press A to continue""",
 
         "multfs_interdmsloc_ABBA": """
-                                interleaved Delay match to sample task with pattern ABBA and feature location\n
-                              Press X on the fourth frame if the first and fourth stimuli have the same location,  otherwise press B.\n
-                              Press X on the third frame if the second and third stimuli have the same location,  otherwise press B.\n
-                              Press A to continue
+interleaved Delay match to sample task with pattern ABBA and feature location\n
+Press X on the fourth frame if the first and fourth stimuli have the same location,  otherwise press B.\n
+Press X on the third frame if the second and third stimuli have the same location,  otherwise press B.\n
+Press A to continue
                               """,
         "multfs_interdmscat_ABBA": """
-                                interleaved Delay match to sample task with pattern ABBA and feature category\n
-                                  Press X on the fourth frame if the first and fourth stimuli have the same category,  otherwise press B.\n
-                                  Press X on the third frame if the second and third stimuli have the same category,  otherwise press B.\n
-                                  Press A to continue
+interleaved Delay match to sample task with pattern ABBA and feature category\n
+  Press X on the fourth frame if the first and fourth stimuli have the same category,  otherwise press B.\n
+  Press X on the third frame if the second and third stimuli have the same category,  otherwise press B.\n
+  Press A to continue
                                   """,
         "multfs_interdmsobj_ABBA": """
-                                interleaved Delay match to sample task with pattern ABBA and feature object\n
-                                  Press X on the fourth frame if the first and fourth stimuli are the same object,  otherwise press B.\n
-                                  Press X on the third frame if the third and third stimuli are the same object,  otherwise press B.\n
-                                  Press A to continue
+interleaved Delay match to sample task with pattern ABBA and feature object\n
+  Press X on the fourth frame if the first and fourth stimuli are the same object,  otherwise press B.\n
+  Press X on the third frame if the third and third stimuli are the same object,  otherwise press B.\n
+  Press A to continue
                                   """,
         "multfs_interdmsloc_ABAB": """
-                            interleaved Delay match to sample task with pattern ABAB and feature location\n
-                              Press X on the third frame if the first and third stimuli have the same location,  otherwise press B.\n
-                              Press X on the fourth frame if the second and fourth stimuli have the same location,  otherwise press B.\n
-                              Press A to continue
+interleaved Delay match to sample task with pattern ABAB and feature location\n
+  Press X on the third frame if the first and third stimuli have the same location,  otherwise press B.\n
+  Press X on the fourth frame if the second and fourth stimuli have the same location,  otherwise press B.\n
+  Press A to continue
                               """,
         "multfs_interdmscat_ABAB": """
-                                interleaved Delay match to sample task with pattern ABAB and feature category\n
-                                  Press X on the third frame if the first and third stimuli have the same category,  otherwise press B.\n
-                                  Press X on the fourth frame if the second and fourth stimuli have the same category,  otherwise press B.\n
-                                  Press A to continue
+interleaved Delay match to sample task with pattern ABAB and feature category\n
+  Press X on the third frame if the first and third stimuli have the same category,  otherwise press B.\n
+  Press X on the fourth frame if the second and fourth stimuli have the same category,  otherwise press B.\n
+  Press A to continue
                                   """,
         "multfs_interdmsobj_ABAB": """
-                                interleaved Delay match to sample task with pattern ABAB and feature object\n
-                                  Press X on the third frame if the first and third stimuli are the same object,  otherwise press B.\n
-                                  Press X on the fourth frame if the second and fourth stimuli are the same object,  otherwise press B.\n
-                                  Press A to continue
+interleaved Delay match to sample task with pattern ABAB and feature object\n
+  Press X on the third frame if the first and third stimuli are the same object,  otherwise press B.\n
+  Press X on the fourth frame if the second and fourth stimuli are the same object,  otherwise press B.\n
+  Press A to continue
                                   """,
         "multfs_1backloc": """
-                    In this task, you will see a sequence of stimulus presented one after another.\n
-                    Press X each time the current stimulus is at the same location as the one presented just before. \n
-                    Otherwise press B\n
-                    Press A to continue
+In this task, you will see a sequence of stimulus presented one after another.\n
+Press X each time the current stimulus is at the same location as the one presented just before. \n
+Otherwise press B\n
+Press A to continue
                     """,
         "multfs_1backobj": """
-                    In this task, you will see a sequence of stimulus presented one after another. \n
-                    Press X each time the current stimulus is the same object as the one presented just before. \n
-                    Otherwise press B \n
-                    Press A to continue
+In this task, you will see a sequence of stimulus presented one after another. \n
+Press X each time the current stimulus is the same object as the one presented just before. \n
+Otherwise press B \n
+Press A to continue
                     """,
         "multfs_1backcat": """
-                    In this task, you will see a sequence of stimulus presented one after another.\n
-                    Press X each time the current stimulus belong to the same category as the one presented just before.\n
-                    Otherwise press B \n
-                    Press A to continue
+In this task, you will see a sequence of stimulus presented one after another.\n
+Press X each time the current stimulus belong to the same category as the one presented just before.\n
+Otherwise press B \n
+Press A to continue
                     """,
 
         "multfs_ctxcol": """
-                        If the presented two stimuli belong to the same category, press X if they are the same object, press B if not.\n
-                        If the presented two stimuli does not belong to the same category, press X if they are at the same location, press B if not.\n
-                        Press A to continue
+If the presented two stimuli belong to the same category, press X if they are the same object, press B if not.\n
+If the presented two stimuli does not belong to the same category, press X if they are at the same location, press B if not.\n
+Press A to continue
                         """,
         "multfs_ctxlco": """
-                        contextual Decision Making task: location-category-object \n
-                        If the presented two stimuli are at the same location, press X if they belong to the same category, press B if not.\n
-                        If the presented two stimuli are not at the same location, press X if they are same object, press B if not.\n
-                        Press A to continue
+contextual Decision Making task: location-category-object \n
+If the presented two stimuli are at the same location, press X if they belong to the same category, press B if not.\n
+If the presented two stimuli are not at the same location, press X if they are same object, press B if not.\n
+Press A to continue
                     """,
     }
     return ins_dict[task]
