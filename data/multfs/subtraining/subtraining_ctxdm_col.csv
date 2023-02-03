@@ -1,0 +1,7 @@
+,stim1,loc1,objmod1,stim2,loc2,objmod2,stim3,loc3,objmod3,preaction,action
+35,4,1,0,3,0,3,0,0,0,False,False
+37,4,1,0,5,1,5,0,0,4,True,False
+8,1,0,1,0,0,4,6,1,6,True,False
+49,6,1,6,1,0,5,5,1,5,False,True
+27,3,0,7,3,0,7,7,1,7,True,True
+4,0,0,0,4,1,4,1,0,1,True,False

@@ -1,0 +1,5 @@
+,stim1,loc1,objmod1,stim2,loc2,objmod2,stim3,loc3,objmod3,stim4,loc4,objmod4,action1,action2
+42,5,1,5,2,0,2,6,1,6,5,1,1,True,True
+4,0,0,4,4,1,4,0,0,4,6,1,6,True,False
+13,1,0,5,5,1,5,5,1,1,5,1,5,True,True
+33,4,1,4,1,0,1,2,0,6,3,0,7,False,False
