@@ -24,10 +24,10 @@ config.INSTRUCTION_DURATION = 100
 # TODO: modify to MRI screen size
 # screensize = config.EXP_WINDOW["screensize"]
 # print("screensize:", screensize)
-triplet_id_to_pos = [(-600, 0), (600, 0), ]
+triplet_id_to_pos = [(-.5, 0), (.5, 0), ]
 
 # STIMULI_SIZE = (screensize[0], screensize[1]/2)
-STIMULI_SIZE = (1400,900)
+STIMULI_SIZE = (1.4,.9)
 print("stimuli size:", STIMULI_SIZE)
 
 class multfs_base(Task):
@@ -210,7 +210,7 @@ class multfs_dms(multfs_base):
             for i in range(2):
                 self._flip_all_windows(exp_win, ctl_win, True)
 
-            img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="pix")
+            img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="norm")
 
             trial_idx = 0
             for trial in self.trials:
@@ -302,7 +302,7 @@ class multfs_1back(multfs_base):
             for i in range(2):
                 self._flip_all_windows(exp_win, ctl_win, True)
 
-            img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="pix")
+            img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="norm")
 
             trial_idx = 0
             for trial in self.trials:
@@ -394,7 +394,7 @@ class multfs_CTXDM(multfs_base):
             for i in range(2):
                 self._flip_all_windows(exp_win, ctl_win, True)
 
-            img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="pix")
+            img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="norm")
 
             trial_idx = 0
             for trial in self.trials:
@@ -499,7 +499,7 @@ class multfs_interdms_ABAB(multfs_base):
             for i in range(2):
                 self._flip_all_windows(exp_win, ctl_win, True)
 
-            img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="pix")
+            img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="norm")
 
             trial_idx = 0
             for trial in self.trials:
@@ -601,7 +601,7 @@ class multfs_interdms_ABBA(multfs_base):
             for i in range(2):
                 self._flip_all_windows(exp_win, ctl_win, True)
 
-            img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="pix")
+            img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="norm")
 
             trial_idx = 0
             for trial in self.trials:
@@ -697,7 +697,7 @@ class multfs_interdms_ABBA(multfs_base):
 #             for i in range(2):
 #                 self._flip_all_windows(exp_win, ctl_win, True)
 #
-#             img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="pix")
+#             img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="norm")
 #
 #             trial_idx = 0
 #             for trial in self.trials:
@@ -889,7 +889,7 @@ class multfs_interdms_ABBA(multfs_base):
 #             for i in range(2):
 #                 self._flip_all_windows(exp_win, ctl_win, True)
 #
-#             img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="pix")
+#             img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="norm")
 #
 #             trial_idx = 0
 #             for trial in self.trials:
@@ -1082,7 +1082,7 @@ class multfs_interdms_ABBA(multfs_base):
 #             for i in range(2):
 #                 self._flip_all_windows(exp_win, ctl_win, True)
 #
-#             img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="pix")
+#             img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="norm")
 #
 #             trial_idx = 0
 #             for trial in self.trials:
@@ -1270,7 +1270,7 @@ def instructions_converter(task_name):
         "multfs_interdmscat_ABBA": """
                                 interleaved Delay match to sample task with pattern ABBA and feature category\n
                                   Press Y on the fourth frame if the first and fourth stimuli have the same category,  otherwise press A.\n
-                                  Press Y on the third frame if the second and third stimuli have the same category,  otherwise press A.\n 
+                                  Press Y on the third frame if the second and third stimuli have the same category,  otherwise press A.\n
                                   Press A to continue
                                   """,
         "multfs_interdmsobj_ABBA": """
@@ -1282,19 +1282,19 @@ def instructions_converter(task_name):
         "multfs_interdmsloc_ABAB": """
                             interleaved Delay match to sample task with pattern ABAB and feature location\n
                               Press Y on the third frame if the first and third stimuli have the same location,  otherwise press A.\n
-                              Press Y on the fourth frame if the second and fourth stimuli have the same location,  otherwise press A.\n 
+                              Press Y on the fourth frame if the second and fourth stimuli have the same location,  otherwise press A.\n
                               Press A to continue
                               """,
         "multfs_interdmscat_ABAB": """
                                 interleaved Delay match to sample task with pattern ABAB and feature category\n
                                   Press Y on the third frame if the first and third stimuli have the same category,  otherwise press A.\n
-                                  Press Y on the fourth frame if the second and fourth stimuli have the same category,  otherwise press A.\n 
+                                  Press Y on the fourth frame if the second and fourth stimuli have the same category,  otherwise press A.\n
                                   Press A to continue
                                   """,
         "multfs_interdmsobj_ABAB": """
                                 interleaved Delay match to sample task with pattern ABAB and feature object\n
                                   Press Y on the third frame if the first and third stimuli are the same object,  otherwise press A.\n
-                                  Press Y on the fourth frame if the second and fourth stimuli are the same object,  otherwise press A.\n 
+                                  Press Y on the fourth frame if the second and fourth stimuli are the same object,  otherwise press A.\n
                                   Press A to continue
                                   """,
         "multfs_1backloc": """
@@ -1303,15 +1303,15 @@ def instructions_converter(task_name):
                     Otherwise press A\n
                     Press A to continue
                     """,
-        "multfs_1backobj": """        
+        "multfs_1backobj": """
                     In this task, you will see a sequence of stimulus presented one after another. \n
                     Press Y each time the current stimulus is the same object as the one presented just before. \n
                     Otherwise press A \n
                     Press A to continue
                     """,
-        "multfs_1backcat": """       
+        "multfs_1backcat": """
                     In this task, you will see a sequence of stimulus presented one after another.\n
-                    Press Y each time the current stimulus belong to the same category as the one presented just before.\n 
+                    Press Y each time the current stimulus belong to the same category as the one presented just before.\n
                     Otherwise press A \n
                     Press A to continue
                     """,
