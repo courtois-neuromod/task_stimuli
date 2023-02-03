@@ -25,7 +25,7 @@ config.INSTRUCTION_DURATION = 100
 
 # TODO: modify to MRI screen size
 screensize = config.EXP_WINDOW["size"]
-print("screensize:", screensize)
+# print("screensize:", screensize)
 # triplet_id_to_pos = [(-300, 0), (300, 0), ]
 
 # STIMULI_SIZE = (screensize[0], screensize[1]/2)
@@ -33,7 +33,7 @@ print("screensize:", screensize)
 
 triplet_id_to_pos = [(-screensize[0]/5, 0), (screensize[1]/5,0)]
 STIMULI_SIZE = (screensize[0]/2, screensize[1]/3)
-print("stimuli size:", STIMULI_SIZE)
+# print("stimuli size:", STIMULI_SIZE)
 
 class multfs_base(Task):
 
@@ -43,7 +43,7 @@ class multfs_base(Task):
         self.temp_dict = {}
         self.instruction = instructions_converter(self.name)
         self.abbrev_instruction = abbrev_instructions_converter(self.name)
-        print("abbrev instruction:", self.abbrev_instruction)
+        # print("abbrev instruction:", self.abbrev_instruction)
         self.globalClock = core.Clock() # to track the time since experiment start
         self.routineTimer = core.Clock() # to track time remaining of each (possibly non-slip) routine
         self.frameTolerance = 0.001 # how close to onset before 'same' frame
@@ -82,7 +82,7 @@ class multfs_base(Task):
         )
 
         # -- prepare to start Routine "Intro" --
-        print("start of the task:", self.globalClock.getTime())
+        # print("start of the task:", self.globalClock.getTime())
         for frameN in range(int(np.floor(config.FRAME_RATE * 1000))):
             screen_text_bold.draw(exp_win)
             screen_text.draw(exp_win)
@@ -93,11 +93,11 @@ class multfs_base(Task):
             keys = psychopy.event.getKeys(keyList=['space','a'])
             if keys:
                 resp_time = self.globalClock.getTime()
-                print("end of the instruction time:", resp_time) # todo: record response time for reading instructions [an empty dict in the init?]
+                # print("end of the instruction time:", resp_time) # todo: record response time for reading instructions [an empty dict in the init?]
                 if keys[-1] == "space" or 'a':
                     break
             yield ()
-        print("end of the instruction time:", resp_time)
+        # print("end of the instruction time:", resp_time)
 
     def _block_intro(self, exp_win, ctl_win, n_trials = 4):
         if ctl_win:
@@ -268,8 +268,8 @@ class multfs_dms(multfs_base):
                     self.empty_text.draw()
                     self._flip_all_windows(exp_win, ctl_win, True)
 
-                print("current trial idx:", trial_idx)
-                print("total number of trials:", self.n_trials)
+                # print("current trial idx:", trial_idx)
+                # print("total number of trials:", self.n_trials)
                 if trial_idx >= self.n_trials:
                     self.trials.addData("trial_end", self.task_timer.getTime())
                     break
@@ -339,9 +339,9 @@ class multfs_1back(multfs_base):
                 #     self.empty_text.draw(exp_win)
                 #     if ctl_win:
                 #         self.empty_text.draw(ctl_win)
-                print("end of the alignment")
-                print(self.globalClock.getTime())
-                print("updated starting time:", (self.globalClock.getTime() - 0.25) % config.TR)
+                # print("end of the alignment")
+                # print(self.globalClock.getTime())
+                # print("updated starting time:", (self.globalClock.getTime() - 0.25) % config.TR)
                 for n_stim in range(1, 1+self.seq_len):
                     img.image = IMAGES_FOLDER + "/" + str(trial["objmod%s" % str(n_stim)]) + "/image.png"
                     img.pos = triplet_id_to_pos[trial["loc%s" % str(n_stim)]]
@@ -546,11 +546,11 @@ class multfs_interdms_ABAB(multfs_base):
                     self._flip_all_windows(exp_win, ctl_win, True)
 
                 thres_time = (int(self.globalClock.getTime() / config.TR) + 1) * config.TR + 0.5
-                print("before alignment:", self.globalClock.getTime())
+                # print("before alignment:", self.globalClock.getTime())
                 while True:
                     if self.globalClock.getTime() >= thres_time:
                         break
-                print("after alignment:", self.globalClock.getTime())
+                # print("after alignment:", self.globalClock.getTime())
 
                 for n_stim in range(1, 1+self.seq_len):
                     img.image = IMAGES_FOLDER + "/" + str(trial["objmod%s" % str(n_stim)]) + "/image.png"
