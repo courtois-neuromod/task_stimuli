@@ -282,7 +282,7 @@ class multfs_dms(multfs_base):
                 self._flip_all_windows(exp_win, ctl_win, True)
     def _save(self):
         self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
-        return True
+        return None
 
 
 
@@ -395,7 +395,7 @@ class multfs_1back(multfs_base):
                 self._flip_all_windows(exp_win, ctl_win, True)
     def _save(self):
         self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
-        return True
+        return None
 
 class multfs_CTXDM(multfs_base):
 
@@ -502,7 +502,7 @@ class multfs_CTXDM(multfs_base):
                 self._flip_all_windows(exp_win, ctl_win, True)
     def _save(self):
         self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
-        return True
+        return None
 
 
 
@@ -611,7 +611,7 @@ class multfs_interdms_ABAB(multfs_base):
                 self._flip_all_windows(exp_win, ctl_win, True)
     def _save(self):
         self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
-        return True
+        return None
 
 
 class multfs_interdms_ABBA(multfs_base):
@@ -719,7 +719,7 @@ class multfs_interdms_ABBA(multfs_base):
                 self._flip_all_windows(exp_win, ctl_win, True)
     def _save(self):
         self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
-        return True
+        return None
 
 
 
