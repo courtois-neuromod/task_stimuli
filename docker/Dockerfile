@@ -41,7 +41,7 @@ RUN mkdir /src/ && cd /src \
 
 ARG ARAVIS_VERSION=0.8.21
 
-RUN pip3 install --upgrade meson numpy scipy ipython pip
+RUN pip3 install --upgrade meson "numpy<1.24" scipy ipython pip
 
 # for aravis in docker see https://github.com/AravisProject/aravis/issues/509
 RUN cd /src/ \
