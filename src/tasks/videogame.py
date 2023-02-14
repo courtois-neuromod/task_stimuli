@@ -698,8 +698,8 @@ class VideoGameMultiLevel(VideoGame):
 
                 for n_repeat in range(self._n_repeats_level):
                     self._first_frame = self.emulator.reset()
-                    if self._nlevels > 1:
-                        self._set_recording_file()
+
+                    self._set_recording_file()
 
                     if self._fixation_duration > 0:
                         self.progress_bar.set_description("fixation")
