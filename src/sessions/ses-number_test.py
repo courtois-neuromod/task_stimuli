@@ -23,6 +23,7 @@ def get_tasks(parsed):
 # experiment
 allowed_aphabets = "ABCDEFGHJKLMNPQRSTUVWXYZ"  # remove O and I
 n_blocks = 2
+grid_size = (6, 4)
 n_pairs_range = (3, 8)  # this is called target score
 trial_duration = 10
 fixation_duration = 1
@@ -74,7 +75,7 @@ def generate_design_file(subject):
         block = pd.DataFrame()
         # rehersal
         n_pairs = random.randrange(n_pairs_range[0], n_pairs_range[-1] + 1)
-        memory_grid = generate_memory_items(n_pairs=n_pairs)
+        memory_grid = generate_memory_items(grid_size=grid_size, n_pairs=n_pairs)
         display.append(memory_grid)  # generate rehersal trials
         onset.append(onset_trial)
         duration.append(trial_duration)
@@ -85,9 +86,8 @@ def generate_design_file(subject):
         pair_number.append(0)
         # recall
         for j in range(n_pairs):
-            print(j)
             # fixation
-            display.append("".join([" "] * 20))
+            display.append("".join([" "] * (grid_size[0] * grid_size[1])))
             onset.append(onset[-1] + duration[-1])
             duration.append((generate_isi() + fixation_duration))
             recall_display.append("N/A")
@@ -125,7 +125,7 @@ def generate_design_file(subject):
             pair_number.append(j + 1)
 
         # ending recall trials with a fixation
-        display.append("".join([" "] * 20))
+        display.append("".join([" "] * (grid_size[0] * grid_size[1])))
         onset.append(onset[-1] + duration[-1])
         duration.append((generate_isi() + fixation_duration))
         recall_display.append("N/A")
@@ -145,7 +145,7 @@ def generate_design_file(subject):
         pair_number.append(-1)
 
         # ending block with a fixation
-        display.append("".join([" "] * 20))
+        display.append("".join([" "] * (grid_size[0] * grid_size[1])))
         onset.append(onset[-1] + duration[-1])
         duration.append((generate_isi() + fixation_duration))
         recall_display.append("N/A")
