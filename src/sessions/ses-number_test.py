@@ -28,7 +28,7 @@ trial_duration = 10
 fixation_duration = 1
 performance_duration = 3
 
-def generate_memory_items(grid_size=(5, 4), n_pairs=4):
+def generate_memory_items(grid_size=(6, 4), n_pairs=4):
     # for now just generate 20 characters mixed with numbers and alphabets
     # grid size is fixed
     import random
@@ -73,7 +73,8 @@ def generate_design_file(subject):
         # initialise a block
         block = pd.DataFrame()
         # rehersal
-        memory_grid = generate_memory_items()
+        n_pairs = random.randrange(n_pairs_range[0], n_pairs_range[-1] + 1)
+        memory_grid = generate_memory_items(n_pairs=n_pairs)
         display.append(memory_grid)  # generate rehersal trials
         onset.append(onset_trial)
         duration.append(trial_duration)
@@ -82,10 +83,9 @@ def generate_design_file(subject):
         trial_type.append("rehersal")
         trial_number.append(i + 1)
         pair_number.append(0)
-
-        n_pairs = random.randrange(n_pairs_range[0], n_pairs_range[-1] + 1)
         # recall
         for j in range(n_pairs):
+            print(j)
             # fixation
             display.append("".join([" "] * 20))
             onset.append(onset[-1] + duration[-1])
@@ -98,7 +98,7 @@ def generate_design_file(subject):
 
             # response grid
             numbers = list(range(1, n_pairs + 1))
-            current = numbers.pop(j)  # remove the current number testing
+            _ = numbers.pop(j)  # remove the current number testing
             numbers = "".join([str(n) for n in numbers])
             pattern = f"[A-Z{numbers}]"
             mem_grid = memory_grid
@@ -171,6 +171,10 @@ def generate_design_file(subject):
         f"sub-{subject}_design.tsv",
     )
     trials.to_csv(out_fname, sep="\t", index=True)
+
+
+def grid_difficulty(memory_grid):
+    return None
 
 
 if __name__ == "__main__":

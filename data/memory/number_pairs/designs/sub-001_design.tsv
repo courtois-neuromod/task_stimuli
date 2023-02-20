@@ -1,22 +1,26 @@
-index	trial_number	pair_number	grid	duration	onset	recall_display	recall_answer	trial_type
-0	0	-1	                    	2.3600000000000003	0.0	N/A	N/A	fixation
-1	1	0	QGU4Y43P1L22HV3KTM1B	10.0	0.0	N/A	N/A	rehersal
-2	1	0	                    	1.62	10.0	N/A	N/A	fixation
-3	1	1	        1           	10.0	11.620000000000001	8	18	recall
-4	1	0	                    	2.67	21.62	N/A	N/A	fixation
-5	1	2	          2         	10.0	24.29	10	11	recall
-6	1	0	                    	1.58	34.29	N/A	N/A	fixation
-7	1	3	      3             	10.0	35.87	6	14	recall
-8	1	0	                    	2.41	45.87	N/A	N/A	fixation
-9	1	4	   4                	10.0	48.28	3	5	recall
-10	0	-1	                    	2.5700000000000003	58.28	N/A	N/A	fixation
-11	2	0	U2LKA2P4T433W1CF1MGN	10.0	60.85	N/A	N/A	rehersal
-12	2	0	                    	2.76	70.85	N/A	N/A	fixation
-13	2	1	                1   	10.0	73.61	16	13	recall
-14	2	0	                    	1.83	83.61	N/A	N/A	fixation
-15	2	2	 2                  	10.0	85.44	1	5	recall
-16	2	0	                    	1.6	95.44	N/A	N/A	fixation
-17	2	3	          3         	10.0	97.03999999999999	10	11	recall
-18	2	0	                    	2.05	107.03999999999999	N/A	N/A	fixation
-19	2	4	         4          	10.0	109.08999999999999	9	7	recall
-20	0	-1	                    	2.5300000000000002	119.08999999999999	N/A	N/A	fixation
+	trial_number	pair_number	display	duration	onset	recall_display	recall_answer	trial_type
+0	1	-1	Please select the amount of time you wish to spend on rehersal.	4.67	0.0	N/A	N/A	estimate
+1	1	0	4R4QNSM3WK1DZU2CTH321XPG	10.0	0.0	N/A	N/A	rehersal
+2	1	0	                    	2.2	10.0	N/A	N/A	fixation
+3	1	1	                    1   	10.0	12.2	20	10	recall
+4	1	0	                    	1.8900000000000001	22.2	N/A	N/A	fixation
+5	1	2	                   2    	10.0	24.09	19	14	recall
+6	1	0	                    	2.84	34.09	N/A	N/A	fixation
+7	1	3	       3                	10.0	36.93000000000001	7	18	recall
+8	1	0	                    	1.73	46.93000000000001	N/A	N/A	fixation
+9	1	4	  4                     	10.0	48.660000000000004	2	0	recall
+10	0	-1	                    	2.2199999999999998	58.660000000000004	N/A	N/A	fixation
+11	1	-1	How many pairs did you get right?	3.81	60.88	N/A	N/A	performance
+12	0	-1	                    	2.49	64.69	N/A	N/A	fixation
+0	2	0	SM4RU4A3Y1FZ1PQ2BC3JDV2G	10.0	67.17999999999999	N/A	N/A	rehersal
+1	2	0	                    	2.51	77.17999999999999	N/A	N/A	fixation
+2	2	1	         1              	10.0	79.69	9	12	recall
+3	2	0	                    	2.75	89.69	N/A	N/A	fixation
+4	2	2	                      2 	10.0	92.44	22	15	recall
+5	2	0	                    	2.3899999999999997	102.44	N/A	N/A	fixation
+6	2	3	                  3     	10.0	104.83	18	7	recall
+7	2	0	                    	2.8899999999999997	114.83	N/A	N/A	fixation
+8	2	4	  4                     	10.0	117.72	2	5	recall
+9	0	-1	                    	2.6100000000000003	127.72	N/A	N/A	fixation
+10	2	-1	How many pairs did you get right?	4.4	130.33	N/A	N/A	performance
+11	0	-1	                    	1.67	134.73000000000002	N/A	N/A	fixation
