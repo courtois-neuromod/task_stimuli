@@ -75,7 +75,7 @@ Try to remember the items and their location on the screen."""
 
 class NumberPair(Task):
 
-    DEFAULT_INSTRUCTION = """You will be presented a 5 x 4 grid on the screen.
+    DEFAULT_INSTRUCTION = """You will be presented a 6 x 4 grid on the screen.
 Try to remember the numer pairs on screen.
 You will be asked to recall them seqentially."""
 
@@ -85,7 +85,7 @@ You will be asked to recall them seqentially."""
         self.duration = len(self.item_list)
         self._progress_bar_refresh_rate = 2
         self.trials = data.TrialHandler(self.item_list, 1, method="sequential")
-        self.grid_size = (5, 4)
+        self.grid_size = (6, 4)
         self.direction_keys = {'left': -1, 'right': 1, 'up': -1, 'down': 1}
         self.confidence_keys = {'a': 'yes', 's': 'no'}
 
@@ -118,8 +118,14 @@ You will be asked to recall them seqentially."""
             )
             for y, x in itertools.product(range(self.grid_size[1]), range(self.grid_size[0]))
         ]  # fill the grid from top left corner, left to right first
+        recall_instruction = (f"Use the arrow keys to move the selected box."
+                              "\nI am sure: press "
+                              f"\"{list(self.confidence_keys.keys())[0]}\" "
+                              "to move on.\nI am not sure: press "
+                              f"\"{list(self.confidence_keys.keys())[1]}\""
+                              " to move on.")
         self.answer_instruction = visual.TextStim(
-                exp_win, text=f"I am sure: press \"{list(self.confidence_keys.keys())[0]}\" to move on.\nI am not sure: press \"{list(self.confidence_keys.keys())[1]}\" to move on.",
+                exp_win, text=recall_instruction,
                 pos=(-0.8 + 2 * 0.25, 0.7 - 5 * 0.25),
                 alignText="left", color="white"
             )
@@ -204,7 +210,7 @@ You will be asked to recall them seqentially."""
                             # reset color
                             last_selected_location = selected_location
                             break  # temporay solution
-                else:  # fixation
+                elif trial['trial_type'] ==  "select_rehersal_time": # time selection
                     pass
                 yield True
             yield True
@@ -215,25 +221,36 @@ You will be asked to recall them seqentially."""
         for direction in change_direction:
             if direction in ['left', 'right']:
                 loc_x += self.direction_keys[direction]
-                if loc_x < 0:
-                    loc_x = 0
-                elif loc_x >= (self.grid_size[0]):
-                    loc_x = self.grid_size[0] - 1
+                # chek if it's the edge
+                loc_x = self._check_edge(loc_x, "x")
             else:
                 loc_y += self.direction_keys[direction]
-                if loc_y < 0:
-                    loc_y = 0
-                elif loc_y >= (self.grid_size[-1]):
-                    loc_y = self.grid_size[-1] - 1
+                # chek if it's the edge
+                loc_y = self._check_edge(loc_y, "y")
         selected_location = self._coordinates2index(loc_x, loc_y)
         if selected_location != int(recall_display):
             return selected_location
-        # revert if the selection is on the display
+
+        # if the selected grid is on the display and on the edge, don't move
+        # if the selection is on the display and in the middle, skip the cell
         if direction in ['left', 'right']:
-            loc_x -= self.direction_keys[direction]
+            if loc_x in [0, self.grid_size[0] - 1]:  # on the edge
+                loc_x -= self.direction_keys[direction]  # don't move
+            else:
+                loc_x += self.direction_keys[direction]  # move past the cell
+        elif loc_y in [0, self.grid_size[-1] - 1]:  # on the edge
+            loc_y -= self.direction_keys[direction] # don't move
         else:
-            loc_y -= self.direction_keys[direction]
+            loc_y += self.direction_keys[direction] # move past the cell
         return self._coordinates2index(loc_x, loc_y)
+
+    def _check_edge(self, loc, dir):
+        dir2idx = {"x":0, "y": -1}
+        if loc < 0:
+            return 0
+        elif loc >= (self.grid_size[dir2idx[dir]]):
+            return self.grid_size[dir2idx[dir]] - 1
+        return loc
 
     def _index2coordinates(self, selected_location):
         loc_x = selected_location % self.grid_size[0]
