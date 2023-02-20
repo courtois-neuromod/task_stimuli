@@ -1,8 +1,7 @@
 import os, sys, time, itertools, random, copy
 from colorama import Fore
-
 from psychopy import visual, core, data, logging, event
-
+from pyglet.window import key
 from .task_base import Task
 
 from ..shared import config, utils
@@ -125,11 +124,23 @@ You will be asked to recall them seqentially."""
                               f"\"{list(self.confidence_keys.keys())[1]}\""
                               " to move on.")
         self.answer_instruction = visual.TextStim(
-                exp_win, text=recall_instruction,
-                pos=(-0.8 + 2 * 0.25, 0.7 - 5 * 0.25),
-                alignText="left", color="white"
-            )
+            exp_win, text=recall_instruction,
+            pos=(-0.8 + 2 * 0.25, 0.7 - 5 * 0.25),
+            alignText="left", color="white"
+        )
+        self.question = visual.TextStim(
+            exp_win, text="",
+            pos=(0, 0.5),
+            alignText="center", color="white")
+
+        self.recall_time = visual.RatingScale(
+            exp_win, low=15, high=75, precision=1,
+            tickMarks=[15, 75],
+            labels=["15 seconds", "75 seconds"], scale=None, noMouse=True
+        )
+        self.recall_time.styleTweaks = ['triangleMarker']
         self._progress_bar_refresh_rate = 2 # 1 flip / trial
+        self.pyglet_keyboard = key.KeyStateHandler()
 
     def _run(self, exp_win, ctl_win):
         # start the trials
@@ -140,8 +151,8 @@ You will be asked to recall them seqentially."""
             change_direction = event.getKeys(keyList=list(self.direction_keys.keys()))
 
             # update the display
-            items = trial["grid"]
-            for item, cell  in zip(items, self.grid):
+            items = trial["display"]
+            for item, cell in zip(items, self.grid):
                 cell[0].text = item
 
             if last_selected_location:
@@ -153,6 +164,14 @@ You will be asked to recall them seqentially."""
                 self.trials.addData("random_start_location", selected_location)
                 self.grid[selected_location][-1].lineColor = 'yellow'
 
+            if trial['trial_type'] in ["estimate", "performance"]:
+                # update text
+                self.question.text = trial['display']
+                pos = 50
+                self.recall_time.markerStart = pos
+                exp_win.winHandle.push_handlers(self.pyglet_keyboard)
+
+
             # display progress
             description = f"Trial {trial['trial_number']}: {trial['trial_type']}"
             if trial['trial_type'] == 'recall':
@@ -161,6 +180,7 @@ You will be asked to recall them seqentially."""
             self.progress_bar.set_description(description)
 
             trial["onset_flip"] = self._exp_win_last_flip_time - self._exp_win_first_flip_time
+
             for frameN in range(int(config.FRAME_RATE * trial["duration"]) - 1):  # use the time of one frame to prepare
                 if trial['trial_type'] in ['rehersal', 'fixation', 'recall']:  # rehersal or fixation
                     for item, box in self.grid:
@@ -210,7 +230,23 @@ You will be asked to recall them seqentially."""
                             # reset color
                             last_selected_location = selected_location
                             break  # temporay solution
-                elif trial['trial_type'] ==  "select_rehersal_time": # time selection
+                elif trial['trial_type'] in ["estimate"]:
+                    self.question.draw(exp_win)
+                    self.recall_time.draw()
+                    if ctl_win:
+                        self.question.draw(exp_win)
+                        self.recall_time.draw()
+
+                    if self.pyglet_keyboard[key.LEFT]:
+                        pos -= 1.0
+                    elif self.pyglet_keyboard[key.RIGHT]:
+                        pos += 1.0
+                    if pos > 75:
+                        pos = 75
+                    elif pos < 15:
+                        pos = 15
+                    self.recall_time.setMarkerPos(pos)
+                else:
                     pass
                 yield True
             yield True
@@ -261,7 +297,7 @@ You will be asked to recall them seqentially."""
         return loc_x + (loc_y * self.grid_size[0])
 
     def _selecte_start_location(self, recall_display):
-        selected_location = list(range(20))
+        selected_location = list(range(self.grid_size[0] * self.grid_size[1]))
         selected_location = selected_location[:int(recall_display)] + \
             selected_location[int(recall_display) + 1:]
         random.shuffle(selected_location)
