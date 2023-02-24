@@ -12,6 +12,7 @@ TASKS.append(
         infix_freq=20,
         infix_dur=1.5,
         name="bourne_seg-%d-fixations" % seg_idx,
+        use_eyetracking=True
     )
 )
 
@@ -25,6 +26,7 @@ TASKS.append(
         infix_freq=20,
         infix_dur=1.5,
         name="life_seg-%d-fixations" % seg_idx,
+        use_eyetracking=True
     )
 )
 
@@ -38,6 +40,7 @@ TASKS.append(
         infix_freq=20,
         infix_dur=1.5,
         name="figures_seg-%d-fixations" % seg_idx,
+        use_eyetracking=True
     )
 )
 
@@ -51,5 +54,6 @@ TASKS.append(
         infix_freq=20,
         infix_dur=1.5,
         name="wolf_seg-%d-fixations" % seg_idx,
+        use_eyetracking=True
     )
 )
