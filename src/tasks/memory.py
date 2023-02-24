@@ -229,7 +229,7 @@ You will be asked to recall them seqentially."""
                             self.progress_bar.set_description(description)
                             # reset color
                             last_selected_location = selected_location
-                            break  # temporay solution
+                            break  # temporay solution  #TODO
                 elif trial['trial_type'] in ["estimate"]:
                     self.question.draw(exp_win)
                     self.recall_time.draw()
