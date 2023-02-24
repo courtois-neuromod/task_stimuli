@@ -100,17 +100,17 @@ def homogenise_grid_difficulty(grid_size, target_score_array, target_score_level
         index_array (ndarray): An array of indexes of each pair of locations in the grid for each trial, arranged
                                according to each participant's sequence of target scores.
     """
-    n_row, n_col = grid_size
-    n_pt, n_trials = target_score_array.shape
-    n_ts_levels = len(target_score_levels)
+    # n_row, n_col = grid_size
+    # n_pt, n_trials = target_score_array.shape
+    # n_ts_levels = len(target_score_levels)
     n_needed_pairs_per_level = [np.sum(target_score_array[0, :] == x) for x in target_score_levels]
 
-    gridCell = pd.DataFrame(index=range(2), columns=range(3))
-    permArrayTmp = np.zeros((n_trials, n_row * n_col))  # for checking no two grids are the same
-    indexArray = np.full((n_trials, max(target_score_levels), 2, 2), np.nan)
-    gridCounter = 0
-    c = 0
-    gridDiff = np.zeros((n_ts_levels, np.sum(n_needed_pairs_per_level)))
+    # gridCell = pd.DataFrame(index=range(2), columns=range(3))
+    # permArrayTmp = np.zeros((n_trials, n_row * n_col))  # for checking no two grids are the same
+    # indexArray = np.full((n_trials, max(target_score_levels), 2, 2), np.nan)
+    # gridCounter = 0
+    # c = 0
+    # gridDiff = np.zeros((n_ts_levels, np.sum(n_needed_pairs_per_level)))
 
     # Loop through target score levels and generate enough valid trials
     valid_memory_grids = {}
@@ -128,7 +128,7 @@ def homogenise_grid_difficulty(grid_size, target_score_array, target_score_level
         valid_memory_grids[n_pairs] = current_grid_location, current_grid_difficulty
 
     # Permute grids according to task condition vector of each participant
-    # TODO
+
     return
 
 def find_valid_grid(grid_size, n_pairs, grid=None, difficulty_score_per_pair=(10, 10)):

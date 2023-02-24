@@ -5,7 +5,8 @@ from .numerpair_utils import generate_best_condition, homogenise_grid_difficulty
 
 
 # Task Parameters
-
+# fMRI: runs of 10 minutes - 2 run max
+# 10 minutes = 6 ~ 10 memory grids, 2 levels of
 
 # what are the reward levels?
 REWARD_LEVEL = [1, 2]
