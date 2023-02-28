@@ -5,7 +5,7 @@ TASKS = []
 seg_idx = 7
 TASKS.append(
     video.SingleVideo(
-        "data/videos/bourne/bourne%02d.mkv" % seg_idx,
+        "data/videos/movie10/bourne/bourne%02d.mkv" % seg_idx,
         aspect_ratio=372 / 157,
         startend_fixduration=0.0,#2.0,
         inmovie_fixations=True,
@@ -19,7 +19,7 @@ TASKS.append(
 seg_idx = 4
 TASKS.append(
     video.SingleVideo(
-        "data/videos/life/life%02d.mkv" % seg_idx,
+        "data/videos/movie10/life/life%02d.mkv" % seg_idx,
         aspect_ratio=12 / 5,
         startend_fixduration=0.0,#2.0,
         inmovie_fixations=True,
@@ -33,7 +33,7 @@ TASKS.append(
 seg_idx = 8
 TASKS.append(
     video.SingleVideo(
-        "data/videos/figures/figures%02d.mkv" % seg_idx,
+        "data/videos/movie10/figures/figures%02d.mkv" % seg_idx,
         aspect_ratio=12 / 5,
         startend_fixduration=0.0,#2.0,
         inmovie_fixations=True,
@@ -47,7 +47,7 @@ TASKS.append(
 seg_idx = 11
 TASKS.append(
     video.SingleVideo(
-        "data/videos/wolf/wolf%02d.mkv" % seg_idx,
+        "data/videos/movie10/wolf/wolf%02d.mkv" % seg_idx,
         aspect_ratio=12 / 5,
         startend_fixduration=0.0,#2.0,
         inmovie_fixations=True,
