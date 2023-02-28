@@ -11,6 +11,8 @@ def check_power_plugged():
         return True
 
 def wait_until(clock, deadline, hogCPUperiod=0.1, keyboard_accuracy=.0005):
+    if deadline < clock.getTime():
+        print(f'ERROR: wait_until called after deadline: {deadline} < {clock.getTime()}')
     sleep_until = deadline - hogCPUperiod
     poll_windows()
     current_time = clock.getTime()

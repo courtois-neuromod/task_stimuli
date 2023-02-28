@@ -8,7 +8,7 @@ import itertools
 visual.window.reportNDroppedFrames = 10e10
 
 TIMEOUT = 5
-DELAY_BETWEEN_TASK = 5
+DELAY_BETWEEN_TASK = 2
 
 globalClock = core.MonotonicClock(0)
 logging.setDefaultClock(globalClock)
@@ -40,6 +40,9 @@ def run_task_loop(loop, eyetracker=None, gaze_drawer=None, record_movie=False):
         shortcut_evt = listen_shortcuts()
         if shortcut_evt:
             return shortcut_evt
+        # force regular flushing to keep log in case of hard crash
+        if frameN % config.FRAME_RATE == 0:
+            logging.flush()
 
 
 def run_task(
@@ -109,6 +112,8 @@ def main_loop(
     enable_ptt=False,
     record_movie=False,
     skip_soundcheck=False,
+    calibration_targets=False,
+    validate_eyetrack=False,
 ):
 
     # force screen resolution to solve issues with video splitter at scanner
@@ -160,6 +165,8 @@ def main_loop(
             output_fname_base=log_name_prefix,
             profile=False,
             debug=False,
+            use_targets = calibration_targets,
+            validate_calib = validate_eyetrack,
         )
         print("starting et client")
         eyetracker_client.start()
@@ -252,6 +259,7 @@ Thanks for your participation!"""
                     gaze_drawer,
                     record_movie=record_movie,
                 )
+                logging.flush()
 
                 if shortcut_evt == "n":
                     # restart the task
@@ -267,7 +275,7 @@ Thanks for your participation!"""
                     # send stop trigger/marker to MEG + Biopac (or anything else on parallel port)
                     break
 
-                logging.flush()
+
             if record_movie:
                 out_fname = os.path.join(
                     task.output_path, "%s_%s.mp4" % (task.output_fname_base, task.name)
@@ -290,9 +298,10 @@ Thanks for your participation!"""
         if ctl_win:
             ctl_win.saveFrameIntervals("ctl_win_frame_intervals.txt")
 
-    except KeyboardInterrupt as ki:
+    except (KeyboardInterrupt, SystemExit) as ki:
         print(traceback.format_exc())
         logging.exp(msg="user killing the program")
+        logging.flush()
         print("you killing me!")
     finally:
         if enable_eyetracker:
