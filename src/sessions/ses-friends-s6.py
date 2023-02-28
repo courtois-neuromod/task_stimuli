@@ -11,5 +11,9 @@ for episode in list(range(1, 16))+list(range(17,25)):
                 aspect_ratio=4 / 3.0,
                 startend_fixduration=2.0,
                 name="task-friends-s6e%d%s" % (episode, segment),
+                use_eyetracking=True,
             )
         )
+        TASKS.append(task_base.Pause(
+            text="You can take a short break.",
+        ))
