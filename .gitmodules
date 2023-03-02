@@ -40,3 +40,7 @@
 	url = git@github.com:courtois-neuromod/mario3.stimuli.git
 	datalad-id = caf26616-f8f9-41d8-b9b8-6471a4591395
 	datalad-url = git@github.com:courtois-neuromod/mario3.stimuli.git
+[submodule "data/narratives.stimuli"]
+	path = data/narratives.stimuli
+	url = ./data/narratives.stimuli
+	datalad-id = 927ecf28-eda2-421d-9d25-6a55ed312166
