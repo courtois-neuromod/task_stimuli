@@ -150,6 +150,7 @@ class EyetrackerCalibration_targets(Task):
         calibration_success = False
         while not calibration_success:
             start_calibration = self.validation
+            start_calibration = True
             while not start_calibration:
                 allKeys = event.getKeys([CALIBRATE_HOTKEY])
                 for key in allKeys:
@@ -195,7 +196,6 @@ class EyetrackerCalibration_targets(Task):
 
             for frameN in range(config.FRAME_RATE * STARTCUE_DURATION):
                 self.startcue.draw(exp_win)
-                self.startcue.draw(ctl_win)
                 yield True
 
             for site_id in markers_order:
@@ -277,7 +277,8 @@ class EyetrackerCalibration_targets(Task):
 
                 for frameN in range(5):
                     black_bgd.draw(exp_win)
-                    black_bgd.draw(ctl_win)
+                    if ctl_win:
+                        black_bgd.draw(ctl_win)
                     yield True
 
                 calibration_success = True
@@ -294,7 +295,8 @@ class EyetrackerCalibration_targets(Task):
 
                 for frameN in range(5):
                     black_bgd.draw(exp_win)
-                    black_bgd.draw(ctl_win)
+                    if ctl_win:
+                        black_bgd.draw(ctl_win)
                     yield True
 
                 self.eyetracker.calibrate(self._pupils_list, self.all_refs_per_flip)
