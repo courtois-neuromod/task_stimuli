@@ -970,6 +970,7 @@ class EyeTrackerClient(threading.Thread):
         calib_data = {"ref_list": ref_list, "pupil_list": pupil_list}
 
         logging.info("sending calibration data to pupil")
+        logging.flush()
         calib_res = self.send_recv_notification(
             {
                 "subject": "start_plugin",
@@ -978,6 +979,8 @@ class EyeTrackerClient(threading.Thread):
                 "raise_calibration_error": False,
             }
         )
+        logging.info("calibration data sent to pupil")
+        logging.flush()
 
     def validate(self, gaze_list, ref_list):
 
