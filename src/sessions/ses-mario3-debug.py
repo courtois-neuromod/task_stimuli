@@ -38,7 +38,7 @@ def generate_design_file(subject):
     print("seed", seed)
     random.seed(seed)
 
-    subject_levels = selected_levels() + sum([random.sample(selected_levels(),len(all_levels)) for rep in range(n_repetitions)],[])
+    subject_levels = selected_levels() + sum([random.sample(selected_levels(),len(selected_levels())) for rep in range(n_repetitions)],[])
     subject_design = pandas.DataFrame(subject_levels, columns=('world','level'))
     out_fname = os.path.join(
         'data',
@@ -112,7 +112,7 @@ def get_tasks(parsed):
             max_duration=30,  # if when level completed or dead we exceed that time in secs, stop the task
             name=f"task-mario3_run-{run+1:02d}",
             instruction="playing Super Mario 3 \n\n Please fixate the dot in between repetitions!",
-            post_run_ratings = [(k, q, 7) for k, q in enumerate(other_ratings+flow_ratings)],
+#            post_run_ratings = [(k, q, 7) for k, q in enumerate(other_ratings+flow_ratings)],
             use_eyetracking=True,
             fixation_duration=2,
             show_instruction_between_repetitions=False,
@@ -128,8 +128,3 @@ def get_tasks(parsed):
             savestate['index'] += task._nlevels
             with open(savestate_path, 'w') as f:
                 json.dump(savestate, f)
-
-        yield task_base.Pause(
-            text="You can take a short break.\n Press A when ready to continue",
-            wait_key='a',
-        )

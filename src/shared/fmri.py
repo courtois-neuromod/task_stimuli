@@ -1,5 +1,5 @@
 from psychopy import core, event, logging
-from psychopy.hardware.emulator import launchScan
+#from psychopy.hardware.emulator import launchScan
 import time
 
 MR_settings = {

@@ -118,7 +118,7 @@ class EyetrackerCalibration_targets(Task):
         self.use_fmri = False
         super()._setup(exp_win)
         self.fixation_dot = fixation_dot(exp_win, radius=self.marker_size)
-        self.startcue = visual.Circle(exp_win, units='pix', pos=(0,0), radius=self.marker_size*0.5, lineWidth=0, fillColor=(1, 1, 1))
+        self.startcue = visual.Circle(exp_win, units='pix', pos=(0,0), radius=self.marker_size*0.5, lineWidth=2, fillColor=(1, 1, 1))
 
     def _pupil_cb(self, pupil):
         if pupil["timestamp"] > self.task_stop:
@@ -215,6 +215,7 @@ class EyetrackerCalibration_targets(Task):
                         msg="calibrate_position,%d,%d,%d,%d"
                         % (marker_pos[0], marker_pos[1], pos[0], pos[1]),
                     )
+                logging.flush()
                 exp_win.callOnFlip(
                     self._log_event, {"marker_x": pos[0], "marker_y": pos[1]}
                 )
@@ -237,8 +238,11 @@ class EyetrackerCalibration_targets(Task):
                         self.all_refs_per_flip.append(ref)  # accumulate all refs
                     yield True
             yield True
+            print("completed markers")
             self.task_stop = time.monotonic()
+            print("completed markers 2")
 
+            
             if self.validation:
                 logging.info(
                     f"validating on {len(self._pupils_list)} pupils and {len(self.all_refs_per_flip)} markers"
@@ -271,6 +275,7 @@ class EyetrackerCalibration_targets(Task):
                         yield True
 
                 #exp_win.clearBuffer(color=True, depth=True)
+<<<<<<< HEAD
                 black_bgd = visual.Rect(exp_win, size=exp_win.size, lineWidth=0,
                                         #colorSpace='rgb', fillColor=(-1, -1, -1))
                                         colorSpace='rgb', fillColor=(-0.2, -0.2, -0.2))
@@ -280,6 +285,8 @@ class EyetrackerCalibration_targets(Task):
                     if ctl_win:
                         black_bgd.draw(ctl_win)
                     yield True
+=======
+>>>>>>> 302c6b0cfc1a70356e0ce1e3c19eec090f4a6b25
 
                 calibration_success = True
 
@@ -287,7 +294,9 @@ class EyetrackerCalibration_targets(Task):
                 logging.info(
                     f"calibrating on {len(self._pupils_list)} pupils and {len(self.all_refs_per_flip)} markers"
                 )
+                logging.flush()
 
+<<<<<<< HEAD
                 #exp_win.clearBuffer(color=True, depth=True)
                 black_bgd = visual.Rect(exp_win, size=exp_win.size, lineWidth=0,
                                         #colorSpace='rgb', fillColor=(-1, -1, -1))
@@ -299,7 +308,12 @@ class EyetrackerCalibration_targets(Task):
                         black_bgd.draw(ctl_win)
                     yield True
 
+=======
+                print("calibrating done")
+>>>>>>> 302c6b0cfc1a70356e0ce1e3c19eec090f4a6b25
                 self.eyetracker.calibrate(self._pupils_list, self.all_refs_per_flip)
+                print("calibrating now")
+
                 while True:
                     notes = getattr(self.eyetracker, '_last_calibration_notification',None)
                     if notes:
@@ -1032,5 +1046,5 @@ def fixation_dot(win, **kwargs):
         **kwargs
     }
     circle = visual.Circle(win, lineWidth=radius*.4, **kwargs, radius=radius)
-    dot = visual.Circle(win, units=kwargs["units"], radius=radius*.25, lineWidth=0, fillColor=(-1,-1,-1))
+    dot = visual.Circle(win, units=kwargs["units"], radius=radius*.25, lineWidth=2, fillColor=(-1,-1,-1))
     return (circle, dot)
