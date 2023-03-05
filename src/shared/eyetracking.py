@@ -112,7 +112,6 @@ class EyetrackerCalibration_targets(Task):
             exp_win.setColor(grey, colorSpace='rgb')
             #ctl_win.setColor(grey, colorSpace='rgb')
             screen_text.draw(exp_win)
-            screen_text.draw(ctl_win)
             yield True
 
     def _setup(self, exp_win):
@@ -196,7 +195,6 @@ class EyetrackerCalibration_targets(Task):
 
             for frameN in range(config.FRAME_RATE * STARTCUE_DURATION):
                 self.startcue.draw(exp_win)
-                self.startcue.draw(ctl_win)
                 yield True
 
             for site_id in markers_order:
@@ -222,7 +220,6 @@ class EyetrackerCalibration_targets(Task):
                 for f in range(self.marker_duration_frames):
                     for stim in self.fixation_dot:
                         stim.draw(exp_win)
-                        stim.draw(ctl_win)
 
                     if (
                         f > self.calibration_lead_in
@@ -268,7 +265,6 @@ class EyetrackerCalibration_targets(Task):
                     for frameN in range(config.FRAME_RATE * FEEDBACK_DURATION):
                         for qc_dot in qc_dots:
                             qc_dot.draw(exp_win)
-                            qc_dot.draw(ctl_win)
                         yield True
 
                 #exp_win.clearBuffer(color=True, depth=True)
@@ -278,7 +274,6 @@ class EyetrackerCalibration_targets(Task):
 
                 for frameN in range(5):
                     black_bgd.draw(exp_win)
-                    black_bgd.draw(ctl_win)
                     yield True
 
                 calibration_success = True
@@ -295,7 +290,6 @@ class EyetrackerCalibration_targets(Task):
 
                 for frameN in range(5):
                     black_bgd.draw(exp_win)
-                    black_bgd.draw(ctl_win)
                     yield True
 
                 self.eyetracker.calibrate(self._pupils_list, self.all_refs_per_flip)
@@ -361,7 +355,6 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
 
         for frameN in range(config.FRAME_RATE * INSTRUCTION_DURATION):
             screen_text.draw(exp_win)
-            screen_text.draw(ctl_win)
             yield True
 
     def _setup(self, exp_win):
@@ -461,7 +454,6 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
                 for f, r in enumerate(radius_anim):
                     circle_marker.radius = r
                     circle_marker.draw(exp_win)
-                    circle_marker.draw(ctl_win)
 
                     if (
                         f > self.calibration_lead_in
