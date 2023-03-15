@@ -111,7 +111,8 @@ class EyetrackerCalibration_targets(Task):
             exp_win.setColor(grey, colorSpace='rgb')
             #ctl_win.setColor(grey, colorSpace='rgb')
             screen_text.draw(exp_win)
-            screen_text.draw(ctl_win)
+            if ctl_win:
+                screen_text.draw(ctl_win)
             yield True
 
     def _setup(self, exp_win):
@@ -222,7 +223,6 @@ class EyetrackerCalibration_targets(Task):
                 for f in range(self.marker_duration_frames):
                     for stim in self.fixation_dot:
                         stim.draw(exp_win)
-                        stim.draw(ctl_win)
 
                     if (
                         f > self.calibration_lead_in
@@ -242,7 +242,7 @@ class EyetrackerCalibration_targets(Task):
             self.task_stop = time.monotonic()
             print("completed markers 2")
 
-            
+
             if self.validation:
                 logging.info(
                     f"validating on {len(self._pupils_list)} pupils and {len(self.all_refs_per_flip)} markers"
@@ -271,22 +271,16 @@ class EyetrackerCalibration_targets(Task):
                     for frameN in range(config.FRAME_RATE * FEEDBACK_DURATION):
                         for qc_dot in qc_dots:
                             qc_dot.draw(exp_win)
-                            qc_dot.draw(ctl_win)
                         yield True
 
                 #exp_win.clearBuffer(color=True, depth=True)
-<<<<<<< HEAD
                 black_bgd = visual.Rect(exp_win, size=exp_win.size, lineWidth=0,
                                         #colorSpace='rgb', fillColor=(-1, -1, -1))
                                         colorSpace='rgb', fillColor=(-0.2, -0.2, -0.2))
 
                 for frameN in range(5):
                     black_bgd.draw(exp_win)
-                    if ctl_win:
-                        black_bgd.draw(ctl_win)
                     yield True
-=======
->>>>>>> 302c6b0cfc1a70356e0ce1e3c19eec090f4a6b25
 
                 calibration_success = True
 
@@ -296,7 +290,6 @@ class EyetrackerCalibration_targets(Task):
                 )
                 logging.flush()
 
-<<<<<<< HEAD
                 #exp_win.clearBuffer(color=True, depth=True)
                 black_bgd = visual.Rect(exp_win, size=exp_win.size, lineWidth=0,
                                         #colorSpace='rgb', fillColor=(-1, -1, -1))
@@ -304,15 +297,9 @@ class EyetrackerCalibration_targets(Task):
 
                 for frameN in range(5):
                     black_bgd.draw(exp_win)
-                    if ctl_win:
-                        black_bgd.draw(ctl_win)
                     yield True
 
-=======
-                print("calibrating done")
->>>>>>> 302c6b0cfc1a70356e0ce1e3c19eec090f4a6b25
                 self.eyetracker.calibrate(self._pupils_list, self.all_refs_per_flip)
-                print("calibrating now")
 
                 while True:
                     notes = getattr(self.eyetracker, '_last_calibration_notification',None)
