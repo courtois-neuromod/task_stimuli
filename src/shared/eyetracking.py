@@ -151,7 +151,6 @@ class EyetrackerCalibration_targets(Task):
         calibration_success = False
         while not calibration_success:
             start_calibration = self.validation
-            start_calibration = True
             while not start_calibration:
                 allKeys = event.getKeys([CALIBRATE_HOTKEY])
                 for key in allKeys:
