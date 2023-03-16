@@ -1,6 +1,7 @@
 import os, sys, time, queue
 import numpy as np
 import threading
+import gzip
 
 from psychopy import visual, core, data, logging, event, sound, constants
 from .task_base import Task
@@ -376,6 +377,9 @@ class VideoGame(VideoGameBase):
             yield False
 
         self._rep_event['nframes'] = level_step
+        self._end_repetition()
+
+    def _end_repetition(self):
         self._rep_event['offset'] = self.task_timer.getTime()
         self._rep_event['duration'] = self._rep_event['offset'] - self._rep_event['onset']
         self._completed = self._completed or self._game_info['lives'] > -1
@@ -658,6 +662,7 @@ class VideoGameMultiLevel(VideoGame):
         completion_fn=None,
         fixation_duration=0,
         show_instruction_between_repetitions=True,
+        hard_run_duration_limit=False,
         **kwargs):
 
         self._state_names = kwargs.pop("state_names")
@@ -667,6 +672,7 @@ class VideoGameMultiLevel(VideoGame):
         self._show_instruction_between_repetitions = show_instruction_between_repetitions
         self._n_repeats_level = n_repeats_level
         self.completion_fn = completion_fn
+        self._hard_run_duration_limit = hard_run_duration_limit
 
         kwargs["repeat_scenario"] = False
         super().__init__(
@@ -678,15 +684,22 @@ class VideoGameMultiLevel(VideoGame):
         #exp_win.waitBlanking = False
         self._set_key_handler(exp_win)
         self._nlevels = 0
-
+        time_exceeded = False
+        self.stop_state_outfile = None
         exp_win.setColor(self._bg_color, colorSpace='rgb255')
         if ctl_win:
             ctl_win.setColor(self._bg_color, colorSpace='rgb255')
         while True:
             for level, scenario in zip(self._state_names, self._scenarii):
-
-                self.state_name = level
-                self.emulator.load_state(level, inttype=self.inttype)
+                n_repeats = self._n_repeats_level
+                # load a custom file, like a saved state not in the integration
+                if os.path.exists(level):
+                    with gzip.open(level, 'rb') as fh:
+                        self.emulator.initial_state = fh.read()
+                    n_repeats = 1 # repeat only once
+                else:
+                    self.state_name = level
+                    self.emulator.load_state(level, inttype=self.inttype)
                 self.emulator.data.load(
                     retro.data.get_file_path(self.game_name, "data.json", inttype=self.inttype),
                     retro.data.get_file_path(self.game_name, f"{scenario}.json", inttype=self.inttype)
@@ -697,7 +710,7 @@ class VideoGameMultiLevel(VideoGame):
                     if self._show_instruction_between_repetitions:
                         yield from self._instructions(exp_win, ctl_win)
 
-                for n_repeat in range(self._n_repeats_level):
+                for n_repeat in range(n_repeats):
                     self._first_frame = self.emulator.reset()
 
                     self._set_recording_file()
@@ -707,7 +720,20 @@ class VideoGameMultiLevel(VideoGame):
                         yield from self.fixation_cross(exp_win)
                     self.progress_bar.set_description(level)
 
-                    yield from super()._run_emulator(exp_win, ctl_win)
+                    if self.max_duration and self._hard_run_duration_limit:
+                        for clearBuffer in super()._run_emulator(exp_win, ctl_win):
+                            yield clearBuffer
+                            if self.task_timer.getTime() > self.max_duration:
+                                time_exceeded=True
+                                # save the current state
+                                self.stop_state_outfile = self._generate_unique_filename("run","state")
+                                with gzip.open(self.stop_state_outfile, 'wb') as fh:
+                                    fh.write(self.emulator.em.get_state())
+                                self._stop_state = self.emulator.get_ram().tobytes()
+                                self._end_repetition() # clean stop the emulator + events
+                                break
+                    else:
+                        yield from super()._run_emulator(exp_win, ctl_win)
                     self.game_sound.stop()
                     self._level_completed = self.completion_fn(self.emulator) if self.completion_fn else True
                     if self._level_completed:
