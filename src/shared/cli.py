@@ -292,7 +292,7 @@ Thanks for your participation!"""
                 # do that only if the task was not aborted to save time
                 # there is anyway the duration of the instruction before listening to TTL
                 for i in range(DELAY_BETWEEN_TASK * config.FRAME_RATE):
-                    exp_win.flip(clearBuffer=False)
+                    exp_win.flip(clearBuffer=i<2)
 
         exp_win.saveFrameIntervals("exp_win_frame_intervals.txt")
         if ctl_win:
