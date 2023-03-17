@@ -50,3 +50,8 @@ WRAP_WIDTH = 2
 
 # port for meg setup
 PARALLEL_PORT_ADDRESS = "/dev/parport0"
+
+
+# remove a bunch of warnings when in production
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
