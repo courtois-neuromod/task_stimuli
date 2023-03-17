@@ -40,21 +40,21 @@ class SoundTaskBase(Task):
         self.fixation = fixation_dot(exp_win)
 
     def _run(self, exp_win, ctl_win):
-        yield True
+
         for _ in utils.wait_until_yield(
             self.task_timer,
             self.initial_wait,
             keyboard_accuracy=.1):
             for stim in self.fixation:
                 stim.draw(exp_win)
-            yield False
+            yield
 
         self.sound.play()
         for _ in utils.wait_until_yield(
             self.task_timer,
             self.initial_wait + self.sound.duration + self.final_wait,
             keyboard_accuracy=.1):
-            yield False
+            yield
         while self.sound.status > 0:
             pass
         self.sound.stop()
@@ -75,6 +75,8 @@ import wave
 class AudioRecording(Task):
     """docstring for AudioRecording."""
 
+    INSTRUCTION_DURATION = 4
+
     def __init__(
         self,
         initial_wait=4, final_wait=9,
@@ -85,6 +87,8 @@ class AudioRecording(Task):
         self.initial_wait, self.final_wait, self.max_duration = initial_wait, final_wait, max_duration
         self.audio_rate, self. audio_channels= audio_rate, audio_channels
         self.done_key = done_key
+        self.duration = self.max_duration
+        self._progress_bar_refresh_rate = None
 
 
     def _setup(self, exp_win,):
@@ -118,12 +122,16 @@ class AudioRecording(Task):
             wrapWidth=config.WRAP_WIDTH,
         )
 
-        screen_text.draw(exp_win)
-        if ctl_win:
-            screen_text.draw(ctl_win)
-        yield True
-        time.sleep(INSTRUCTION_DURATION)
-        yield True
+        for flip_idx, _ in enumerate(utils.wait_until_yield(
+            core.monotonicClock,
+            core.getTime()+ self.INSTRUCTION_DURATION,
+            keyboard_accuracy=.01)):
+            if flip_idx < 2:
+                screen_text.draw(exp_win)
+                if ctl_win:
+                    screen_text.draw(ctl_win)
+                yield True
+            yield
 
     def _start_recording(self):
         self._audio_stream = self._pyaudio_if.open(
@@ -153,25 +161,26 @@ class AudioRecording(Task):
             self.initial_wait,
             keyboard_accuracy=.05):
             self._poll_audio()
-            yield True
 
-        for _ in utils.wait_until_yield(
+        for flip_idx, _ in enumerate(utils.wait_until_yield(
             self.task_timer,
             self.max_duration - self.final_wait,
-            keyboard_accuracy=.05):
+            keyboard_accuracy=.005)):
             self._poll_audio()
             if len(event.getKeys(self.done_key)):
                 break
-            for stim in self.fixation:
-                stim.draw(exp_win)
-            yield True
+            if flip_idx < 2:
+                for stim in self.fixation:
+                    stim.draw(exp_win)
+                yield True
+            yield
 
-        for _ in utils.wait_until_yield(
+        for flip_idx,_ in enumerate(utils.wait_until_yield(
             self.task_timer,
             self.task_timer.getTime() + self.final_wait,
-            keyboard_accuracy=.05):
+            keyboard_accuracy=.05)):
             self._poll_audio()
-            yield True
+            yield flip_idx < 2
 
     def _stop(self, exp_win, ctl_win):
         #self._mic.stop()
@@ -191,12 +200,16 @@ class AudioRecording(Task):
 
 class FreeRecall(AudioRecording):
 
+    INSTRUCTION_DURATION = 10
+
     DEFAULT_INSTRUCTION = """
 Please provide an account of what you heard.
 Remember you have as much time as you need.
+
 Please provide as many details as you can.
 Please try to keep your head as still as possible while you talk.
-Please start talking when the fixation dot appears.
+
+Please start talking only when the fixation dot appears.
 Press A when done.
     """
 
@@ -214,6 +227,13 @@ Use up/down buttons to answer.
 
     RESPONSE_KEYS = {'u':'A','d':'B'}
 
+    QUESTIONS = [
+        "I like this story.",
+        "I could hear and understand the story well.",
+        "I can relate to the storyteller.",
+        "The story was engaging",
+        ]
+
     def __init__(
         self,
         design_file,
@@ -227,6 +247,7 @@ Use up/down buttons to answer.
         self.design_file = design_file
         self.design = data.importConditions(self.design_file)
         self.duration = len(self.design)
+        self._progress_bar_refresh_rate = None
 
     def _setup(self, exp_win):
 
@@ -267,6 +288,10 @@ Use up/down buttons to answer.
                 for stim in self.fixation:
                     stim.draw(exp_win)
                 yield True
+
+
+    def _handle_controller_presses(self, exp_win):
+        self._new_key_pressed = event.getKeys('udlra')
 
     def _run(self, exp_win, ctl_win):
         # initial wait with fixation
@@ -312,13 +337,14 @@ Use up/down buttons to answer.
                         for stim in text_stims:
                             stim.draw(exp_win)
                         yield True
-                    # wait for min duration if answered before min duration
+                    # wait for onset + min duration if answered before min duration
                     if self.task_timer.getTime() < trial['onset'] + self.trial_duration_min:
-                        utils.wait_until(
+                        yield from utils.wait_until_yield(
                             self.task_timer,
                             trial['onset'] + self.trial_duration_min,
                             keyboard_accuracy=.0001)
                     break
+                yield
 
 
             # flip to get screen clear timing
@@ -327,8 +353,157 @@ Use up/down buttons to answer.
             # inter-trial fixation
             yield from self._fixation(exp_win, trial['offset'] + self.isi_fixation)
 
+        # display questionnaire
+        self.progress_bar.set_description("Questions:")
+        yield from self._questionnaire(exp_win, ctl_win, [(k, q, 5) for k, q in enumerate(self.QUESTIONS)])
+
         # final_wait with fixation
-        yield from self._fixation(exp_win, trial['offset'] + self.final_wait - self.isi_fixation)
+        yield from self._fixation(exp_win, trial['offset'] + self.final_wait)
+
+
+
+    def _questionnaire(self, exp_win, ctl_win, questions):
+        if questions is None:
+            return
+        exp_win.setColor([0] * 3, colorSpace='rgb')
+        lines = []
+        bullets = []
+        responses = []
+        texts = []
+        legends = []
+        y_spacing = 80
+        win_width = exp_win.size[0]
+        scales_block_x = win_width * 0.25
+        scales_block_y = len(questions) // 2 * y_spacing
+        extent = win_width * 0.2
+
+        # add legends to Likert scale
+        legends.append(visual.TextStim(
+            exp_win,
+            text = 'Disagree',
+            units="pix",
+            pos=(scales_block_x - extent*0.75, scales_block_y*1.4),
+            wrapWidth= win_width * 0.5,
+            height= y_spacing / 3,
+            anchorHoriz="right",
+            alignText="right",
+            bold=True
+        ))
+        legends.append(visual.TextStim(
+            exp_win,
+            text = 'Agree',
+            units="pix",
+            pos=(scales_block_x + extent*1.15, scales_block_y*1.4),
+            wrapWidth= win_width * 0.5,
+            height= y_spacing / 3,
+            anchorHoriz="right",
+            alignText="right",
+            bold=True
+        ))
+
+
+        active_question = 0
+
+        # create all stimuli
+        #all_questions_text = ""
+        for q_n, (key, question, n_pts) in enumerate(questions):
+            default_response = n_pts // 2
+            responses.append(default_response)
+            x_spacing = extent * 2 / (n_pts - 1)
+            #all_questions_text += question + "\n\n"
+
+            y_pos = scales_block_y - q_n * y_spacing
+
+            lines.append(
+                visual.Line(
+                    exp_win,
+                    (scales_block_x - extent, y_pos),
+                    (scales_block_x + extent, y_pos),
+                    units="pix",
+                    lineWidth=6,
+                    autoLog=False,
+                    lineColor=(0, -1, -1) if q_n == 0 else (-1, -1, -1),
+                )
+            )
+            bullets.append(
+                [
+                    visual.Circle(
+                        exp_win,
+                        units="pix",
+                        radius=10,
+                        pos=(
+                            scales_block_x - extent + i * x_spacing,
+                            y_pos,
+                        ),
+                        fillColor= (1, 1, 1) if default_response == i else (-1, -1, -1),
+                        lineColor=(-1, -1, -1),
+                        lineWidth=10,
+                        autoLog=False,
+                    )
+                    for i in range(n_pts)
+                ]
+            )
+            texts.append(visual.TextStim(
+                exp_win,
+                text = question,
+                units="pix",
+                bold = q_n == active_question,
+                pos=(0, y_pos),
+                wrapWidth= win_width * 0.5,
+                height= y_spacing / 3,
+                anchorHoriz="right",
+                alignText="right"
+            ))
+            responses[q_n] = default_response
+
+
+
+        # questionnaire interaction loop
+        n_flips = 0
+        while True:
+            self._handle_controller_presses(exp_win)
+            new_key_pressed = [k[0] for k in self._new_key_pressed]
+            if "u" in new_key_pressed and active_question > 0:
+                active_question -= 1
+            elif "d" in new_key_pressed and active_question < len(questions)-1:
+                active_question += 1
+            elif "r" in new_key_pressed and responses[active_question] < n_pts - 1:
+                responses[active_question] += 1
+            elif "l" in new_key_pressed and responses[active_question] > 0:
+                responses[active_question] -= 1
+            elif "a" in new_key_pressed:
+                for (key, question, n_pts), value in zip(questions, responses):
+                    self._log_event({
+                        "trial_type": "questionnaire-answer",
+                        "question": key,
+                        "value": value
+                    })
+                break
+            elif n_flips > 1:
+                time.sleep(.01)
+                continue
+
+            if n_flips > 0: #avoid double log when first loading questionnaire
+                self._log_event({
+                    "trial_type": "questionnaire-value-change",
+                    "question": questions[active_question][0],
+                    "value": responses[active_question]
+                })
+
+            exp_win.logOnFlip(
+                level=logging.EXP,
+                msg="questions %s" % responses)
+            for q_n, (txt, line, bullet_q) in enumerate(zip(texts, lines, bullets)):
+                #txt.bold = q_n == active_question
+                txt._pygletTextObj.set_style('bold', q_n == active_question)
+                line.lineColor = (0, -1, -1) if q_n == active_question else (-1, -1, -1)
+                for bullet_n, bullet in enumerate(bullet_q):
+                    bullet.fillColor = (1, 1, 1) if responses[q_n] == bullet_n else (-1, -1, -1)
+
+            for stim in lines + sum(bullets, []) + texts + legends:
+                stim.draw(exp_win)
+            yield True
+            n_flips += 1
 
 
     def _save(self):
