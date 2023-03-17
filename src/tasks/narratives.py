@@ -212,17 +212,21 @@ If you are unsure, choose the best possible answer.
 Use up/down buttons to answer.
 """
 
+    RESPONSE_KEYS = {'u':'A','d':'B'}
+
     def __init__(
         self,
         design_file,
-        initial_wait=4, final_wait=9, max_response_time=15
+        initial_wait=4, final_wait=9, trial_duration_min=4, trial_duration_max=12, isi_fixation=1.5,
         *args, **kwargs):
         super().__init__(**kwargs)
-        self.initial_wait, self.final_wait, self.max_response_time = initial_wait, final_wait, max_response_time
+        self.initial_wait, self.final_wait = initial_wait, final_wait
+        self.trial_duration_min, self.trial_duration_max, self.isi_fixation = trial_duration_min, trial_duration_max, isi_fixation
         if not os.path.exists(design_file):
             raise ValueError(f"{design_file} does not exists")
         self.design_file = design_file
-        self.design = data.importConditions(design)
+        self.design = data.importConditions(self.design_file)
+        self.duration = len(self.design)
 
     def _setup(self, exp_win):
 
@@ -232,8 +236,8 @@ Use up/down buttons to answer.
             text=self.instruction,
             alignText="center",
             color="white",
-            wrapWidth=config.WRAP_WIDTH,
-            pos=(0, -.5),
+            wrapWidth=1.8,
+            pos=(0, .5),
         )
 
         self.text2 = visual.TextStim(
@@ -241,13 +245,92 @@ Use up/down buttons to answer.
             text=self.instruction,
             alignText="center",
             color="white",
-            wrapWidth=config.WRAP_WIDTH,
-            pos=(0, .5),
+            wrapWidth=1.6,
+            pos=(0, -.5),
         )
 
         self.fixation = fixation_dot(exp_win)
 
+        # create trial handler
+        self._restart()
+
+    def _restart(self):
+        self.trials = data.TrialHandler(self.design, 1, method="sequential")
+
+
+    def _fixation(self, exp_win, offset):
+        for flip, _ in enumerate(utils.wait_until_yield(
+            self.task_timer,
+            offset-1/(config.FRAME_RATE+1),
+            keyboard_accuracy=.1)):
+            if flip < 2:
+                for stim in self.fixation:
+                    stim.draw(exp_win)
+                yield True
 
     def _run(self, exp_win, ctl_win):
+        # initial wait with fixation
+        yield from self._fixation(exp_win, self.initial_wait)
 
-        
+        text_stims = [self.text1, self.text2]
+        # trials
+        for trial_n, trial in enumerate(self.trials):
+
+            self.progress_bar.set_description(
+                f"Trial {trial_n}:"
+            )
+            self.progress_bar.update(1)
+            # display segments
+            self.text1.text = trial['Segment_A']
+            self.text2.text = trial['Segment_B']
+            for flip in range(2):
+                for stim in text_stims:
+                    stim.color = 'white'
+                    stim.draw(exp_win)
+                yield True
+                if flip == 0:
+                    trial['onset'] = self._exp_win_last_flip_time - self._exp_win_first_flip_time
+            # wait for response key
+            event.getKeys(self.RESPONSE_KEYS.keys()) # flush keys
+            for _ in utils.wait_until_yield(
+                self.task_timer,
+                self.task_timer.getTime() + self.trial_duration_max,
+                keyboard_accuracy=.0001):
+                keys = event.getKeys(self.RESPONSE_KEYS.keys(), timeStamped=self.task_timer)
+
+                if len(keys):
+                    # stop on first press so there should be a single pressed key
+                    key = keys[0]
+                    trial['response'] = self.RESPONSE_KEYS[key[0]]
+                    trial['response_correct'] = trial['response'] == trial['Correct_Answer']
+                    trial['response_onset'] = key[1]
+                    trial['response_time'] = key[1] - trial['onset']
+
+                    chosen_idx = 'AB'.index(trial['response'])
+                    text_stims[chosen_idx].color = 'black'
+                    for flip in range(2):
+                        for stim in text_stims:
+                            stim.draw(exp_win)
+                        yield True
+                    # wait for min duration if answered before min duration
+                    if self.task_timer.getTime() < trial['onset'] + self.trial_duration_min:
+                        utils.wait_until(
+                            self.task_timer,
+                            trial['onset'] + self.trial_duration_min,
+                            keyboard_accuracy=.0001)
+                    break
+
+
+            # flip to get screen clear timing
+            yield True
+            trial['offset'] = self._exp_win_last_flip_time - self._exp_win_first_flip_time
+            # inter-trial fixation
+            yield from self._fixation(exp_win, trial['offset'] + self.isi_fixation)
+
+        # final_wait with fixation
+        yield from self._fixation(exp_win, trial['offset'] + self.final_wait - self.isi_fixation)
+
+
+    def _save(self):
+        self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
+        return False
