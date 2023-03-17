@@ -2,8 +2,8 @@ import os
 
 from ..tasks.narratives import Story, FreeRecall, RecencyJudgments
 
-STORIES = ['21styear','black','forgot','lucy','notthefallintact','pieman','prettymouth','slumlordreach','tunnel']
-STORIES_DURATIONS = [3374,800,837,542,581,450,712,1801,1533]
+STORIES = [ 'black','forgot','lucy','notthefallintact','pieman','prettymouth','slumlordreach','tunnel']
+STORIES_DURATIONS = [ 800,837,542,581,450,712,1801,1533]
 
 STIMULI_PATH  = 'data/narratives.stimuli'
 
