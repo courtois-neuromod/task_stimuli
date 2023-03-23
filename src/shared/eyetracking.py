@@ -363,7 +363,6 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
 
         for frameN in range(config.FRAME_RATE * INSTRUCTION_DURATION):
             screen_text.draw(exp_win)
-            screen_text.draw(ctl_win)
             yield True
 
     def _setup(self, exp_win):
@@ -463,7 +462,6 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
                 for f, r in enumerate(radius_anim):
                     circle_marker.radius = r
                     circle_marker.draw(exp_win)
-                    circle_marker.draw(ctl_win)
 
                     if (
                         f > self.calibration_lead_in
