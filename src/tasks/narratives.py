@@ -57,7 +57,10 @@ class SoundTaskBase(Task):
             yield
         while self.sound.status > 0:
             pass
+
+    def _stop(self, exp_win, ctl_win):
         self.sound.stop()
+        yield
 
 
 class Story(SoundTaskBase):
@@ -143,10 +146,11 @@ class AudioRecording(Task):
         self._audio_buffers = []
 
     def _stop_recording(self):
-
-        # Stop and close the stream
-        self._audio_stream.stop_stream()
-        self._audio_stream.close()
+        if hasattr(self, '_audio_stream'):
+            # Stop and close the stream
+            self._audio_stream.stop_stream()
+            self._audio_stream.close()
+            del self._audio_stream
 
     def _poll_audio(self):
         self._audio_buffers.append(self._audio_stream.read(1024))
@@ -189,13 +193,14 @@ class AudioRecording(Task):
 
 
     def _save(self):
-        output_wav_file = self._generate_unique_filename("audio", "wav")
-        wf = wave.open(output_wav_file, 'wb')
-        wf.setnchannels(self.audio_channels)
-        wf.setsampwidth(self._pyaudio_if.get_sample_size(pyaudio.paInt16))
-        wf.setframerate(self.audio_rate)
-        wf.writeframes(b''.join(self._audio_buffers))
-        wf.close()
+        if hasattr(self, '_audio_buffers'):
+            output_wav_file = self._generate_unique_filename("audio", "wav")
+            wf = wave.open(output_wav_file, 'wb')
+            wf.setnchannels(self.audio_channels)
+            wf.setsampwidth(self._pyaudio_if.get_sample_size(pyaudio.paInt16))
+            wf.setframerate(self.audio_rate)
+            wf.writeframes(b''.join(self._audio_buffers))
+            wf.close()
 
 
 class FreeRecall(AudioRecording):
@@ -276,7 +281,7 @@ Use up/down buttons to answer.
         self._restart()
 
     def _restart(self):
-        self.trials = data.TrialHandler(self.design, 1, method="sequential")
+        self.trials = data.TrialHandler(self.design, 1, method="random")
 
 
     def _fixation(self, exp_win, offset):
