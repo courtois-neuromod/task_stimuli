@@ -31,6 +31,11 @@
 	url = git@github.com:courtois-neuromod/friends.stimuli.git
 	datalad-id = bbbf34b9-31aa-4e35-b1ed-36525c6d7ce3
 	datalad-url = git@github.com:courtois-neuromod/friends.stimuli.git
+[submodule "data/videos/movie10"]
+	path = data/videos/movie10
+	url = git@github.com:courtois-neuromod/movie10.stimuli.git
+	datalad-id = a9ff7995-4d2d-4ea7-9b23-ec17f0c66a61
+	datalad-url = git@github.com:courtois-neuromod/movie10.stimuli.git
 [submodule "data/emotions"]
 	path = data/emotions
 	url = git@github.com:courtois-neuromod/emotions.stimuli.git
