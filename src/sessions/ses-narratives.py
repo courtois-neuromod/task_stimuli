@@ -17,4 +17,4 @@ def get_tasks(parsed):
         yield FreeRecall(name="task-{story_cap}Recall_run-01", max_duration=story_duration*.4)
         yield RecencyJudgments(
                 design_file=os.path.join(STIMULI_PATH, 'recency_segments', story, f"first_viewing_{story}.csv"),
-                name="task-{story_cap}Recency_run-01"),
+                name="task-{story_cap}Recency_run-01")
