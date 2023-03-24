@@ -1,7 +1,10 @@
+attrdict
 PsychoPy>=2020.2.4.post1
+gym==0.25.2
 gym-retro
 pandas>=1.1.1
 python-dotenv
 tqdm>=4.60.0
 textdistance
 colorama
+psychopy-sounddevice
