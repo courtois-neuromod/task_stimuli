@@ -980,7 +980,7 @@ class EyeTrackerClient(threading.Thread):
                 "subject": "start_plugin",
                 "name": "Gazer2D",
                 "args": {"calib_data": calib_data},
-                "raise_calibration_error": True,
+                "raise_calibration_error": False,
             }
         )
         logging.info("calibration data sent to pupil")

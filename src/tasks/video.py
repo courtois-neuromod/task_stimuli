@@ -80,7 +80,7 @@ and fixate the dot whenever it appears."""
                                         colorSpace='rgb', fillColor=(-.58, -.58, -.58)) # (54, 54, 54) on 0-255 scale
             self.black_bgd = visual.Rect(exp_win, size=exp_win.size, lineWidth=0,
                                         colorSpace='rgb', fillColor=(-1, -1, -1))
-            self.startcue = visual.Circle(exp_win, units='pix', pos=(0,0), radius=10, lineWidth=0, fillColor=(1, 1, 1))
+            self.startcue = visual.Circle(exp_win, units='pix', pos=(0,0), radius=10, lineWidth=1, fillColor=(1, 1, 1))
             self.markers = np.asarray(
                 [
                     (0.5, 0.5),
@@ -193,8 +193,6 @@ and fixate the dot whenever it appears."""
                     )
 
             yield False
-
-        self.movie_stim.pause()
 
         if self._inmovie_fixations:
             window_size_frame = exp_win.size - 100 * 2
