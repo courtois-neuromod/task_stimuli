@@ -2,6 +2,19 @@ from ..tasks import images, video, memory, task_base
 
 TASKS = []
 
+TASKS.append(
+    video.SingleVideo(
+        f"data/videos/Sync-Footage-V1-H264.mp4",
+        aspect_ratio=12/5,
+        startend_fixduration=0.0,#2.0,
+        inmovie_fixations=True,
+        infix_freq=20,
+        infix_dur=1.5,
+        name=f"task-sync",
+        use_eyetracking=True
+    )
+)
+
 segments = [
     ('bourne', 6, 372 / 157),
     ('life', 3, 12 / 5),
