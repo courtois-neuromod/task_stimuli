@@ -265,7 +265,7 @@ class EyetrackerCalibration_targets(Task):
                         else:
                             fill_col = (1, 1, 1) # white indicates no fixations reccorded for that marker
                         qc_dots.append(visual.Circle(exp_win, units='pix', pos=pos, radius=self.marker_size*0.8,
-                                                     lineWidth=0, fillColor=fill_col))
+                                                     lineWidth=1, fillColor=fill_col))
 
                 if self.feedback:
                     for frameN in range(config.FRAME_RATE * FEEDBACK_DURATION):
@@ -307,6 +307,8 @@ class EyetrackerCalibration_targets(Task):
                         calibration_success = notes['topic'].startswith("notify.calibration.successful")
                         if not calibration_success:
                             print('#### CALIBRATION FAILED: restart with <c> ####')
+                        else:
+                            print('##### CALIBRATION SUCCESSFUL')
                         break
         self.eyetracker.pause()
 
