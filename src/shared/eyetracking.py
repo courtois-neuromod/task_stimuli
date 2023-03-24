@@ -118,7 +118,7 @@ class EyetrackerCalibration_targets(Task):
         self.use_fmri = False
         super()._setup(exp_win)
         self.fixation_dot = fixation_dot(exp_win, radius=self.marker_size)
-        self.startcue = visual.Circle(exp_win, units='pix', pos=(0,0), radius=self.marker_size*0.5, lineWidth=0, fillColor=(1, 1, 1))
+        self.startcue = visual.Circle(exp_win, units='pix', pos=(0,0), radius=self.marker_size*0.5, lineWidth=1, fillColor=(1, 1, 1))
 
     def _pupil_cb(self, pupil):
         if pupil["timestamp"] > self.task_stop:
@@ -261,7 +261,7 @@ class EyetrackerCalibration_targets(Task):
                         else:
                             fill_col = (1, 1, 1) # white indicates no fixations reccorded for that marker
                         qc_dots.append(visual.Circle(exp_win, units='pix', pos=pos, radius=self.marker_size*0.8,
-                                                     lineWidth=0, fillColor=fill_col))
+                                                     lineWidth=1, fillColor=fill_col))
 
                 if self.feedback:
                     for frameN in range(config.FRAME_RATE * FEEDBACK_DURATION):
