@@ -1,6 +1,47 @@
-import os, re
+import os
 
+
+# Task Parameters
+# fMRI: runs of 10 minutes - 2 run max
+# 10 minutes = 6 ~ 10 memory grids, 2 levels of
 NUMBER_PAIRS_DATA_PATH = os.path.join("data", "memory", "number_pairs")
+DIFFICULTY_SCALE = {  # The homogenous grid difficulty per target score level
+    3: 0,
+    4: 0,
+    5: 0.4,
+    6: 0.5,
+    7: 0.8571,
+    8: 1,
+}
+
+ALLOWED_ALPHABETS = "ABCDEFGHJKLMNPQRSTUVWXYZ"  # remove O and I
+
+encoding_duration = 5  # lower limit per grid
+recall_duration = 3  # upper limit per pair
+feedback_duration = 3
+estimate_duration = 8
+# what are the reward levels?
+REWARD_LEVEL = [1, 100]
+# target score: number of pairs in the memeory grid
+# what are the target scores to be tested?
+TARGET_SCORE_LEVEL = [4, 8]
+GRID_SIZE = (4, 6)
+
+# how many repetitions of each (target scores x reward level) condition?
+# (should be even if using contiguous task conditions)
+# len(REWARD_LEVEL) * len(TARGET_SCORE_LEVEL) * N_META_BLOCK == number of total trials
+N_META_BLOCK = 4
+N_TRIALS_PER_RUN = len(REWARD_LEVEL) * len(TARGET_SCORE_LEVEL) * N_META_BLOCK
+# how many different grid/task condition sets to generate?
+N_SUBJECTS = 1
+
+N_PERMUTATION = 1000  # how many permutations to check?
+
+
+# fMRI parameters
+TR = 1.49  # this has to be double checked
+ISI = 3  # 3 seconds jittered
+ISI_JITTER = 2
 
 
 def get_tasks(parsed):
@@ -11,170 +52,421 @@ def get_tasks(parsed):
         "designs",
         f"sub-{parsed.subject}_design.tsv",
     )
-    tasks = [
-        memory.NumberPair(
-            name="numberpairs",
-            items_list=session_design_filename
-            )
-    ]
+    tasks = [memory.NumberPair(name="numberpairs", items_list=session_design_filename)]
     return tasks
 
 
-# experiment
-allowed_aphabets = "ABCDEFGHJKLMNPQRSTUVWXYZ"  # remove O and I
-n_blocks = 2
-grid_size = (6, 4)
-n_pairs_range = (3, 8)  # this is called target score
-trial_duration = 10
-fixation_duration = 1
-performance_duration = 3
-
-def generate_memory_items(grid_size=(6, 4), n_pairs=4):
-    # for now just generate 20 characters mixed with numbers and alphabets
-    # grid size is fixed
-    import random
-    items = [str(i + 1) for i in range(n_pairs)] * 2
-    n_space = grid_size[0] * grid_size[1] - len(items)
-    items += random.sample(list(allowed_aphabets), k=n_space)
-    random.shuffle(items)
-    return "".join(items)
-
-
-def generate_isi(lb=0.50, ub=2.00):
-    """Generate ISI given a uniform distribution, in seconds."""
+def generate_design_file(subject, target_score_level, reward_level):
+    import hashlib
+    import re
+    from itertools import product
     import numpy as np
-    return np.round(np.random.uniform(lb, ub), 2)
-
-
-def generate_design_file(subject):
-    # sourcery skip: use-fstring-for-concatenation
     import pandas as pd
-    import numpy as np
-    import random
+    from scipy.ndimage import label, generate_binary_structure
 
-    trials = pd.DataFrame()
+    # sample all ISI with same seed for matching run length
+    np.random.seed(0)
+    isi_set = (
+        np.random.random_sample(N_TRIALS_PER_RUN * 4 + N_META_BLOCK * 2) * ISI_JITTER
+        - ISI_JITTER / 2
+        + ISI
+    )
+    isi_set = isi_set.tolist()
+    print(len(isi_set))
+    # seed numpy with subject id to have reproducible design generation
+    seed = int(hashlib.sha1(f"{subject}".encode("utf-8")).hexdigest(), 16) % (
+        2**32 - 1
+    )
+    print("seed", seed)
+    np.random.seed(seed)
 
-    for i in range(n_blocks):
-        if i == 0:
-            # initalise a block with question to select the rehersal time
-            onset_trial = 0
-            display = ["Please select the amount of time you wish to spend on rehersal."]
-            onset = [onset_trial]
-            duration = [generate_isi() + performance_duration]
-            recall_display = ["N/A"]
-            recall_ans = ["N/A"]
-            trial_type = ["estimate"]
-            trial_number = [i + 1]
-            pair_number = [-1]
-        else:
-            onset_trial = block['onset'].values[-1] \
-                + block['duration'].values[-1]
-            (display, onset, duration, recall_display, recall_ans, trial_type,
-             trial_number, pair_number) = [], [], [], [], [], [], [], []
-        # initialise a block
-        block = pd.DataFrame()
-        # rehersal
-        n_pairs = random.randrange(n_pairs_range[0], n_pairs_range[-1] + 1)
-        memory_grid = generate_memory_items(grid_size=grid_size, n_pairs=n_pairs)
-        display.append(memory_grid)  # generate rehersal trials
-        onset.append(onset_trial)
-        duration.append(trial_duration)
-        recall_display.append("N/A")
-        recall_ans.append("N/A")
-        trial_type.append("rehersal")
-        trial_number.append(i + 1)
-        pair_number.append(0)
-        # recall
-        for j in range(n_pairs):
-            # fixation
-            display.append("".join([" "] * (grid_size[0] * grid_size[1])))
-            onset.append(onset[-1] + duration[-1])
-            duration.append((generate_isi() + fixation_duration))
-            recall_display.append("N/A")
-            recall_ans.append("N/A")
-            trial_type.append("fixation")
-            trial_number.append(i + 1)
-            pair_number.append(0)
+    # number of memeory grid to generate
+    n_reward = len(reward_level)
+    n_target_score = len(target_score_level)
+    n_condition = n_reward * n_target_score  # how many different conditions?
 
-            # response grid
-            numbers = list(range(1, n_pairs + 1))
-            _ = numbers.pop(j)  # remove the current number testing
+    # generate condion list
+    n_samples = 10000
+    n_max_condition_difference = 0
+
+    def generate_best_condition(n_memory_grid, n_condition, n_samples, contiguous=True):
+        """
+        Generates a vector of blocks (n_blocks = n_memory_grid/n_condition) of task
+        condition levels where the difference in trial
+
+        if contiguous, each block contains two of each task condition in a sequential order.
+        Example: 2x2 design of two blocks: [1 1 2 2 3 3 4 4 2 2 1 1 4 4 3 3]
+
+        if contiguous, n_memory_grid/2 must be divisible by n_condition.
+        else: n_memory_grid must be divisible by n_condition
+
+        !! Will only work for a balanced design !!
+
+        Parameters:
+            n_memory_grid (int): number of trials.
+            n_condition (int): number of conditions.
+            n_samples (int): number of samples to take for permutations.
+
+        Returns:
+            conditions (numpy.ndarray): array of condition permutations where the
+            difference in trial index between repeats of each condition is maximised.
+            max_condition_distance: maximum distance of conditions.
+        """
+        import numpy
+
+        if contiguous:
+            n_memory_grid = int(n_memory_grid / 2)
+
+        conditions = []
+        min_condition_distances = []
+        for _ in range(n_samples):
+            tmp_conditions = _generate_conditions(n_memory_grid, n_condition)
+            conditions.append(tmp_conditions)
+            min_condition_distances.append(
+                _get_condition_distance(tmp_conditions, n_condition)
+            )
+
+        max_condition_distance = np.max(min_condition_distances)
+        ind = np.array(min_condition_distances) == max_condition_distance
+        conditions = np.array(conditions)[ind]
+        if contiguous:
+            conditions = np.repeat(conditions, 2, axis=1)
+
+        # make sure each row is unique
+        return np.unique(conditions, axis=0), max_condition_distance
+
+    def _generate_conditions(n_memory_grids, n_condition):
+        """Randomly generate condition for each memory grid."""
+        if n_memory_grids % n_condition != 0:
+            raise ValueError(
+                "n_memory_grid must be divisible by n_condition. Current values "
+                f"n_memory_grid: {n_memory_grids}\nn_condition: {n_condition}."
+            )
+        n_blocks = n_memory_grids // n_condition
+        condition_perm = np.empty((n_blocks, n_condition), dtype=int)
+
+        # permute within block
+        for i in range(n_blocks):
+            condition_perm[i, :] = np.random.permutation(np.arange(n_condition)) + 1
+        return condition_perm.ravel()
+
+    def _get_condition_distance(conditions, n_condition):
+        # get the minimal distance of each condition in a list of task conditions
+        minimal_distance = []
+        for i in range(n_condition):
+            idx_current_condition = np.where(conditions == i + 1)[0]
+            minimal = np.min(np.diff(idx_current_condition))
+            minimal_distance.append(minimal)  # minimum distance for this condition
+        return np.min(minimal_distance)  # minimum distance of any condition
+
+    def homogenise_grid_difficulty(
+        grid_size, target_score_array, reward_array, target_score_levels
+    ):
+        """Generates a set of permutations of pairs on an n_row x n_col grid with difficulty = target_difficulty.
+        The same set of grids is generated for each participant and organised according to their individual sequence of
+        target scores. The higher the score, the easier the grid.
+        +1 is given to a pair's difficulty score if it is contiguous and +1 if it is vertically/horizontally aligned.
+
+        Args:
+            n_row (int): Number of rows in grid.
+            n_col (int): Number of columns in grid.
+            ts_array (ndarray): Trial array of target scores (assumes n_g == ts) (n_participants x n_memory_grid).
+            ts_levels (list): List of target score levels.
+            target_difficulty (list): The homogenous grid difficulty per TSLevel.
+
+        Returns:
+            grid_cell (list): A list of grids, where each element of the list is a tuple of a numpy array of grid location array, and a numpy array of grid difficulty array.
+            index_array (ndarray): An array of indexes of each pair of locations in the grid for each trial, arranged
+                                according to each participant's sequence of target scores.
+        """
+        designs = []
+        for s in range(target_score_array.shape[0]):
+            n_needed_pairs_per_level = [
+                np.sum(target_score_array[0, :] == x) for x in target_score_levels
+            ]
+            # Loop through target score levels and generate enough valid trials
+            valid_memory_grids = {}
+            for n_pairs, needed_pairs in zip(
+                target_score_levels, n_needed_pairs_per_level
+            ):
+                # Generate all grids for nTSLvl
+                current_grid_location = []
+                current_grid_difficulty = []
+                valid_memory_grids[n_pairs] = []
+                while len(current_grid_location) < needed_pairs:
+                    grid, difficulty_score = find_valid_grid(grid_size, n_pairs)
+                    # if grid already exist, disgard and find the next one
+                    if any(np.array_equal(c, grid) for c in current_grid_location):
+                        continue
+                    current_grid_location.append(grid)
+                    current_grid_difficulty.append(difficulty_score)
+                for l, d in zip(current_grid_location, current_grid_difficulty):
+                    valid_memory_grids[n_pairs].append((l, d))
+
+            sdf = pd.DataFrame()
+            for ts_level in target_score_array[s, :]:
+                grid, difficulty = valid_memory_grids[ts_level].pop()
+                grid = _make_memory_grid(grid, grid_size)
+                df = {
+                    "grid": [grid],
+                    "difficulty": [np.mean(difficulty)],
+                    "target_score": [ts_level],
+                }
+                df = pd.DataFrame(df)
+                sdf = pd.concat([sdf, df])
+            sdf = sdf.reset_index(drop=True)
+            sdf["reward_level"] = reward_array[s, :]
+            designs.append(sdf)
+        return designs
+
+    def _make_memory_grid(grid, grid_size):
+        """Fill the memory grid with filler alphabets."""
+        n_space = grid_size[0] * grid_size[1]
+
+        fillers = np.random.choice(len(ALLOWED_ALPHABETS), size=n_space)
+
+        return "".join(
+            str(c) if c > 0 else list(ALLOWED_ALPHABETS)[fillers[i]]
+            for i, c in enumerate(grid.flatten().tolist())
+        )
+
+    def find_valid_grid(
+        grid_size, n_pairs, grid=None, difficulty_score_per_pair=(10, 10), verbose=0
+    ):
+        """
+        Find valid grid that fits the difficulty level.
+        """
+        threshold = DIFFICULTY_SCALE[n_pairs]
+        grid_difficulty_score = np.mean(difficulty_score_per_pair)
+        if (
+            np.absolute(grid_difficulty_score - threshold) < 0.0001
+            and np.sum(difficulty_score_per_pair == 2) < 3
+        ):
+            if verbose != 0:
+                print(
+                    f"Found grid containing {n_pairs} pairs of targets, at score {threshold}"
+                )
+                print(grid, np.mean(difficulty_score_per_pair))
+            return grid, difficulty_score_per_pair
+        # get a grid
+        grid = _generate_number_pairs_grids(grid_size, n_pairs)
+        # homogenous score
+        difficulty_score_per_pair = _calculate_homogenous_score(grid)
+        return find_valid_grid(grid_size, n_pairs, grid, difficulty_score_per_pair)
+
+    def _calculate_homogenous_score(grid):
+        n_pairs = np.max(grid)
+        difficulty_score_per_pair = np.zeros(n_pairs)
+        for x in range(1, n_pairs + 1):
+            # Calculate contiguous pairs
+            s = generate_binary_structure(2, 2)
+            contiguous = int(label(grid == x, structure=s)[-1] == 1)
+            # Calculate aligned pairs
+            aligned = _check_alignment(grid, x)
+            difficulty_score_per_pair[x - 1] += contiguous + aligned
+        return difficulty_score_per_pair
+
+    def _check_alignment(tmp_grid, x):
+        verticle_aligned = np.sum(tmp_grid == x, axis=0)
+        verticle_aligned = np.where(verticle_aligned == 2)[0].size > 0
+        horisontal_aligned = np.sum(tmp_grid == x, axis=1)
+        horisontal_aligned = np.where(horisontal_aligned == 2)[0].size > 0
+        return any([verticle_aligned, horisontal_aligned])
+
+    def _generate_number_pairs_grids(grid_size, n_pairs):
+        memory_grid = np.zeros(grid_size, dtype=int)
+        idx_number_pairs = np.random.choice(
+            grid_size[0] * grid_size[1], size=n_pairs * 2, replace=False
+        )
+        idx_number_pairs = idx_number_pairs.tolist()
+        memory_grid.flat[idx_number_pairs] = np.repeat(range(1, n_pairs + 1), 2)
+        return memory_grid
+
+    while n_max_condition_difference < N_SUBJECTS:
+        max_difference_conditions, max_difference = generate_best_condition(
+            N_TRIALS_PER_RUN, n_condition, n_samples, contiguous=True
+        )
+        if (
+            len(np.unique(max_difference_conditions, axis=0))
+            != max_difference_conditions.shape[0]
+        ):  # check no condition repeats
+            continue
+        n_max_condition_difference = max_difference_conditions.shape[0]
+        n_samples = int(
+            n_samples * 1.3
+        )  # if we didn't find enough condition permutations, permute more!
+
+    # take the first N_SUBJECTS as the list for the experiment.
+    memory_grids_conditions = max_difference_conditions[:N_SUBJECTS, :]
+
+    # translate the condition back to reward and target score
+    # generate all combination of reward and target score
+    reward_translator, target_score_translator = {}, {}
+    for i, (t, r) in enumerate(product(target_score_level, reward_level), 1):
+        reward_translator[i] = r
+        target_score_translator[i] = t
+
+    reward_array = (
+        pd.DataFrame(memory_grids_conditions.copy()).replace(reward_translator).values
+    )  # reward level for each subject
+    target_score_array = (
+        pd.DataFrame(memory_grids_conditions.copy())
+        .replace(target_score_translator)
+        .values
+    )  # target score for each subject
+
+    # Homogenise grid difficulty
+    designs = homogenise_grid_difficulty(
+        GRID_SIZE, target_score_array, reward_array, target_score_level
+    )
+    designs = designs[0]
+
+    event_file = pd.DataFrame()
+    for i_encoding, row in designs.iterrows():
+        recalls = {
+            "duration": [estimate_duration],
+            "event_type": ["estimate"],
+            "grid": ["select encoding time"],
+            "difficulty": [row["difficulty"]],
+            "target_score": [row["target_score"]],
+            "reward_level": [row["reward_level"]],
+            "recall_display": ["NA"],
+            "recall_ans": ["NA"],
+        }
+        recalls["duration"].append(isi_set.pop())
+        recalls["event_type"].append("isi")
+        recalls["recall_display"].append("NA")
+        recalls["recall_ans"].append("NA")
+        recalls["grid"].append("")
+        recalls["difficulty"].append(row["difficulty"])
+        recalls["target_score"].append(row["target_score"])
+        recalls["reward_level"].append(row["reward_level"])
+
+        recalls["duration"].append(encoding_duration)
+        recalls["event_type"].append("encoding")
+        recalls["recall_display"].append("NA")
+        recalls["recall_ans"].append("NA")
+        recalls["grid"].append(row["grid"])
+        recalls["difficulty"].append(row["difficulty"])
+        recalls["target_score"].append(row["target_score"])
+        recalls["reward_level"].append(row["reward_level"])
+
+        recalls["duration"].append(isi_set.pop())
+        recalls["event_type"].append("isi")
+        recalls["recall_display"].append("NA")
+        recalls["recall_ans"].append("NA")
+        recalls["grid"].append("")
+        recalls["difficulty"].append(row["difficulty"])
+        recalls["target_score"].append(row["target_score"])
+        recalls["reward_level"].append(row["reward_level"])
+
+        for i in range(row["target_score"]):
+            numbers = list(range(1, row["target_score"] + 1))
+            _ = numbers.pop(i)  # remove the current number testing
             numbers = "".join([str(n) for n in numbers])
             pattern = f"[A-Z{numbers}]"
-            mem_grid = memory_grid
             # find the location index of the current number
-            mem_grid = re.sub(pattern, r' ', mem_grid)
-            current_number_loc = [loc
-                                  for loc, c in enumerate(mem_grid)
-                                  if c.isdigit()]
-            random.shuffle(current_number_loc)
+            recall_grid = re.sub(pattern, r" ", row["grid"])
+            current_number_loc = np.array(
+                [loc for loc, c in enumerate(recall_grid) if c.isdigit()]
+            )
+            np.random.shuffle(current_number_loc)
             # the first one will be the answer
-            current_ans_loc = current_number_loc[0]
-            # the last one will be the displayed
-            current_display_loc = current_number_loc[-1]
+            recall_ans = current_number_loc[0]
             # remove the answer from the grid
-            mem_grid = mem_grid[:current_ans_loc] + " " \
-                + mem_grid[current_ans_loc + 1:]
-            display.append(mem_grid)
-            onset.append(onset[-1] + duration[-1] )
-            duration.append(trial_duration)
-            recall_display.append(current_display_loc)
-            recall_ans.append(current_ans_loc)
-            trial_type.append("recall")
-            trial_number.append(i + 1)
-            pair_number.append(j + 1)
+            recall_grid = recall_grid[:recall_ans] + " " + recall_grid[recall_ans + 1 :]
 
-        # ending recall trials with a fixation
-        display.append("".join([" "] * (grid_size[0] * grid_size[1])))
-        onset.append(onset[-1] + duration[-1])
-        duration.append((generate_isi() + fixation_duration))
-        recall_display.append("N/A")
-        recall_ans.append("N/A")
-        trial_type.append("fixation")
-        trial_number.append(0)
-        pair_number.append(-1)
+            # the last one will be the displayed
+            recalls["duration"].append(recall_duration)
+            recalls["event_type"].append("recall")
+            recalls["recall_display"].append(current_number_loc[-1])
+            recalls["recall_ans"].append(recall_ans)
+            recalls["grid"].append(recall_grid)
+            recalls["difficulty"].append(row["difficulty"])
+            recalls["target_score"].append(row["target_score"])
+            recalls["reward_level"].append(row["reward_level"])
 
-        # how many pairs did you get right?
-        display.append("How many pairs did you get right?")
-        onset.append(onset[-1] + duration[-1])
-        duration.append((generate_isi() + performance_duration))
-        recall_display.append("N/A")
-        recall_ans.append("N/A")
-        trial_type.append("performance")
-        trial_number.append(i + 1)
-        pair_number.append(-1)
+        recalls["duration"].append(isi_set.pop())
+        recalls["event_type"].append("isi")
+        recalls["recall_display"].append("NA")
+        recalls["recall_ans"].append("NA")
+        recalls["grid"].append("")
+        recalls["difficulty"].append(row["difficulty"])
+        recalls["target_score"].append(row["target_score"])
+        recalls["reward_level"].append(row["reward_level"])
 
-        # ending block with a fixation
-        display.append("".join([" "] * (grid_size[0] * grid_size[1])))
-        onset.append(onset[-1] + duration[-1])
-        duration.append((generate_isi() + fixation_duration))
-        recall_display.append("N/A")
-        recall_ans.append("N/A")
-        trial_type.append("fixation")
-        trial_number.append(0)
-        pair_number.append(-1)
+        recalls["duration"].append(estimate_duration)
+        recalls["event_type"].append("e_success")
+        recalls["recall_display"].append("NA")
+        recalls["recall_ans"].append("NA")
+        recalls["grid"].append("how many did you get right")
+        recalls["difficulty"].append(row["difficulty"])
+        recalls["target_score"].append(row["target_score"])
+        recalls["reward_level"].append(row["reward_level"])
 
-        block['trial_number'] = trial_number
-        block['pair_number'] = pair_number
-        block['display'] = display
-        block['duration'] = duration
-        block['onset'] = onset
-        block['recall_display'] = recall_display
-        block['recall_answer'] = recall_ans
-        block['trial_type'] =trial_type
+        recalls["duration"].append(isi_set.pop())
+        recalls["event_type"].append("isi")
+        recalls["recall_display"].append("NA")
+        recalls["recall_ans"].append("NA")
+        recalls["grid"].append("")
+        recalls["difficulty"].append(row["difficulty"])
+        recalls["target_score"].append(row["target_score"])
+        recalls["reward_level"].append(row["reward_level"])
 
-        trials = pd.concat((trials, block))
+        if _switch_condition(designs, i_encoding, row):
+            recalls["duration"].append(estimate_duration)
+            recalls["event_type"].append("effort")
+            recalls["recall_display"].append("NA")
+            recalls["recall_ans"].append("NA")
+            recalls["grid"].append("how much effor")
+            recalls["difficulty"].append(row["difficulty"])
+            recalls["target_score"].append(row["target_score"])
+            recalls["reward_level"].append(row["reward_level"])
 
+            recalls["duration"].append(isi_set.pop())
+            recalls["event_type"].append("isi")
+            recalls["recall_display"].append("NA")
+            recalls["recall_ans"].append("NA")
+            recalls["grid"].append("")
+            recalls["difficulty"].append(row["difficulty"])
+            recalls["target_score"].append(row["target_score"])
+            recalls["reward_level"].append(row["reward_level"])
+
+        recalls["duration"].append(feedback_duration)
+        recalls["event_type"].append("feedback")
+        recalls["recall_display"].append("NA")
+        recalls["recall_ans"].append("NA")
+        recalls["grid"].append("feed back screen")
+        recalls["difficulty"].append(row["difficulty"])
+        recalls["target_score"].append(row["target_score"])
+        recalls["reward_level"].append(row["reward_level"])
+
+        recalls["duration"].append(TR * 2)  # block end
+        recalls["event_type"].append("isi")
+        recalls["recall_display"].append("NA")
+        recalls["recall_ans"].append("NA")
+        recalls["grid"].append("")
+        recalls["difficulty"].append(row["difficulty"])
+        recalls["target_score"].append(row["target_score"])
+        recalls["reward_level"].append(row["reward_level"])
+
+        recalls = pd.DataFrame(recalls)
+        recalls["i_grid"] = i_encoding + 1
+        event_file = pd.concat((event_file, recalls))
     out_fname = os.path.join(
         NUMBER_PAIRS_DATA_PATH,
         "designs",
         f"sub-{subject}_design.tsv",
     )
-    trials.to_csv(out_fname, sep="\t", index=True)
+    event_file.to_csv(out_fname, sep="\t", index=True)
 
 
-def grid_difficulty(memory_grid):
-    return None
+def _switch_condition(designs, trial, row):
+    if trial == designs.shape[0] - 1:
+        return True
+    next_ts = designs.loc[trial + 1, "target_score"]
+    next_rl = designs.loc[trial + 1, "reward_level"]
+    return (next_rl != row["reward_level"]) or (next_ts != row["target_score"])
 
 
 if __name__ == "__main__":
@@ -182,8 +474,23 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawTextHelpFormatter,
-        description="generate design files for participant / session",
+        description="generate design files for participant.",
     )
     parser.add_argument("subject", type=str, help="participant id")
+    parser.add_argument(
+        "--target_score_level",
+        nargs="+",
+        type=int,
+        default=TARGET_SCORE_LEVEL,
+        help="A list of target score range from 3 to 8.",
+    )
+    parser.add_argument(
+        "--reward_level",
+        nargs="+",
+        type=int,
+        default=REWARD_LEVEL,
+        help="A list of reward level.",
+    )
+
     parsed = parser.parse_args()
-    generate_design_file(parsed.subject)
+    generate_design_file(parsed.subject, parsed.target_score_level, parsed.reward_level)
