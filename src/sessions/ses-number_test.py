@@ -1,6 +1,5 @@
 import os
 
-
 # Task Parameters
 # fMRI: runs of 10 minutes - 2 run max
 # 10 minutes = 6 ~ 10 memory grids, 2 levels of
@@ -37,7 +36,6 @@ N_SUBJECTS = 1
 
 N_PERMUTATION = 1000  # how many permutations to check?
 
-
 # fMRI parameters
 TR = 1.49  # this has to be double checked
 ISI = 3  # 3 seconds jittered
@@ -72,7 +70,7 @@ def generate_design_file(subject, target_score_level, reward_level):
         + ISI
     )
     isi_set = isi_set.tolist()
-    print(len(isi_set))
+    print(f"number of uniqune ISI needed for {N_TRIALS_PER_RUN} trials: ", len(isi_set))
     # seed numpy with subject id to have reproducible design generation
     seed = int(hashlib.sha1(f"{subject}".encode("utf-8")).hexdigest(), 16) % (
         2**32 - 1
@@ -162,22 +160,11 @@ def generate_design_file(subject, target_score_level, reward_level):
     def homogenise_grid_difficulty(
         grid_size, target_score_array, reward_array, target_score_levels
     ):
-        """Generates a set of permutations of pairs on an n_row x n_col grid with difficulty = target_difficulty.
-        The same set of grids is generated for each participant and organised according to their individual sequence of
+        """Generates a set of permutations of pairs on an n_row x n_col grid
+        with difficulty = target_difficulty.
+        The same set of grids is generated for each participant and organised
+        according to their individual sequence of
         target scores. The higher the score, the easier the grid.
-        +1 is given to a pair's difficulty score if it is contiguous and +1 if it is vertically/horizontally aligned.
-
-        Args:
-            n_row (int): Number of rows in grid.
-            n_col (int): Number of columns in grid.
-            ts_array (ndarray): Trial array of target scores (assumes n_g == ts) (n_participants x n_memory_grid).
-            ts_levels (list): List of target score levels.
-            target_difficulty (list): The homogenous grid difficulty per TSLevel.
-
-        Returns:
-            grid_cell (list): A list of grids, where each element of the list is a tuple of a numpy array of grid location array, and a numpy array of grid difficulty array.
-            index_array (ndarray): An array of indexes of each pair of locations in the grid for each trial, arranged
-                                according to each participant's sequence of target scores.
         """
         designs = []
         for s in range(target_score_array.shape[0]):
@@ -223,7 +210,7 @@ def generate_design_file(subject, target_score_level, reward_level):
         """Fill the memory grid with filler alphabets."""
         n_space = grid_size[0] * grid_size[1]
 
-        fillers = np.random.choice(len(ALLOWED_ALPHABETS), size=n_space)
+        fillers = np.random.choice(len(ALLOWED_ALPHABETS), size=n_space, replace=False)
 
         return "".join(
             str(c) if c > 0 else list(ALLOWED_ALPHABETS)[fillers[i]]
@@ -282,6 +269,25 @@ def generate_design_file(subject, target_score_level, reward_level):
         memory_grid.flat[idx_number_pairs] = np.repeat(range(1, n_pairs + 1), 2)
         return memory_grid
 
+
+    def _generate_recall_grid(i, row):
+        numbers = list(range(1, row["target_score"] + 1))
+        _ = numbers.pop(i)  # remove the current number testing
+        numbers = "".join([str(n) for n in numbers])
+        pattern = f"[A-Z{numbers}]"
+        # find the location index of the current number
+        recall_grid = re.sub(pattern, r" ", row["grid"])
+        current_number_loc = np.array(
+            [loc for loc, c in enumerate(recall_grid) if c.isdigit()]
+            )
+        np.random.shuffle(current_number_loc)
+        # the first one will be the answer
+        recall_answer = current_number_loc[0]
+        # remove the answer from the grid, replace with empty space
+        recall_grid = f"{recall_grid[:recall_answer]} {recall_grid[recall_answer + 1:]}"
+        return recall_grid,current_number_loc,recall_answer
+
+
     while n_max_condition_difference < N_SUBJECTS:
         max_difference_conditions, max_difference = generate_best_condition(
             N_TRIALS_PER_RUN, n_condition, n_samples, contiguous=True
@@ -319,149 +325,119 @@ def generate_design_file(subject, target_score_level, reward_level):
     designs = homogenise_grid_difficulty(
         GRID_SIZE, target_score_array, reward_array, target_score_level
     )
-    designs = designs[0]
+    designs = designs[0]  # original code was for generating multiple designs
 
     event_file = pd.DataFrame()
     for i_encoding, row in designs.iterrows():
         recalls = {
             "duration": [estimate_duration],
             "event_type": ["estimate"],
+            "pair_number": ["NA"],
             "grid": ["select encoding time"],
-            "difficulty": [row["difficulty"]],
-            "target_score": [row["target_score"]],
-            "reward_level": [row["reward_level"]],
             "recall_display": ["NA"],
-            "recall_ans": ["NA"],
+            "recall_answer": ["NA"],
         }
         recalls["duration"].append(isi_set.pop())
         recalls["event_type"].append("isi")
+        recalls["pair_number"].append("NA")
         recalls["recall_display"].append("NA")
-        recalls["recall_ans"].append("NA")
+        recalls["recall_answer"].append("NA")
         recalls["grid"].append("")
-        recalls["difficulty"].append(row["difficulty"])
-        recalls["target_score"].append(row["target_score"])
-        recalls["reward_level"].append(row["reward_level"])
 
         recalls["duration"].append(encoding_duration)
         recalls["event_type"].append("encoding")
+        recalls["pair_number"].append("NA")
         recalls["recall_display"].append("NA")
-        recalls["recall_ans"].append("NA")
+        recalls["recall_answer"].append("NA")
         recalls["grid"].append(row["grid"])
-        recalls["difficulty"].append(row["difficulty"])
-        recalls["target_score"].append(row["target_score"])
-        recalls["reward_level"].append(row["reward_level"])
 
         recalls["duration"].append(isi_set.pop())
         recalls["event_type"].append("isi")
+        recalls["pair_number"].append("NA")
         recalls["recall_display"].append("NA")
-        recalls["recall_ans"].append("NA")
+        recalls["recall_answer"].append("NA")
         recalls["grid"].append("")
-        recalls["difficulty"].append(row["difficulty"])
-        recalls["target_score"].append(row["target_score"])
-        recalls["reward_level"].append(row["reward_level"])
 
         for i in range(row["target_score"]):
-            numbers = list(range(1, row["target_score"] + 1))
-            _ = numbers.pop(i)  # remove the current number testing
-            numbers = "".join([str(n) for n in numbers])
-            pattern = f"[A-Z{numbers}]"
-            # find the location index of the current number
-            recall_grid = re.sub(pattern, r" ", row["grid"])
-            current_number_loc = np.array(
-                [loc for loc, c in enumerate(recall_grid) if c.isdigit()]
-            )
-            np.random.shuffle(current_number_loc)
-            # the first one will be the answer
-            recall_ans = current_number_loc[0]
-            # remove the answer from the grid
-            recall_grid = recall_grid[:recall_ans] + " " + recall_grid[recall_ans + 1 :]
+            recall_grid, current_number_loc, recall_answer = _generate_recall_grid(i, row)
 
             # the last one will be the displayed
             recalls["duration"].append(recall_duration)
             recalls["event_type"].append("recall")
+            recalls["pair_number"].append(i + 1)
             recalls["recall_display"].append(current_number_loc[-1])
-            recalls["recall_ans"].append(recall_ans)
+            recalls["recall_answer"].append(recall_answer)
             recalls["grid"].append(recall_grid)
-            recalls["difficulty"].append(row["difficulty"])
-            recalls["target_score"].append(row["target_score"])
-            recalls["reward_level"].append(row["reward_level"])
 
         recalls["duration"].append(isi_set.pop())
         recalls["event_type"].append("isi")
+        recalls["pair_number"].append("NA")
         recalls["recall_display"].append("NA")
-        recalls["recall_ans"].append("NA")
+        recalls["recall_answer"].append("NA")
         recalls["grid"].append("")
-        recalls["difficulty"].append(row["difficulty"])
-        recalls["target_score"].append(row["target_score"])
-        recalls["reward_level"].append(row["reward_level"])
 
         recalls["duration"].append(estimate_duration)
         recalls["event_type"].append("e_success")
+        recalls["pair_number"].append("NA")
         recalls["recall_display"].append("NA")
-        recalls["recall_ans"].append("NA")
+        recalls["recall_answer"].append("NA")
         recalls["grid"].append("how many did you get right")
-        recalls["difficulty"].append(row["difficulty"])
-        recalls["target_score"].append(row["target_score"])
-        recalls["reward_level"].append(row["reward_level"])
 
         recalls["duration"].append(isi_set.pop())
         recalls["event_type"].append("isi")
+        recalls["pair_number"].append("NA")
         recalls["recall_display"].append("NA")
-        recalls["recall_ans"].append("NA")
+        recalls["recall_answer"].append("NA")
         recalls["grid"].append("")
-        recalls["difficulty"].append(row["difficulty"])
-        recalls["target_score"].append(row["target_score"])
-        recalls["reward_level"].append(row["reward_level"])
 
         if _switch_condition(designs, i_encoding, row):
             recalls["duration"].append(estimate_duration)
             recalls["event_type"].append("effort")
             recalls["recall_display"].append("NA")
-            recalls["recall_ans"].append("NA")
+            recalls["recall_answer"].append("NA")
             recalls["grid"].append("how much effor")
-            recalls["difficulty"].append(row["difficulty"])
-            recalls["target_score"].append(row["target_score"])
-            recalls["reward_level"].append(row["reward_level"])
+            recalls["pair_number"].append("NA")
 
             recalls["duration"].append(isi_set.pop())
             recalls["event_type"].append("isi")
             recalls["recall_display"].append("NA")
-            recalls["recall_ans"].append("NA")
+            recalls["recall_answer"].append("NA")
             recalls["grid"].append("")
-            recalls["difficulty"].append(row["difficulty"])
-            recalls["target_score"].append(row["target_score"])
-            recalls["reward_level"].append(row["reward_level"])
+            recalls["pair_number"].append("NA")
 
         recalls["duration"].append(feedback_duration)
         recalls["event_type"].append("feedback")
         recalls["recall_display"].append("NA")
-        recalls["recall_ans"].append("NA")
+        recalls["recall_answer"].append("NA")
         recalls["grid"].append("feed back screen")
-        recalls["difficulty"].append(row["difficulty"])
-        recalls["target_score"].append(row["target_score"])
-        recalls["reward_level"].append(row["reward_level"])
+        recalls["pair_number"].append(-1)
 
         recalls["duration"].append(TR * 2)  # block end
         recalls["event_type"].append("isi")
         recalls["recall_display"].append("NA")
-        recalls["recall_ans"].append("NA")
+        recalls["recall_answer"].append("NA")
         recalls["grid"].append("")
-        recalls["difficulty"].append(row["difficulty"])
-        recalls["target_score"].append(row["target_score"])
-        recalls["reward_level"].append(row["reward_level"])
+        recalls["pair_number"].append("NA")
 
         recalls = pd.DataFrame(recalls)
         recalls["i_grid"] = i_encoding + 1
+        recalls["difficulty"] = row["difficulty"]
+        recalls["target_score"] = row["target_score"]
+        recalls["reward_level"] = row["reward_level"]
+        recalls.index.name = "event_index"
+
         event_file = pd.concat((event_file, recalls))
     out_fname = os.path.join(
         NUMBER_PAIRS_DATA_PATH,
         "designs",
         f"sub-{subject}_design.tsv",
     )
+    event_file = event_file.reset_index()
     event_file.to_csv(out_fname, sep="\t", index=True)
 
 
 def _switch_condition(designs, trial, row):
+    """Check if the target score x reward level pair changes next."""
     if trial == designs.shape[0] - 1:
         return True
     next_ts = designs.loc[trial + 1, "target_score"]
