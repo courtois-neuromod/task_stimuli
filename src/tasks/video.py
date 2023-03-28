@@ -132,7 +132,7 @@ and fixate the dot whenever it appears."""
         fixation_on = False  # "switch" to determine fixation onset/offset time for logs
         self.movie_stim.play()
 
-        while self.movie_stim.status != visual.FINISHED:
+        while self.movie_stim.isPlaying:
         #while self.movie_stim.getCurrentFrameNumber() < 200:
             #exp_win.clearBuffer(color=True, depth=True)
             self.movie_stim.draw(exp_win)
