@@ -50,7 +50,7 @@
 	url = ./data/narratives.stimuli
 	datalad-id = 927ecf28-eda2-421d-9d25-6a55ed312166
 [submodule "data/language/petitprince"]
-	path = data/language/petitprince
+	path = data/language/petitprince.stimuli
 	url = https://github.com/OpenNeuroDatasets/ds003643.git
 	datalad-id = acc00a1b-08c3-4b06-ad19-3de01b33eeed
 	datalad-url = https://github.com/OpenNeuroDatasets/ds003643.git
