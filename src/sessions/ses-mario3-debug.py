@@ -21,6 +21,7 @@ def get_tasks(parsed):
     def smb3_completion_fn(env):
         return env.data['killed'] == 0
 
+    scenario = 'scenario'
     bids_sub = "sub-%s" % parsed.subject
     next_levels = [f"1Player.World1.Level1" for i in range(20)]
     for run in range(10):
