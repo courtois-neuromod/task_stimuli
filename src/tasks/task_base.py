@@ -78,9 +78,10 @@ class Task(object):
             ctl_win.timeOnFlip(self, '_ctl_win_last_flip_time')
             ctl_win.flip(clearBuffer=clearBuffer)
 
-        exp_win.flip(clearBuffer=clearBuffer)
-        # set callback for next flip, to be the first callback for other callbacks to use
-        exp_win.timeOnFlip(self, '_exp_win_last_flip_time')
+        if not clearBuffer is None:
+            exp_win.flip(clearBuffer=clearBuffer)
+            # set callback for next flip, to be the first callback for other callbacks to use
+            exp_win.timeOnFlip(self, '_exp_win_last_flip_time')
 
     def instructions(self, exp_win, ctl_win):
         if hasattr(self, "_instructions"):
