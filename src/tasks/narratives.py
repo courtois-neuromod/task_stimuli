@@ -1,6 +1,6 @@
-import os, sys, time
+import os, sys, time, random
 from psychopy import visual, core, data, logging, event, sound
-from pandas import read_csv
+import pandas
 from .task_base import Task
 from colorama import Fore
 
@@ -57,6 +57,7 @@ class SoundTaskBase(Task):
             yield
         while self.sound.status > 0:
             pass
+        print(f"{'#'*25} STOP SCANNER {'#'*25}")
 
     def _stop(self, exp_win, ctl_win):
         self.sound.stop()
@@ -186,6 +187,8 @@ class AudioRecording(Task):
             self._poll_audio()
             yield flip_idx < 2
 
+        print(f"{'#'*25} STOP SCANNER {'#'*25}")
+
     def _stop(self, exp_win, ctl_win):
         #self._mic.stop()
         self._stop_recording()
@@ -230,8 +233,6 @@ If you are unsure, choose the best possible answer.
 Use up/down buttons to answer.
 """
 
-    RESPONSE_KEYS = {'u':'A','d':'B'}
-
     QUESTIONS = [
         "I like this story.",
         "I could hear and understand the story well.",
@@ -243,14 +244,17 @@ Use up/down buttons to answer.
         self,
         design_file,
         initial_wait=4, final_wait=9, trial_duration_min=4, trial_duration_max=12, isi_fixation=1.5,
+        run_feedback_duration=3,
         *args, **kwargs):
         super().__init__(**kwargs)
         self.initial_wait, self.final_wait = initial_wait, final_wait
         self.trial_duration_min, self.trial_duration_max, self.isi_fixation = trial_duration_min, trial_duration_max, isi_fixation
+        self.run_feedback_duration = run_feedback_duration
         if not os.path.exists(design_file):
             raise ValueError(f"{design_file} does not exists")
         self.design_file = design_file
         self.design = data.importConditions(self.design_file)
+        #self.design = self.design[:3]
         self.duration = len(self.design)
         self._progress_bar_refresh_rate = None
 
@@ -302,6 +306,7 @@ Use up/down buttons to answer.
         # initial wait with fixation
         yield from self._fixation(exp_win, self.initial_wait)
 
+        n_correct_answer = 0
         text_stims = [self.text1, self.text2]
         # trials
         for trial_n, trial in enumerate(self.trials):
@@ -310,9 +315,14 @@ Use up/down buttons to answer.
                 f"Trial {trial_n}:"
             )
             self.progress_bar.update(1)
+            responses = 'AB'
+            # randomize screen position
+            responses = random.sample(responses, 2)
+
+            response_keys = {k:r for k,r in zip('ud', responses)}
             # display segments
-            self.text1.text = trial['Segment_A']
-            self.text2.text = trial['Segment_B']
+            self.text1.text = trial[f'Segment_{responses[0]}']
+            self.text2.text = trial[f'Segment_{responses[1]}']
             for flip in range(2):
                 for stim in text_stims:
                     stim.color = 'white'
@@ -321,22 +331,24 @@ Use up/down buttons to answer.
                 if flip == 0:
                     trial['onset'] = self._exp_win_last_flip_time - self._exp_win_first_flip_time
             # wait for response key
-            event.getKeys(self.RESPONSE_KEYS.keys()) # flush keys
+            event.getKeys(response_keys.keys()) # flush keys
             for _ in utils.wait_until_yield(
                 self.task_timer,
                 self.task_timer.getTime() + self.trial_duration_max,
                 keyboard_accuracy=.0001):
-                keys = event.getKeys(self.RESPONSE_KEYS.keys(), timeStamped=self.task_timer)
+                keys = event.getKeys(response_keys.keys(), timeStamped=self.task_timer)
 
                 if len(keys):
                     # stop on first press so there should be a single pressed key
                     key = keys[0]
-                    trial['response'] = self.RESPONSE_KEYS[key[0]]
+                    trial['response'] = response_keys[key[0]]
                     trial['response_correct'] = trial['response'] == trial['Correct_Answer']
                     trial['response_onset'] = key[1]
                     trial['response_time'] = key[1] - trial['onset']
 
-                    chosen_idx = 'AB'.index(trial['response'])
+                    n_correct_answer += trial['response_correct']
+
+                    chosen_idx = responses.index(trial['response'])
                     text_stims[chosen_idx].color = 'black'
                     for flip in range(2):
                         for stim in text_stims:
@@ -351,20 +363,36 @@ Use up/down buttons to answer.
                     break
                 yield
 
-
             # flip to get screen clear timing
             yield True
             trial['offset'] = self._exp_win_last_flip_time - self._exp_win_first_flip_time
             # inter-trial fixation
             yield from self._fixation(exp_win, trial['offset'] + self.isi_fixation)
 
+
+        if self.run_feedback_duration > 0:
+            self.text1.color = 'white'
+            self.text1.text = f"You got {n_correct_answer}/{len(self.design)} answers correct."
+            self.text1.draw(exp_win)
+            yield True
+            yield from utils.wait_until_yield(
+                self.task_timer,
+                trial['offset'] + self.run_feedback_duration,
+                keyboard_accuracy=.0001)
+
         # display questionnaire
         self.progress_bar.set_description("Questions:")
         yield from self._questionnaire(exp_win, ctl_win, [(k, q, 5) for k, q in enumerate(self.QUESTIONS)])
 
+        # depends if questionnaire was shown
+        final_wait = (
+            trial['offset'] + self.run_feedback_duration + self.final_wait
+            if not len(self._events) else
+            self._events[-1]['onset'] + self.final_wait
+            )
         # final_wait with fixation
-        yield from self._fixation(exp_win, trial['offset'] + self.final_wait)
-
+        yield from self._fixation(exp_win, final_wait)
+        print(f"{'#'*25} STOP SCANNER {'#'*25}")
 
 
     def _questionnaire(self, exp_win, ctl_win, questions):
@@ -512,5 +540,9 @@ Use up/down buttons to answer.
 
 
     def _save(self):
-        self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
+        out_fname = self._generate_unique_filename("events", "tsv")
+        self.trials.saveAsWideText(out_fname)
+        events_df = pandas.read_csv(out_fname, sep="\t")
+        events_df = pandas.concat([events_df, pandas.DataFrame(self._events)])
+        events_df.to_csv(out_fname, sep="\t", index=False)
         return False
