@@ -16,6 +16,7 @@ INSTRUCTION_DURATION = 4
 STARTCUE_DURATION = 2
 FEEDBACK_DURATION = 3
 CALIBRATE_HOTKEY = "c"
+DEFAULT_EYE_ROLL = False
 
 MARKER_FILL_COLOR = (0.8, 0, 0.5)
 
@@ -73,6 +74,7 @@ class EyetrackerCalibration_targets(Task):
         use_eyetracking=True,
         validation=False,
         feedback=False,
+        eye_roll=DEFAULT_EYE_ROLL,
         **kwargs,
     ):
         self.markers_order = markers_order
@@ -88,6 +90,7 @@ class EyetrackerCalibration_targets(Task):
 
         self.validation = validation
         self.feedback = feedback
+        self.eye_roll = eye_roll
 
     def _instructions(self, exp_win, ctl_win):
         if self.validation:
@@ -150,7 +153,7 @@ class EyetrackerCalibration_targets(Task):
 
         calibration_success = False
         while not calibration_success:
-            start_calibration = self.validation
+            start_calibration = self.validation or not self.eye_roll
             while not start_calibration:
                 allKeys = event.getKeys([CALIBRATE_HOTKEY])
                 for key in allKeys:
