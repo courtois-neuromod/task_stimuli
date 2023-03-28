@@ -765,7 +765,11 @@ class EyeTrackerClient(threading.Thread):
             self.pupil_monitor = Msg_Receiver(
 
                 self._ctx, f"tcp://localhost:{self._ipc_sub_port}",
-                topics=("gaze", "pupil", "fixations", "notify.calibration.successful", "notify.calibration.failed", "notify.aravis")
+                topics=(
+                    "gaze", "pupil", "fixations",
+                    "notify.calibration.successful",
+                    "notify.calibration.failed",
+                    "notify.aravis")
 
             )
             self.paused = False
@@ -802,6 +806,9 @@ class EyeTrackerClient(threading.Thread):
                         elif topic.startswith("notify.aravis.start_capture"):
                             self._aravis_notification = tmp
         logging.info("eyetracker listener: stopping")
+
+
+
 
     def set_pupil_cb(self, pupil_cb):
         self._pupil_cb = pupil_cb
@@ -980,7 +987,7 @@ class EyeTrackerClient(threading.Thread):
                 "subject": "start_plugin",
                 "name": "Gazer2D",
                 "args": {"calib_data": calib_data},
-                "raise_calibration_error": False,
+                "raise_calibration_error": True,
             }
         )
         logging.info("calibration data sent to pupil")
