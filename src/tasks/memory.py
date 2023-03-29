@@ -75,8 +75,10 @@ Try to remember the items and their location on the screen."""
 class NumberPair(Task):
 
     DEFAULT_INSTRUCTION = """You will be presented a 6 x 4 grid on the screen.
-Try to remember the numer pairs on screen.
-You will be asked to recall them seqentially."""
+Remember the numer pairs on screen.
+You will be asked to recall them seqentially.
+If you can remeber all the pair, you will win the bonus points.
+"""
 
     def __init__(self, items_list, *args, **kwargs):
         super().__init__(**kwargs)
@@ -128,128 +130,282 @@ You will be asked to recall them seqentially."""
             pos=(-0.8 + 2 * 0.25, 0.7 - 5 * 0.25),
             alignText="left", color="white"
         )
+        self.postanswer_message = visual.TextStim(
+            exp_win, text="Response received. Wait for the next trial.",
+            pos=(-0.8 + 2 * 0.25, 0.7 - 5 * 0.25),
+            alignText="left", color="white"
+        )
         self.question = visual.TextStim(
             exp_win, text="",
             pos=(0, 0.5),
             alignText="center", color="white")
 
         self.recall_time = visual.RatingScale(
-            exp_win, low=15, high=75, precision=1,
-            tickMarks=[15, 75],
-            labels=["15 seconds", "75 seconds"], scale=None, noMouse=True
+            exp_win, low=5, high=60, precision=1,
+            tickMarks=[5, 60],
+            labels=["5 seconds", "60 seconds"], scale=None, noMouse=True,
+            acceptKeys='a', maxTime=0,
         )
         self.recall_time.styleTweaks = ['triangleMarker']
+
+        self.estimate_success = visual.RatingScale(
+            exp_win, choices=[0, 1, 2, 3, 4],
+            noMouse=True, precision=1,
+            acceptKeys='a', maxTime=0,
+        )
+        self.estimate_success.styleTweaks = ['triangleMarker']
+
+        self.effort = visual.RatingScale(
+            exp_win, low=0, high=100, precision=1,
+            tickMarks=[0, 100],
+            labels=["0%", "100%"], scale=None, noMouse=True,
+            acceptKeys='a', maxTime=0,
+        )
+        self.recall_time.styleTweaks = ['triangleMarker']
+
         self._progress_bar_refresh_rate = 2 # 1 flip / trial
         self.pyglet_keyboard = key.KeyStateHandler()
 
     def _run(self, exp_win, ctl_win):
         # start the trials
-        last_selected_location = None
         for trial in self.trials:
             # flush keys
-            confidence_answer_keys = event.getKeys(keyList=list(self.confidence_keys.keys()))
+            last_selected_location = None
+            confidence_answer_keys = event.getKeys(
+                        keyList=list(self.confidence_keys.keys()),
+                        timeStamped=self.task_timer)
             change_direction = event.getKeys(keyList=list(self.direction_keys.keys()))
-
-            # update the display
-            items = trial["display"]
-            for item, cell in zip(items, self.grid):
-                cell[0].text = item
-
-            if last_selected_location:
-                self.grid[last_selected_location][-1].lineColor = 'white'
-
-            if trial['trial_type'] == 'recall':
-                # set a random box that's not the box with number in as the start
-                selected_location = self._selecte_start_location(trial['recall_display'])
-                self.trials.addData("random_start_location", selected_location)
-                self.grid[selected_location][-1].lineColor = 'yellow'
-
-            if trial['trial_type'] in ["estimate", "performance"]:
-                # update text
-                self.question.text = trial['display']
-                pos = 50
-                self.recall_time.markerStart = pos
-                exp_win.winHandle.push_handlers(self.pyglet_keyboard)
-
-
+            exp_win.winHandle.push_handlers(self.pyglet_keyboard)
             # display progress
-            description = f"Trial {trial['trial_number']}: {trial['trial_type']}"
-            if trial['trial_type'] == 'recall':
-                loc_x, loc_y = self._index2coordinates(selected_location)
-                description = f"Trial {trial['trial_number']}: {trial['trial_type']}-{trial['pair_number']} selecting {selected_location}({loc_x}, {loc_y})"
+            description = f"Trial {trial['i_grid']}: {trial['event_type']}. {trial['duration']}s"
             self.progress_bar.set_description(description)
+            # trial onset
+            trial["onset"] = self._exp_win_last_flip_time - self._exp_win_first_flip_time
 
-            trial["onset_flip"] = self._exp_win_last_flip_time - self._exp_win_first_flip_time
+            # subject estimate time for encoding part
+            if trial['event_type'] in ["estimate"]:
+                n_correct = 0  # reset correct counter
+                self.recall_time.reset()
+                self.question.text = f"{trial['target_score']} of number pairs to remember.\n{trial['reward_level']} bonus points."
+                pos = random.randrange(5, 60)
+                self.recall_time.markerStart = pos
+                grid_memory_time = None
+                # while self.recall_time.noResponse and \
+                #     (self.task_timer.getTime() - trial["onset"]) < trial['duration'] :
+                while self.recall_time.noResponse:
+                    # use a sliding scale to select time one wants to use for
+                    # memorising the grid
+                    self.question.draw(exp_win)
+                    self.recall_time.draw(exp_win)
+                    if ctl_win:
+                        self.question.draw(exp_win)
+                        self.recall_time.draw(exp_win)
 
-            for frameN in range(int(config.FRAME_RATE * trial["duration"]) - 1):  # use the time of one frame to prepare
-                if trial['trial_type'] in ['rehersal', 'fixation', 'recall']:  # rehersal or fixation
+                    pos = self._update_rating_scale(pos, 0, 55)
+                    self.recall_time.setMarkerPos(pos)
+                    yield True
+                grid_memory_time = self.recall_time.getRating()
+                self.trials.addData('estimate_time',
+                                    grid_memory_time)
+                self.trials.addData('decision_time',
+                                    self.recall_time.getRT())
+                self.trials.addData('choice_history',
+                                    self.recall_time.getHistory())
+                description = (f"{Fore.RED}Trial {trial['i_grid']}: "
+                               f"{trial['event_type']}-{trial['pair_number']} "
+                               f"selecting {grid_memory_time}{Fore.RESET}")
+                yield True
+
+            elif trial['event_type'] in ['encoding', 'recall']:
+                # reset grid display
+                items = trial["grid"]
+                for item, cell in zip(items, self.grid):  # update the display
+                    cell[0].text = item
+                    cell[-1].lineColor = 'white'  # reset grid color
+
+                if trial['event_type'] == 'encoding':
+                    trial["duration"] = int(grid_memory_time) \
+                        if grid_memory_time else 5  # in case no response received
+                    description = f"Trial {trial['i_grid']}: {trial['event_type']}. {trial['duration']}s"
+                    self.progress_bar.set_description(description)
                     for item, box in self.grid:
                         item.draw(exp_win)
                         box.draw(exp_win)
                         if ctl_win:
                             item.draw(exp_win)
                             box.draw(exp_win)
-                    if trial['trial_type'] == 'recall':
+                    yield True
+                    utils.wait_until(self.task_timer,
+                                     trial["onset"] + trial["duration"] - 1 / config.FRAME_RATE)
+
+                elif trial['event_type'] == 'recall':
+                    # set a random box that's not the box with number in as the start
+                    selected_location = self._selecte_start_location(trial['recall_display'])
+                    self.trials.addData("random_start_location", selected_location)
+                    self.grid[selected_location][-1].lineColor = 'yellow'
+                    loc_x, loc_y = self._index2coordinates(selected_location)
+                    description = (f"Trial {trial['i_grid']}: "
+                                f"{trial['event_type']}-{trial['pair_number']} "
+                                f"selecting {selected_location}({loc_x}, {loc_y})")
+                    self.progress_bar.set_description(description)
+                    collect_response = False
+                    selection_history = [(selected_location, 0)]
+                    while collect_response is False:
                         for item, box in self.grid:
                             item.draw(exp_win)
                             box.draw(exp_win)
                             if ctl_win:
                                 item.draw(exp_win)
                                 box.draw(exp_win)
-                        # show instruction
+                        # collect response
                         self.answer_instruction.draw(exp_win)
                         if ctl_win:
                             self.answer_instruction.draw(exp_win)
-
+                        yield True
                         # detect key press for location, update color of selected block
                         last_selected_location = selected_location
                         change_direction = event.getKeys(keyList=list(self.direction_keys.keys()))
                         if len(change_direction):
-                            selected_location = self._find_next_location(change_direction, selected_location, trial['recall_display'])
+                            change_direction_timestamp = self.task_timer.getTime() - trial['onset']
+                            selected_location = self._find_next_location(
+                                change_direction, selected_location,
+                                trial['recall_display'])
+                            selection_history.append((selected_location, change_direction_timestamp))
                             # update screen buffer
                             self.grid[selected_location][-1].lineColor = 'yellow'
                             if selected_location != last_selected_location:
                                 self.grid[last_selected_location][-1].lineColor = 'white'
+
                             # update progress bar
                             loc_x, loc_y = self._index2coordinates(selected_location)
-                            description = f"Trial {trial['trial_number']}: {trial['trial_type']}-{trial['pair_number']} selecting {selected_location}({loc_x}, {loc_y})"
+                            description = (
+                                f"Trial {trial['i_grid']}: "
+                                f"{trial['event_type']}-{trial['pair_number']} "
+                                f"selecting {selected_location}({loc_x}, {loc_y})"
+                            )
                             self.progress_bar.set_description(description)
+                            for item, box in self.grid:
+                                item.draw(exp_win)
+                                box.draw(exp_win)
+                                if ctl_win:
+                                    item.draw(exp_win)
+                                    box.draw(exp_win)
+                            # collect response
+                            self.answer_instruction.draw(exp_win)
+                            if ctl_win:
+                                self.answer_instruction.draw(exp_win)
+                            yield True
 
-                        # detect key press for metacognition answer
-                        confidence_answer_keys = event.getKeys(keyList=list(self.confidence_keys.keys()), timeStamped=self.task_timer)
+                        confidence_answer_keys = event.getKeys(
+                            keyList=list(self.confidence_keys.keys()),
+                            timeStamped=self.task_timer)
                         if len(confidence_answer_keys):
-                            first_response = confidence_answer_keys[0]
-                            self.trials.addData("selected_location", selected_location)
-                            self.trials.addData("confidence_key", first_response[0])
-                            self.trials.addData("confidence_key_onset", first_response[1])
-                            self.trials.addData("confidence_rating", self.confidence_keys[first_response[0]])
-                            self.trials.addData("correct", int(trial['recall_answer'] == selected_location))
-                            self.trials.addData("recall_time", first_response[1] - trial["onset_flip"])
-                            description = f"{Fore.RED}Trial {trial['trial_number']}: {trial['trial_type']}-{trial['pair_number']} selecting {selected_location}({loc_x}, {loc_y}), confident? {self.confidence_keys[first_response[0]]} keypress: {first_response[0]}{Fore.RESET}"
-                            self.progress_bar.set_description(description)
-                            # reset color
-                            last_selected_location = selected_location
-                            break  # temporay solution  #TODO
-                elif trial['trial_type'] in ["estimate"]:
+                            collect_response = True
+                    # detect key press for metacognition answer
+                    first_response = confidence_answer_keys[0]
+                    recall_correct = int(trial['recall_answer'] == selected_location)
+                    confidence_rating = self.confidence_keys[first_response[0]]
+                    n_correct += recall_correct
+                    self.trials.addData("selected_location", selected_location)
+                    self.trials.addData("confidence_key", first_response[0])
+                    self.trials.addData("confidence_key_onset", first_response[1])
+                    self.trials.addData("confidence_rating", confidence_rating)
+                    self.trials.addData("correct", recall_correct)
+                    self.trials.addData("choice_history", selection_history)
+                    self.trials.addData("decision_time", first_response[1] - trial["onset"])
+                    description = (f"{Fore.RED}Trial {trial['i_grid']}: "
+                                    f"{trial['event_type']}-{trial['pair_number']} "
+                                    f"selecting {selected_location}({loc_x}, {loc_y}), "
+                                    f"confident? {confidence_rating} "
+                                    f"correct? {recall_correct} "
+                                    f"keypress: {first_response[0]}{Fore.RESET}")
+                    self.progress_bar.set_description(description)
+                    # reset color
+                    last_selected_location = selected_location
+
+            elif trial['event_type'] == "e_success":
+                # update text
+                self.estimate_success.reset()
+                self.question.text = f"Out of {trial['target_score']} number pairs, how many did you get right?"
+                pos = int(trial['target_score'])
+                self.estimate_success.markerStart = pos
+                self.estimate_success.choices = list(range(int(trial['target_score']) + 1))
+                while self.estimate_success.noResponse:
                     self.question.draw(exp_win)
-                    self.recall_time.draw()
+                    self.estimate_success.draw(exp_win)
                     if ctl_win:
                         self.question.draw(exp_win)
-                        self.recall_time.draw()
-
-                    if self.pyglet_keyboard[key.LEFT]:
-                        pos -= 1.0
-                    elif self.pyglet_keyboard[key.RIGHT]:
-                        pos += 1.0
-                    if pos > 75:
-                        pos = 75
-                    elif pos < 15:
-                        pos = 15
-                    self.recall_time.setMarkerPos(pos)
-                else:
-                    pass
+                        self.estimate_success.draw(exp_win)
+                    yield True
+                estimate_success = self.estimate_success.getRating()
+                self.trials.addData('estimate_success', estimate_success)
+                self.trials.addData('decision_time', self.estimate_success.getRT())
+                self.trials.addData('choice_history', self.estimate_success.getHistory())
+                description = f"{Fore.RED}Trial {trial['i_grid']}: {trial['event_type']} selecting {estimate_success}{Fore.RESET}"
+                self.progress_bar.set_description(description)
                 yield True
+
+            elif trial['event_type'] == "feedback":
+                # update text
+                self.question.text = f"Out of {trial['target_score']} number pairs, you got {n_correct} correctly."
+                self.question.draw(exp_win)
+                if ctl_win:
+                    self.question.draw(exp_win)
+                yield True
+                utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] - 1 / config.FRAME_RATE)
+
+            elif trial['event_type'] in ["effort"]:
+                # update text
+                self.question.text = f"How much effor did you put in the task?"
+                pos = random.randrange(0, 100)
+                self.effort.markerStart = pos
+                effort_estmation = None
+                # while self.recall_time.noResponse and \
+                #     (self.task_timer.getTime() - trial["onset"]) < trial['duration'] :
+                while self.effort.noResponse:
+                    # use a sliding scale to select time one wants to use for
+                    # memorising the grid
+                    self.question.draw(exp_win)
+                    self.effort.draw(exp_win)
+                    if ctl_win:
+                        self.question.draw(exp_win)
+                        self.effort.draw(exp_win)
+
+                    pos = self._update_rating_scale(pos, 0, 100)
+                    self.effort.setMarkerPos(pos)
+                    yield True
+                effort_estmation = self.effort.getRating()
+                self.trials.addData('effort',
+                                    effort_estmation)
+                self.trials.addData('decision_time',
+                                    self.effort.getRT())
+                self.trials.addData('choice_history',
+                                    self.effort.getHistory())
+                description = (f"{Fore.RED}Trial {trial['i_grid']}: "
+                               f"{trial['event_type']} "
+                               f"selecting {effort_estmation}{Fore.RESET}")
+                self.progress_bar.set_description(description)
+                yield True
+
+            elif trial['event_type'] == "isi":
+                utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] - 1 / config.FRAME_RATE)
+                yield True
+            else:
+                pass
+            self.progress_bar.set_description(description)
             yield True
+
+    def _update_rating_scale(self, pos, min, max):
+        if self.pyglet_keyboard[key.LEFT]:
+            pos -= 1.0
+        elif self.pyglet_keyboard[key.RIGHT]:
+            pos += 1.0
+
+        if pos > max:
+            pos = max
+        elif pos < min:
+            pos = min
+        return pos
 
     def _find_next_location(self, change_direction, selected_location, recall_display):
         loc_x, loc_y = self._index2coordinates(selected_location)

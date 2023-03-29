@@ -69,9 +69,10 @@ def generate_design_file(subject, target_score_level, reward_level):
         - ISI_JITTER / 2
         + ISI
     )
-    isi_set = isi_set.tolist()
+
+    isi_set = isi_set.round(2).tolist()
     print(f"number of uniqune ISI needed for {N_TRIALS_PER_RUN} trials: ", len(isi_set))
-    # seed numpy with subject id to have reproducible design generation
+    # seed numpy with subject id and session to have reproducible design generation
     seed = int(hashlib.sha1(f"{subject}".encode("utf-8")).hexdigest(), 16) % (
         2**32 - 1
     )
@@ -110,8 +111,6 @@ def generate_design_file(subject, target_score_level, reward_level):
             difference in trial index between repeats of each condition is maximised.
             max_condition_distance: maximum distance of conditions.
         """
-        import numpy
-
         if contiguous:
             n_memory_grid = int(n_memory_grid / 2)
 
@@ -269,7 +268,6 @@ def generate_design_file(subject, target_score_level, reward_level):
         memory_grid.flat[idx_number_pairs] = np.repeat(range(1, n_pairs + 1), 2)
         return memory_grid
 
-
     def _generate_recall_grid(i, row):
         numbers = list(range(1, row["target_score"] + 1))
         _ = numbers.pop(i)  # remove the current number testing
@@ -332,35 +330,34 @@ def generate_design_file(subject, target_score_level, reward_level):
         recalls = {
             "duration": [estimate_duration],
             "event_type": ["estimate"],
-            "pair_number": ["NA"],
+            "pair_number": ["--"],
             "grid": ["select encoding time"],
-            "recall_display": ["NA"],
-            "recall_answer": ["NA"],
+            "recall_display": ["--"],
+            "recall_answer": ["--"],
         }
         recalls["duration"].append(isi_set.pop())
         recalls["event_type"].append("isi")
-        recalls["pair_number"].append("NA")
-        recalls["recall_display"].append("NA")
-        recalls["recall_answer"].append("NA")
+        recalls["pair_number"].append("--")
+        recalls["recall_display"].append("--")
+        recalls["recall_answer"].append("--")
         recalls["grid"].append("")
 
         recalls["duration"].append(encoding_duration)
         recalls["event_type"].append("encoding")
-        recalls["pair_number"].append("NA")
-        recalls["recall_display"].append("NA")
-        recalls["recall_answer"].append("NA")
+        recalls["pair_number"].append("--")
+        recalls["recall_display"].append("--")
+        recalls["recall_answer"].append("--")
         recalls["grid"].append(row["grid"])
 
         recalls["duration"].append(isi_set.pop())
         recalls["event_type"].append("isi")
-        recalls["pair_number"].append("NA")
-        recalls["recall_display"].append("NA")
-        recalls["recall_answer"].append("NA")
+        recalls["pair_number"].append("--")
+        recalls["recall_display"].append("--")
+        recalls["recall_answer"].append("--")
         recalls["grid"].append("")
 
         for i in range(row["target_score"]):
             recall_grid, current_number_loc, recall_answer = _generate_recall_grid(i, row)
-
             # the last one will be the displayed
             recalls["duration"].append(recall_duration)
             recalls["event_type"].append("recall")
@@ -371,53 +368,53 @@ def generate_design_file(subject, target_score_level, reward_level):
 
         recalls["duration"].append(isi_set.pop())
         recalls["event_type"].append("isi")
-        recalls["pair_number"].append("NA")
-        recalls["recall_display"].append("NA")
-        recalls["recall_answer"].append("NA")
-        recalls["grid"].append("")
+        recalls["pair_number"].append("--")
+        recalls["recall_display"].append("--")
+        recalls["recall_answer"].append("--")
+        recalls["grid"].append("--")
 
         recalls["duration"].append(estimate_duration)
         recalls["event_type"].append("e_success")
-        recalls["pair_number"].append("NA")
-        recalls["recall_display"].append("NA")
-        recalls["recall_answer"].append("NA")
+        recalls["pair_number"].append("--")
+        recalls["recall_display"].append("--")
+        recalls["recall_answer"].append("--")
         recalls["grid"].append("how many did you get right")
 
         recalls["duration"].append(isi_set.pop())
         recalls["event_type"].append("isi")
-        recalls["pair_number"].append("NA")
-        recalls["recall_display"].append("NA")
-        recalls["recall_answer"].append("NA")
-        recalls["grid"].append("")
+        recalls["pair_number"].append("--")
+        recalls["recall_display"].append("--")
+        recalls["recall_answer"].append("--")
+        recalls["grid"].append("--")
 
         if _switch_condition(designs, i_encoding, row):
             recalls["duration"].append(estimate_duration)
             recalls["event_type"].append("effort")
-            recalls["recall_display"].append("NA")
-            recalls["recall_answer"].append("NA")
+            recalls["recall_display"].append("--")
+            recalls["recall_answer"].append("--")
             recalls["grid"].append("how much effor")
-            recalls["pair_number"].append("NA")
+            recalls["pair_number"].append("--")
 
             recalls["duration"].append(isi_set.pop())
             recalls["event_type"].append("isi")
-            recalls["recall_display"].append("NA")
-            recalls["recall_answer"].append("NA")
-            recalls["grid"].append("")
-            recalls["pair_number"].append("NA")
+            recalls["recall_display"].append("--")
+            recalls["recall_answer"].append("--")
+            recalls["grid"].append("--")
+            recalls["pair_number"].append("--")
 
         recalls["duration"].append(feedback_duration)
         recalls["event_type"].append("feedback")
-        recalls["recall_display"].append("NA")
-        recalls["recall_answer"].append("NA")
+        recalls["recall_display"].append("--")
+        recalls["recall_answer"].append("--")
         recalls["grid"].append("feed back screen")
         recalls["pair_number"].append(-1)
 
         recalls["duration"].append(TR * 2)  # block end
         recalls["event_type"].append("isi")
-        recalls["recall_display"].append("NA")
-        recalls["recall_answer"].append("NA")
-        recalls["grid"].append("")
-        recalls["pair_number"].append("NA")
+        recalls["recall_display"].append("--")
+        recalls["recall_answer"].append("--")
+        recalls["grid"].append("--")
+        recalls["pair_number"].append("--")
 
         recalls = pd.DataFrame(recalls)
         recalls["i_grid"] = i_encoding + 1
