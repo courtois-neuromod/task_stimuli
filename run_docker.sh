@@ -1,5 +1,5 @@
 #!/bin/bash
-sudo docker run \
+docker run \
   --network host \
   --device=/dev/dri \
   --device=/dev/snd  \
