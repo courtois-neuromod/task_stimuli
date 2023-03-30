@@ -2,7 +2,7 @@
 def get_tasks(parsed):
     from ..tasks import language, task_base
     TASKS = [
-        language.WordFeatures(
+        language.WordFamiliarity(
             f"{TRIPLET_DATA_PATH}/words_designs/sub-{parsed.subject}_ses-{parsed.session}_run-{run+1:02d}_design.tsv",
             name=f"task-singlewords_run-{run+1:02d}",
             use_eyetracking=True,
@@ -12,18 +12,18 @@ def get_tasks(parsed):
     return TASKS
 
 
-TRIPLET_DATA_PATH = "data/language/triplets/"
+TRIPLET_DATA_PATH = "data/language/triplets"
 TR=1.49
-N_BLOCKS_PER_RUN = 4
+N_BLOCKS_PER_RUN = 1
 N_TRIALS_PER_BLOCK = 25
 N_TRIALS_PER_RUN = N_BLOCKS_PER_RUN * N_TRIALS_PER_BLOCK
-N_RUNS_PER_SESSION = 2
+N_RUNS_PER_SESSION = 1
 STIMULI_DURATION = .5
 TRIAL_DURATION = 2*TR
 BASELINE_BEGIN = 9
 BASELINE_END = 9
 ISI = TRIAL_DURATION - STIMULI_DURATION
-ISI_JITTER = 0
+ISI_JITTER = 2
 FEATURES_INSTRUCTION_DURATION = 3*TR
 POST_FEATURES_INSTRUCTION_ISI = 1*TR
 
@@ -41,7 +41,7 @@ SENSORIMOTOR_FEATURES = [
     "by performing an action with your torso",
 ]
 
-def generate_design_file(subject, all_words, pilot=False):
+def generate_design_file(subject, all_words, pilot=False, sm_feat=False):
     import os
     import hashlib
     import numpy as np
@@ -71,10 +71,11 @@ def generate_design_file(subject, all_words, pilot=False):
         run_words['trial_index'] = np.arange(len(run_words))
         run_words['block_index'] = run_words['trial_index']//N_TRIALS_PER_BLOCK
         run_words['isi'] = np.random.permutation(isi_set)[:len(run_words)]
-        run_words['sensorimotor_feature'] = run_sm_feats.repeat(N_TRIALS_PER_BLOCK)[:len(run_words)]
+        if sm_feat:
+            run_words['sensorimotor_feature'] = run_sm_feats.repeat(N_TRIALS_PER_BLOCK)[:len(run_words)]
         run_words['onset'] = BASELINE_BEGIN + \
-            run_words['trial_index']*STIMULI_DURATION + \
-            np.cumsum(run_words['isi']) + \
+            run_words['trial_index']*TRIAL_DURATION + \
+            np.hstack([[0],np.cumsum(run_words['isi'][:-1])]) + \
             run_words['block_index'] * (FEATURES_INSTRUCTION_DURATION + POST_FEATURES_INSTRUCTION_ISI)
         run_words['duration'] = STIMULI_DURATION
         run_words = pandas.concat(
@@ -85,9 +86,9 @@ def generate_design_file(subject, all_words, pilot=False):
                     'sensorimotor_feature': [run_words.sensorimotor_feature[block*N_TRIALS_PER_BLOCK]],
                     'block_index': [block],
                     'isi': [POST_FEATURES_INSTRUCTION_ISI],
-                    }),
+                    }) if sm_feat else None,
                   run_words[block*N_TRIALS_PER_BLOCK:(block+1)*N_TRIALS_PER_BLOCK]] \
-              for block in range(int(np.ceil(len(run_words)/25)))],[]))
+              for block in range(int(np.ceil(len(run_words)/25)))], []))
 
 
         session = run // N_RUNS_PER_SESSION + 1
@@ -114,10 +115,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--pilot", help="Use pilot set", action="store_true"
     )
+    parser.add_argument(
+        "--sm_feat", help="sensorimotor features questions", action="store_true"
+    )
 
     parsed = parser.parse_args()
     if parsed.pilot:
         all_words = pandas.read_csv(os.path.join(TRIPLET_DATA_PATH, 'pilotable_words_v2.tsv'),sep='\t')
     else:
         all_words = pandas.read_csv(os.path.join(TRIPLET_DATA_PATH, 'fMRI_unique_words.tsv'), sep='\t')
-    generate_design_file(parsed.subject, all_words, parsed.pilot)
+    generate_design_file(parsed.subject, all_words, parsed.pilot, parsed.sm_feat)

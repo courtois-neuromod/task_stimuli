@@ -4,7 +4,7 @@ import argparse
 import datetime
 from src.shared import eyetracking
 
-BASE_OUTPUT_DIR = '/scratch'
+BASE_OUTPUT_DIR = '/home/basile/tests'
 
 def start_eyetracker(args):
 
@@ -38,7 +38,7 @@ def start_eyetracker(args):
             "subject": "start_plugin",
             "name": "Annotation_Capture",
             "args": {
-                "annotation_definitions": [['Trigger','T'],['Trigger5','5'],['Trigger%','%']],
+                "annotation_definitions": [['Trigger','T'], ['Trigger5','5'], ['Trigger%','%']]
             },
         }
     )

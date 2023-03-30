@@ -21,10 +21,19 @@ def parse_args():
         action="store_true",
     )
     parser.add_argument(
-        "--eyetracking", "-e", help="Enable eyetracking", action="store_true"
+        "--eyetracking", "-e", help="Enable eyetracking", action="store_true",
+    )
+    parser.add_argument(
+        "--target_ETcalibration", help="Use concentric circles for eyetracking calibration", action="store_true",
+    )
+    parser.add_argument(
+        "--validate_ET", "-v", help="validate eyetracking calibration", action="store_true"
     )
     parser.add_argument(
         "--skip-soundcheck", help="Disable soundcheck", action="store_true"
+    )
+    parser.add_argument(
+        "--force", help="Force arguments, including savestate override", action="store_true"
     )
     parser.add_argument(
         "--skip_n_tasks", help="skip n of the tasks", default=0, type=int

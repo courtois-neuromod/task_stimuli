@@ -13,7 +13,7 @@ RUN apt-get update \
   && apt-get -y install libxml2-dev libglib2.0-dev cmake libusb-1.0-0-dev gobject-introspection \
      libgtk-3-dev gtk-doc-tools  xsltproc libgstreamer1.0-dev \
      libgstreamer-plugins-base1.0-dev libgstreamer-plugins-good1.0-dev \
-     libgirepository1.0-dev gettext ninja-build\
+     libgirepository1.0-dev gettext ninja-build vlc libvlc-dev\
   && apt-get autoremove && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN wget -O libjpeg-turbo.tar.gz https://sourceforge.net/projects/libjpeg-turbo/files/1.5.1/libjpeg-turbo-1.5.1.tar.gz/download \
@@ -21,14 +21,17 @@ RUN wget -O libjpeg-turbo.tar.gz https://sourceforge.net/projects/libjpeg-turbo/
   && cd libjpeg-turbo-1.5.1 \
   && ./configure --enable-static=no --prefix=/usr/local \
   && make install \
-  && ldconfig
+  && ldconfig \
+  && cd .. \
+  && rm -Rf libjpeg*
 
 RUN git clone https://github.com/pupil-labs/libuvc \
   && cd libuvc \
   && mkdir build \
   && cd build \
   && cmake .. \
-  && make && make install
+  && make && make install \
+  && cd ../../ && rm -Rf libuvc
 
 RUN mkdir /src/ && cd /src \
   && git clone https://github.com/courtois-neuromod/pupil.git \
@@ -38,20 +41,16 @@ RUN mkdir /src/ && cd /src \
 
 ARG ARAVIS_VERSION=0.8.21
 
-RUN pip3 install --upgrade meson numpy scipy ipython pip
+RUN pip3 install --upgrade meson "numpy<1.24" scipy ipython pip
 
+# for aravis in docker see https://github.com/AravisProject/aravis/issues/509
 RUN cd /src/ \
   && wget https://github.com/AravisProject/aravis/archive/refs/tags/${ARAVIS_VERSION}.tar.gz \
   && tar -xzf ${ARAVIS_VERSION}.tar.gz \
   && cd aravis-$ARAVIS_VERSION \
   && meson build && cd build \
-  && ninja && ninja install
-
-RUN cd /src/ \
-  && wget https://github.com/courtois-neuromod/task_stimuli/archive/refs/heads/eyetracker_desktop.zip \
-  && unzip eyetracker_desktop.zip \
-  && mv task_stimuli-* task_stimuli
-RUN pip3 install -r /src/task_stimuli/requirements.txt
+  && ninja && ninja install \
+  && cd ../.. && rm -Rf aravis-$ARAVIS_VERSION
 
 COPY ./entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
@@ -71,6 +70,14 @@ RUN pip install --no-binary :all: --force-reinstall pyzmq
 ENV GI_TYPELIB_PATH=/usr/local/lib/x86_64-linux-gnu/girepository-1.0/
 
 ENTRYPOINT ["/entrypoint.sh"]
-WORKDIR /src/task_stimuli/
 
-# for aravis in docker see https://github.com/AravisProject/aravis/issues/509
+RUN cd /src/ \
+  && wget https://github.com/courtois-neuromod/task_stimuli/archive/refs/heads/eyetracker_desktop.zip \
+  && unzip eyetracker_desktop.zip \
+  && mv task_stimuli-* task_stimuli
+RUN pip3 install -r /src/task_stimuli/requirements.txt
+COPY ./.env.docker /src/task_stimuli/.env
+
+RUN pip install python-vlc==3.0.11115
+
+WORKDIR /src/task_stimuli/

@@ -14,6 +14,9 @@
 	path = data/retinotopy
 	url = git@github.com:courtois-neuromod/retino.stimuli.git
 	datalad-id = 52140b46-63c8-45a7-a03f-2f2cab0db23f
+[submodule "data/language/triplets"]
+	path = data/language/triplets
+	url = git@github.com:courtois-neuromod/triplets.stimuli.git
 [submodule "data/fLoc"]
 	path = data/fLoc
 	url = git@github.com:courtois-neuromod/floc.stimuli.git
@@ -31,3 +34,13 @@
 	url = git@github.com:courtois-neuromod/friends.stimuli.git
 	datalad-id = bbbf34b9-31aa-4e35-b1ed-36525c6d7ce3
 	datalad-url = git@github.com:courtois-neuromod/friends.stimuli.git
+[submodule "data/emotions"]
+	path = data/emotions
+	url = git@github.com:courtois-neuromod/emotions.stimuli.git
+	datalad-id = b48527a1-6b6b-47aa-b947-62a670e11bd5
+	datalad-url = git@github.com:courtois-neuromod/emotions.stimuli.git
+[submodule "data/videogames/mario3"]
+	path = data/videogames/mario3
+	url = git@github.com:courtois-neuromod/mario3.stimuli.git
+	datalad-id = caf26616-f8f9-41d8-b9b8-6471a4591395
+	datalad-url = git@github.com:courtois-neuromod/mario3.stimuli.git
