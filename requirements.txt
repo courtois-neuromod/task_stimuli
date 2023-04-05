@@ -9,3 +9,4 @@ textdistance
 colorama
 psychopy-sounddevice
 termcolor
+pyaudio
