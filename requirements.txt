@@ -8,3 +8,4 @@ tqdm>=4.60.0
 textdistance
 colorama
 psychopy-sounddevice
+termcolor
