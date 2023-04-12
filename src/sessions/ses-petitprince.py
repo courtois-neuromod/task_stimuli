@@ -15,5 +15,5 @@ def get_tasks(parsed):
 
     for lang,seg in all_segments:
         yield Story(
-            sound_file=os.path.join(STIMULI_PATH, f'task-lpp{lang}_section_{seg+1}.wav'),
+            sound_file=os.path.join(STIMULI_PATH, f'task-lpp{lang}_section{"_" if lang=="FR" else "-"}{seg+1}.wav'),
             name=f"task-lpp{lang}_run-{seg+1:02d}")
