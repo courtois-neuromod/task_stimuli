@@ -28,6 +28,7 @@ EXP_WINDOW = dict(
     fullscr=True,
     gammaErrorPolicy="warn",
     #waitBlanking=False,
+    waitBlanking=True,
 )
 
 EXP_MONITOR.setSizePix(EXP_WINDOW['size'])

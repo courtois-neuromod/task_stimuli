@@ -111,14 +111,15 @@ class EyetrackerCalibration_targets(Task):
             exp_win.setColor(grey, colorSpace='rgb')
             #ctl_win.setColor(grey, colorSpace='rgb')
             screen_text.draw(exp_win)
-            screen_text.draw(ctl_win)
+            if ctl_win:
+                screen_text.draw(ctl_win)
             yield True
 
     def _setup(self, exp_win):
         self.use_fmri = False
         super()._setup(exp_win)
         self.fixation_dot = fixation_dot(exp_win, radius=self.marker_size)
-        self.startcue = visual.Circle(exp_win, units='pix', pos=(0,0), radius=self.marker_size*0.5, lineWidth=0, fillColor=(1, 1, 1))
+        self.startcue = visual.Circle(exp_win, units='pix', pos=(0,0), radius=self.marker_size*0.5, lineWidth=2, fillColor=(1, 1, 1))
 
     def _pupil_cb(self, pupil):
         if pupil["timestamp"] > self.task_stop:
@@ -195,7 +196,6 @@ class EyetrackerCalibration_targets(Task):
 
             for frameN in range(config.FRAME_RATE * STARTCUE_DURATION):
                 self.startcue.draw(exp_win)
-                self.startcue.draw(ctl_win)
                 yield True
 
             for site_id in markers_order:
@@ -215,13 +215,13 @@ class EyetrackerCalibration_targets(Task):
                         msg="calibrate_position,%d,%d,%d,%d"
                         % (marker_pos[0], marker_pos[1], pos[0], pos[1]),
                     )
+                logging.flush()
                 exp_win.callOnFlip(
                     self._log_event, {"marker_x": pos[0], "marker_y": pos[1]}
                 )
                 for f in range(self.marker_duration_frames):
                     for stim in self.fixation_dot:
                         stim.draw(exp_win)
-                        stim.draw(ctl_win)
 
                     if (
                         f > self.calibration_lead_in
@@ -237,7 +237,10 @@ class EyetrackerCalibration_targets(Task):
                         self.all_refs_per_flip.append(ref)  # accumulate all refs
                     yield True
             yield True
+            print("completed markers")
             self.task_stop = time.monotonic()
+            print("completed markers 2")
+
 
             if self.validation:
                 logging.info(
@@ -261,13 +264,12 @@ class EyetrackerCalibration_targets(Task):
                         else:
                             fill_col = (1, 1, 1) # white indicates no fixations reccorded for that marker
                         qc_dots.append(visual.Circle(exp_win, units='pix', pos=pos, radius=self.marker_size*0.8,
-                                                     lineWidth=0, fillColor=fill_col))
+                                                     lineWidth=1, fillColor=fill_col))
 
                 if self.feedback:
                     for frameN in range(config.FRAME_RATE * FEEDBACK_DURATION):
                         for qc_dot in qc_dots:
                             qc_dot.draw(exp_win)
-                            qc_dot.draw(ctl_win)
                         yield True
 
                 #exp_win.clearBuffer(color=True, depth=True)
@@ -277,7 +279,6 @@ class EyetrackerCalibration_targets(Task):
 
                 for frameN in range(5):
                     black_bgd.draw(exp_win)
-                    black_bgd.draw(ctl_win)
                     yield True
 
                 calibration_success = True
@@ -286,6 +287,7 @@ class EyetrackerCalibration_targets(Task):
                 logging.info(
                     f"calibrating on {len(self._pupils_list)} pupils and {len(self.all_refs_per_flip)} markers"
                 )
+                logging.flush()
 
                 #exp_win.clearBuffer(color=True, depth=True)
                 black_bgd = visual.Rect(exp_win, size=exp_win.size, lineWidth=0,
@@ -294,16 +296,18 @@ class EyetrackerCalibration_targets(Task):
 
                 for frameN in range(5):
                     black_bgd.draw(exp_win)
-                    black_bgd.draw(ctl_win)
                     yield True
 
                 self.eyetracker.calibrate(self._pupils_list, self.all_refs_per_flip)
+
                 while True:
                     notes = getattr(self.eyetracker, '_last_calibration_notification',None)
                     if notes:
                         calibration_success = notes['topic'].startswith("notify.calibration.successful")
                         if not calibration_success:
                             print('#### CALIBRATION FAILED: restart with <c> ####')
+                        else:
+                            print('##### CALIBRATION SUCCESSFUL')
                         break
         self.eyetracker.pause()
 
@@ -761,7 +765,11 @@ class EyeTrackerClient(threading.Thread):
             self.pupil_monitor = Msg_Receiver(
 
                 self._ctx, f"tcp://localhost:{self._ipc_sub_port}",
-                topics=("gaze", "pupil", "fixations", "notify.calibration.successful", "notify.calibration.failed", "notify.aravis")
+                topics=(
+                    "gaze", "pupil", "fixations",
+                    "notify.calibration.successful",
+                    "notify.calibration.failed",
+                    "notify.aravis")
 
             )
             self.paused = False
@@ -798,6 +806,9 @@ class EyeTrackerClient(threading.Thread):
                         elif topic.startswith("notify.aravis.start_capture"):
                             self._aravis_notification = tmp
         logging.info("eyetracker listener: stopping")
+
+
+
 
     def set_pupil_cb(self, pupil_cb):
         self._pupil_cb = pupil_cb
@@ -970,14 +981,17 @@ class EyeTrackerClient(threading.Thread):
         calib_data = {"ref_list": ref_list, "pupil_list": pupil_list}
 
         logging.info("sending calibration data to pupil")
+        logging.flush()
         calib_res = self.send_recv_notification(
             {
                 "subject": "start_plugin",
                 "name": "Gazer2D",
                 "args": {"calib_data": calib_data},
-                "raise_calibration_error": False,
+                "raise_calibration_error": True,
             }
         )
+        logging.info("calibration data sent to pupil")
+        logging.flush()
 
     def validate(self, gaze_list, ref_list):
 
@@ -1027,5 +1041,5 @@ def fixation_dot(win, **kwargs):
         **kwargs
     }
     circle = visual.Circle(win, lineWidth=radius*.4, **kwargs, radius=radius)
-    dot = visual.Circle(win, units=kwargs["units"], radius=radius*.25, lineWidth=0, fillColor=(-1,-1,-1))
+    dot = visual.Circle(win, units=kwargs["units"], radius=radius*.25, lineWidth=2, fillColor=(-1,-1,-1))
     return (circle, dot)
