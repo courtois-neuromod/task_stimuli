@@ -139,7 +139,7 @@ class EmotionVideos(Task):
             stimuli.draw()
             yield True
             trial['onset_video_flip'] = self._exp_win_last_flip_time - self._exp_win_first_flip_time
-            while stimuli.status != visual.FINISHED:
+            while stimuli.isPlaying:
                 stimuli.draw()
                 yield False #flip without clearing buffer for perfs
             # clear screen and back buffer

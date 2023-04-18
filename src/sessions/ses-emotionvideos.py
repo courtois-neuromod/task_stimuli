@@ -171,7 +171,12 @@ def generate_design_file():
             for dimension in dimensions:
                 ks_val, ks_p = ks_2samp(gifs_run[dimension], gifs_list[dimension])
                 if ks_p < 0.05:
-                    continue
+                    print(ks_p)
+                    fail = True
+                    break
+            start=split+1
+        if fail:
+            continue
 
         print(f"found design at iteration {i}") #yeahhhh!
         break
@@ -234,6 +239,39 @@ def generate_individual_design_file():
 
         gifs_sub.to_csv(out_fname, sep="\t")
 
+def rearrange_individual_design_file():
+    import pandas as pd
+
+    runs_sub05_ses001 = ['14', '17', '02', '27', '22', '25'] #Run number that sub-05 did instead of sub-03
+    runs_sub05_ses001 = [f"run-{run}_design.tsv" for run in runs_sub05_ses001]
+    
+    #Put those runs at the end of sub-03 tsv file
+    print()
+    df_sub_03 = pd.read_csv(os.path.join(EMOTION_DATA_PATH, OUTPUT_RUNS_ORDER_PATH, 'sub-03_design_run_order.tsv'), sep='\t', index_col=0)
+    df_sub_03 = pd.concat([df_sub_03[~df_sub_03.tsv.isin(runs_sub05_ses001)], df_sub_03[df_sub_03.tsv.isin(runs_sub05_ses001)]]).reset_index(drop=True)
+    
+    out_fname_03 = os.path.join(
+    EMOTION_DATA_PATH, 
+    OUTPUT_RUNS_ORDER_PATH,
+    f"sub-03_design_run_order.tsv"
+    )
+    df_sub_03.tsv.to_csv(out_fname_03, sep="\t")
+    
+
+    #Generate a new randomised tsv file for sub-05 taking into account those runs
+    runs_sub05_ses002 = ['27', '09', '20', '14']
+    runs_sub05_ses002 = [f"run-{run}_design.tsv" for run in runs_sub05_ses002]
+    runs_sub05 = runs_sub05_ses001+runs_sub05_ses002
+    df_sub_05 = pd.read_csv(os.path.join(EMOTION_DATA_PATH, OUTPUT_RUNS_ORDER_PATH, 'sub-05_design_run_order.tsv'), sep='\t', index_col=0)
+    df_sub_05_shuffle = df_sub_05[~df_sub_05.tsv.isin(runs_sub05)].sample(frac=1)
+    df_sub_05 = pd.DataFrame(pd.concat([pd.Series(runs_sub05), df_sub_05_shuffle.tsv]), columns=['tsv']).reset_index(drop=True)
+    out_fname_05 = os.path.join(
+    EMOTION_DATA_PATH, 
+    OUTPUT_RUNS_ORDER_PATH,
+    f"sub-05_design_run_order.tsv"
+    )
+    df_sub_05.to_csv(out_fname_05, sep="\t")    
+
 
 if __name__ == "__main__":
     """
@@ -248,7 +286,8 @@ if __name__ == "__main__":
     parsed = parser.parse_args()
     """
     #repeat_gifs()
-    generate_design_file()
-    generate_individual_design_file()
+    #generate_design_file()
+    #generate_individual_design_file()
+    rearrange_individual_design_file()
 
     #get_tasks(parsed)
