@@ -9,14 +9,14 @@ STORIES_BLOCK2 = [['slurmlord', 'pieman'],['prettymouth', 'tunnel_part1', 'tunne
 STORIES_DURATIONS_BLOCK2 = [[929.5, 450],[712, 747.76, 786.01]]
 
 STORIES = sum(STORIES_BLOCK1 + STORIES_BLOCK2, [])
-STORIES_DURATIONS = sum(STORIES_DURATIONS_BLOCK1 + STORIES_DURATIONS_BLOCK2)
+STORIES_DURATIONS = sum(STORIES_DURATIONS_BLOCK1 + STORIES_DURATIONS_BLOCK2, [])
 
 STIMULI_PATH  = 'data/narratives.stimuli'
 
 def get_tasks(parsed):
 
     stories = list(zip(STORIES, STORIES_DURATIONS))
-    stories = random.sample(stories, len(stories))
+    #stories = random.sample(stories, len(stories))
     for story, story_duration in stories:
         story_cap = story.capitalize()
 
