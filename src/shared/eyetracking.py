@@ -58,6 +58,7 @@ CAPTURE_SETTINGS = {
     "frame_rate": 250,
     "exposure_time": 4000,
     "global_gain": 1,
+    #"auto_noise_suppression": True,
     "gev_packet_size": 1400,
     "uid": "Aravis-Fake-GV01",  # for test purposes
     #"uid": "MRC Systems GmbH-GVRD-MRC HighSpeed-MR_CAM_HS_0019",
@@ -364,7 +365,6 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
 
         for frameN in range(config.FRAME_RATE * INSTRUCTION_DURATION):
             screen_text.draw(exp_win)
-            screen_text.draw(ctl_win)
             yield True
 
     def _setup(self, exp_win):
@@ -464,7 +464,6 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
                 for f, r in enumerate(radius_anim):
                     circle_marker.radius = r
                     circle_marker.draw(exp_win)
-                    circle_marker.draw(ctl_win)
 
                     if (
                         f > self.calibration_lead_in
@@ -687,6 +686,7 @@ class EyeTrackerClient(threading.Thread):
         self._req_socket.send_string("SUB_PORT")
         self._ipc_sub_port = int(self._req_socket.recv())
         logging.info(f"ipc_sub_port: {self._ipc_sub_port}")
+        self.resume()
 
     def start_source(self):
         self.send_recv_notification(
@@ -951,7 +951,7 @@ class EyeTrackerClient(threading.Thread):
     def interleave_calibration(self, tasks):
         calibration_index=0
         for task in tasks:
-            if task.use_eyetracking:
+            if task.use_eyetracking and task.et_calibrate:
                 calibration_index += 1
                 if self.use_targets:
                     yield EyetrackerCalibration_targets(
