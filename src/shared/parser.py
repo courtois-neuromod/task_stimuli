@@ -24,7 +24,7 @@ def parse_args():
         "--eyetracking", "-e", help="Enable eyetracking", action="store_true",
     )
     parser.add_argument(
-        "--target_ETcalibration", help="Use concentric circles for eyetracking calibration", action="store_true",
+        "--target_ETcalibration", help="Use concentric circles for eyetracking calibration", action="store_true", default=True,
     )
     parser.add_argument(
         "--validate_ET", "-v", help="validate eyetracking calibration", action="store_true"
