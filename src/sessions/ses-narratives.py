@@ -22,14 +22,18 @@ def get_tasks(parsed):
 
         yield Story(
             sound_file=os.path.join(STIMULI_PATH, 'audio_files', f"{story}_audio.wav"),
-            name=f"task-{story_cap}Story_run-01")
+            name=f"task-{story_cap}Story_run-01",
+            use_eyetracking=True,)
 
         yield Pause(
             text="You can take a short break while we stop the scanner.\n Then press A when ready to continue",
             wait_key='a',
         )
 
-        yield FreeRecall(name=f"task-{story_cap}Recall_run-01", max_duration=story_duration*.4)
+        yield FreeRecall(
+            name=f"task-{story_cap}Recall_run-01",
+            max_duration=story_duration*.4,
+            use_eyetracking=True,)
 
         yield Pause(
             text="You can take a short break while we stop the scanner.\n Then press A when ready to continue",
@@ -39,7 +43,8 @@ def get_tasks(parsed):
             story_full = story.replace('_part2','')
             yield RecencyJudgments(
                     design_file=os.path.join(STIMULI_PATH, 'recency_segments', story_full, f"first_viewing_{story_full}.csv"),
-                    name=f"task-{story_full.capitalize()}Recency_run-01")
+                    use_eyetracking=True,
+                    name=f"task-{story_full.capitalize()}Recency_run-01",)
 
             yield Pause(
                 text="You can take a short break while we stop the scanner.\n Then press A when ready to continue",
