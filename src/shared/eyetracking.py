@@ -59,7 +59,7 @@ CAPTURE_SETTINGS = {
     "exposure_time": 4000,
     "global_gain": 1,
     "auto_noise_suppression": True,
-    #"gev_packet_size": 9140,
+    "gev_packet_size": 9140,
     #"uid": "Aravis-Fake-GV01",  # for test purposes
     "uid": "MRC Systems GmbH-GVRD-MRC HighSpeed-MR_CAM_HS_0019",
 }
@@ -951,7 +951,7 @@ class EyeTrackerClient(threading.Thread):
     def interleave_calibration(self, tasks):
         calibration_index=0
         for task in tasks:
-            if task.use_eyetracking:
+            if task.use_eyetracking and task.et_calibrate:
                 calibration_index += 1
                 if self.use_targets:
                     yield EyetrackerCalibration_targets(

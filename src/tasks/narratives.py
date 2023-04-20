@@ -197,8 +197,8 @@ class AudioRecording(Task):
 
     def _save(self):
         if hasattr(self, '_audio_buffers'):
-            output_wav_file = self._generate_unique_filename("audio", "wav")
-            wf = wave.open(output_wav_file, 'wb')
+            self.output_wav_file = self._generate_unique_filename("audio", "wav")
+            wf = wave.open(self.output_wav_file, 'wb')
             wf.setnchannels(self.audio_channels)
             wf.setsampwidth(self._pyaudio_if.get_sample_size(pyaudio.paInt16))
             wf.setframerate(self.audio_rate)

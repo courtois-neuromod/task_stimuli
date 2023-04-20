@@ -1,7 +1,8 @@
 import os
 import random
-from ..tasks.narratives import Story, FreeRecall, RecencyJudgments
+from ..tasks.narratives import Story, FreeRecall, RecencyJudgments, AudioRecording, SoundTaskBase
 from ..tasks.task_base import Pause
+from subprocess import Popen, DEVNULL
 
 STORIES_BLOCK1 = [['lucy', 'forgot'], ['black', 'notthefall']]
 STORIES_DURATIONS_BLOCK1 = [[542.12, 837], [800, 581.84]]
@@ -13,36 +14,93 @@ STORIES_DURATIONS = sum(STORIES_DURATIONS_BLOCK1 + STORIES_DURATIONS_BLOCK2, [])
 
 STIMULI_PATH  = 'data/narratives.stimuli'
 
+pause_message = "You can take a short break while we stop the scanner.\n\n When the scanner is stopped you can press A when ready to continue"
+
 def get_tasks(parsed):
+
+    gnome_control_process = Popen(
+        ["gnome-control-center","sound"],
+        stdout=DEVNULL,
+        stderr=DEVNULL,
+    )
 
     stories = list(zip(STORIES, STORIES_DURATIONS))
     #stories = random.sample(stories, len(stories))
 
-    audio_test = FreeRecall(
-        name=f"test-audio",
-        max_duration=120)
-    audio_test.use_fmri=False
-    yield audio_test
+    test_micrecord = AudioRecording(
+        instruction='We will test the microphone.\n Try to speak when the dot appears on the screen and we will then check the quality.',
+        initial_wait=1,
+        final_wait=1,
+        name=f"test-micrecord",
+        max_duration=120,
+        )
+    yield test_micrecord
+
+    audacity_process = Popen(
+        ["audacity", test_micrecord.output_wav_file],
+        stdout=DEVNULL,
+        stderr=DEVNULL,
+    )
+
+    print("Now check the audio quality")
+    yield SoundTaskBase(
+        initial_wait=1,
+        final_wait=1,
+        instruction='Now checking mic recording quality',
+        sound_file=test_micrecord.output_wav_file,
+        name=f"test-playback"
+        )
+
+    if int(parsed.session) == 1:
+
+        yield Story(
+            sound_file="data/language/petitprince.stimuli/stimuli/task-lppEN_section-1.wav",
+            name=f"task-PetitprinceStory_run-01",
+            use_eyetracking=True,
+            et_calibrate=False,
+            )
+
+        yield Pause(
+            text=pause_message,
+            wait_key='a',
+        )
+
+        yield FreeRecall(
+            name=f"task-PetitprinceRecall_run-01",
+            max_duration=200,
+            use_eyetracking=True,
+            et_calibrate=False,
+            )
+
+        yield Pause(
+            text=pause_message,
+            wait_key='a',
+        )
+
     for story, story_duration in stories:
         story_cap = story.capitalize()
 
         yield Story(
             sound_file=os.path.join(STIMULI_PATH, 'audio_files', f"{story}_audio.wav"),
             name=f"task-{story_cap}Story_run-01",
-            use_eyetracking=True,)
+            use_eyetracking=True,
+            et_calibrate=False,
+            )
 
         yield Pause(
-            text="You can take a short break while we stop the scanner.\n Then press A when ready to continue",
+            text=pause_message,
             wait_key='a',
         )
 
         yield FreeRecall(
             name=f"task-{story_cap}Recall_run-01",
             max_duration=story_duration*.4,
-            use_eyetracking=True,)
+            use_eyetracking=True,
+            et_calibrate=False,
+            )
 
         yield Pause(
-            text="You can take a short break while we stop the scanner.\n Then press A when ready to continue",
+            text=pause_message,
             wait_key='a',
         )
         if not 'part1' in story:
@@ -53,6 +111,6 @@ def get_tasks(parsed):
                     name=f"task-{story_full.capitalize()}Recency_run-01",)
 
             yield Pause(
-                text="You can take a short break while we stop the scanner.\n Then press A when ready to continue",
+                text=pause_message,
                 wait_key='a',
             )
