@@ -3,9 +3,9 @@ import random
 from ..tasks.narratives import Story, FreeRecall, RecencyJudgments
 from ..tasks.task_base import Pause
 
-STORIES_BLOCK1 = [['lucy', 'forgot'], ['black', 'notthefallintact']]
+STORIES_BLOCK1 = [['lucy', 'forgot'], ['black', 'notthefall']]
 STORIES_DURATIONS_BLOCK1 = [[542.12, 837], [800, 581.84]]
-STORIES_BLOCK2 = [['slurmlord', 'pieman'],['prettymouth', 'tunnel_part1', 'tunnel_part2']]
+STORIES_BLOCK2 = [['slumlord', 'pieman'],['prettymouth', 'tunnel_part1', 'tunnel_part2']]
 STORIES_DURATIONS_BLOCK2 = [[929.5, 450],[712, 747.76, 786.01]]
 
 STORIES = sum(STORIES_BLOCK1 + STORIES_BLOCK2, [])
@@ -17,6 +17,12 @@ def get_tasks(parsed):
 
     stories = list(zip(STORIES, STORIES_DURATIONS))
     #stories = random.sample(stories, len(stories))
+
+    audio_test = FreeRecall(
+        name=f"test-audio",
+        max_duration=120)
+    audio_test.use_fmri=False
+    yield audio_test
     for story, story_duration in stories:
         story_cap = story.capitalize()
 
