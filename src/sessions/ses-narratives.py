@@ -46,6 +46,7 @@ def get_tasks(parsed):
         wait_key='c',
     )
 
+    first_story = True
     for story, story_duration in stories:
         story_cap = story.capitalize()
 
@@ -53,9 +54,10 @@ def get_tasks(parsed):
             sound_file=os.path.join(STIMULI_PATH, 'audio_files', f"{story}_audio.wav"),
             name=f"task-{story_cap}Story_run-01",
             use_eyetracking=True,
-            et_calibrate=False,
+            et_calibrate=first_story,
             )
 
+        first_story = False
         yield Pause(
             text=pause_message,
             wait_key='a',
