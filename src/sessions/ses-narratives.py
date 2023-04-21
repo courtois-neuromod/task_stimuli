@@ -29,8 +29,8 @@ def get_tasks(parsed):
 
     test_micrecord = AudioRecording(
         instruction='We will test the microphone.\n Try to speak when the dot appears on the screen and we will then check the quality.',
-        initial_wait=1,
-        final_wait=1,
+        initial_wait=.1,
+        final_wait=.1,
         name=f"test-micrecord",
         max_duration=120,
         )
