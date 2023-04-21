@@ -41,41 +41,10 @@ def get_tasks(parsed):
         stdout=DEVNULL,
         stderr=DEVNULL,
     )
-
-    print("Now check the audio quality")
-    yield SoundTaskBase(
-        initial_wait=1,
-        final_wait=1,
-        instruction='Now checking mic recording quality',
-        sound_file=test_micrecord.output_wav_file,
-        name=f"test-playback"
-        )
-
-    if int(parsed.session) == 1:
-
-        yield Story(
-            sound_file="data/language/petitprince.stimuli/stimuli/task-lppEN_section-1.wav",
-            name=f"task-PetitprinceStory_run-01",
-            use_eyetracking=True,
-            et_calibrate=False,
-            )
-
-        yield Pause(
-            text=pause_message,
-            wait_key='a',
-        )
-
-        yield FreeRecall(
-            name=f"task-PetitprinceRecall_run-01",
-            max_duration=200,
-            use_eyetracking=True,
-            et_calibrate=False,
-            )
-
-        yield Pause(
-            text=pause_message,
-            wait_key='a',
-        )
+    yield Pause(
+        text="Please wait while we are checking the recording sample.",
+        wait_key='c',
+    )
 
     for story, story_duration in stories:
         story_cap = story.capitalize()
