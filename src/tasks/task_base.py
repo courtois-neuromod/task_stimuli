@@ -88,7 +88,8 @@ class Task(object):
         if hasattr(self, "_instructions"):
             for clearBuffer in self._instructions(exp_win, ctl_win):
                 yield
-                self._flip_all_windows(exp_win, ctl_win, clearBuffer)
+                if clearBuffer is not None:
+                    self._flip_all_windows(exp_win, ctl_win, clearBuffer)
         # 2 flips to clear screen
         for i in range(2):
             yield
@@ -108,7 +109,8 @@ class Task(object):
         for clearBuffer in self._run(exp_win, ctl_win):
             # yield first to allow external draw before flip
             yield
-            self._flip_all_windows(exp_win, ctl_win, clearBuffer)
+            if clearBuffer is not None:
+                self._flip_all_windows(exp_win, ctl_win, clearBuffer)
             # increment the progress bar depending on task flip rate
             if self.progress_bar:
                 if self._progress_bar_refresh_rate and flip_idx % self._progress_bar_refresh_rate == 0:
@@ -120,7 +122,8 @@ class Task(object):
         if hasattr(self, "_stop"):
             for clearBuffer in self._stop(exp_win, ctl_win):
                 yield
-                self._flip_all_windows(exp_win, ctl_win, clearBuffer)
+                if clearBuffer is not None:
+                    self._flip_all_windows(exp_win, ctl_win, clearBuffer)
         if self.progress_bar:
             self.progress_bar.clear()
             self.progress_bar.close()

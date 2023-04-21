@@ -38,6 +38,7 @@ class SoundTaskBase(Task):
     def _setup(self, exp_win):
         self.sound = sound.Sound(self.sound_file)
         self.fixation = fixation_dot(exp_win)
+        self.duration = self.sound.duration
 
     def _run(self, exp_win, ctl_win):
 
@@ -55,6 +56,8 @@ class SoundTaskBase(Task):
             self.initial_wait + self.sound.duration + self.final_wait,
             keyboard_accuracy=.1):
             yield
+            self.progress_bar.n = int(self.task_timer.getTime())
+            self.progress_bar.refresh()
         while self.sound.status > 0:
             pass
         print(f"{'#'*25} STOP SCANNER {'#'*25}")
@@ -172,6 +175,8 @@ class AudioRecording(Task):
             self.max_duration - self.final_wait,
             keyboard_accuracy=.005)):
             self._poll_audio()
+            self.progress_bar.n = int(self.task_timer.getTime())
+            self.progress_bar.refresh()
             if len(event.getKeys(self.done_key)):
                 break
             if flip_idx < 2:
@@ -180,6 +185,7 @@ class AudioRecording(Task):
                 yield True
             yield
 
+        print(f"{'*'*25} PREPARE TO STOP {'*'*25}")
         for flip_idx,_ in enumerate(utils.wait_until_yield(
             self.task_timer,
             self.task_timer.getTime() + self.final_wait,
@@ -391,11 +397,14 @@ Use up/down buttons to answer.
             self._events[-1]['onset'] + self.final_wait
             )
         # final_wait with fixation
+        print(f"{'*'*25} PREPARE TO STOP {'*'*25}")
         yield from self._fixation(exp_win, final_wait)
-        print(f"{'#'*25} STOP SCANNER {'#'*25}")
+        print(f"{'#'*25} STOP SCANNER    {'#'*25}")
 
 
     def _questionnaire(self, exp_win, ctl_win, questions):
+        event.getKeys('udlra') # flush keys
+
         if questions is None:
             return
         exp_win.setColor([0] * 3, colorSpace='rgb')

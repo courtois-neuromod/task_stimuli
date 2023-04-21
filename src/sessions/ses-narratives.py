@@ -65,7 +65,7 @@ def get_tasks(parsed):
 
         yield FreeRecall(
             name=f"task-{story_cap}Recall_run-01",
-            max_duration=story_duration*.4,
+            max_duration=story_duration,
             use_eyetracking=True,
             et_calibrate=False,
             )
