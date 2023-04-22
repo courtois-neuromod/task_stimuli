@@ -106,7 +106,7 @@ If you can remeber all the pair, you will win the bonus points.
         self.direction_values = {"l": DIRECTIONS["left"],
                                  "r": DIRECTIONS["right"],
                                  "u": DIRECTIONS["up"],
-                                 "d": DIRECTIONS["down"]}  # laptop
+                                 "d": DIRECTIONS["down"]}  # mri
         self.rating_pygame = {"left": key.L, "right": key.R}  # mri
 
     def _instructions(self, exp_win, ctl_win):
@@ -122,6 +122,17 @@ If you can remeber all the pair, you will win the bonus points.
             screen_text.draw(exp_win)
             if ctl_win:
                 screen_text.draw(ctl_win)
+            yield True
+
+        message = (
+            f"In this session, "
+            f"you can earn up to {self.total_possible_points} pionts.")
+        duration = 3
+        screen_text.text = message
+        for _ in range(config.FRAME_RATE * duration):
+            screen_text.draw(exp_win)
+            if ctl_win:
+                screen_text.draw(exp_win)
             yield True
 
     def _setup(self, exp_win):
@@ -156,8 +167,9 @@ If you can remeber all the pair, you will win the bonus points.
         )
         self.question = visual.TextStim(
             exp_win, text="",
-            pos=(0, 0.5),
-            alignText="center", color="white")
+            # pos=(0, 0.5),
+            alignText="center", color="white",
+            wrapWidth=config.WRAP_WIDTH)
 
         self.recall_time = visual.RatingScale(
             exp_win, low=5, high=60, precision=1,
@@ -189,15 +201,6 @@ If you can remeber all the pair, you will win the bonus points.
     def _run(self, exp_win, ctl_win):
         # start the trials
         total_earned_points = 0
-        # final results screen
-        self.question.text = (
-            f"In this session, "
-            f"you can earn up to {self.total_possible_points} pionts.")
-        for _ in range(config.FRAME_RATE * 5):
-            self.question.draw(exp_win)
-            if ctl_win:
-                self.question.draw(exp_win)
-            yield True
 
         for trial in self.trials:
             # flush keys
@@ -217,7 +220,11 @@ If you can remeber all the pair, you will win the bonus points.
             if trial['event_type'] in ["estimate"]:
                 n_correct = 0  # reset correct counter
                 self.recall_time.reset()
-                self.question.text = f"{trial['target_score']} of number pairs to remember.\n{trial['reward_level']} bonus points to win if you get all pairs correct."
+                self.question.text = (
+                    f"{trial['target_score']} of number pairs to remember.\n"
+                    f"{trial['reward_level']} bonus points to win if you get"
+                    " all pairs correct."
+                )
                 pos = random.randrange(5, 60)
                 self.recall_time.markerStart = pos
                 grid_memory_time = None
@@ -247,8 +254,7 @@ If you can remeber all the pair, you will win the bonus points.
 
             elif trial['event_type'] in ['encoding', 'recall']:
                 # reset grid display
-                items = trial["grid"]
-                for item, cell in zip(items, self.grid):  # update the display
+                for item, cell in zip(trial["grid"], self.grid):
                     cell[0].text = item
                     cell[-1].lineColor = 'white'  # reset grid color
 
@@ -257,6 +263,7 @@ If you can remeber all the pair, you will win the bonus points.
                         if grid_memory_time else 5  # in case no response received
                     description = f"Trial {trial['i_grid']}: {trial['event_type']}. {trial['duration']}s"
                     self.progress_bar.set_description(description)
+                    deadline = trial["onset"] + trial["duration"] - 1 / config.FRAME_RATE
                     for item, box in self.grid:
                         item.draw(exp_win)
                         box.draw(exp_win)
@@ -264,8 +271,7 @@ If you can remeber all the pair, you will win the bonus points.
                             item.draw(exp_win)
                             box.draw(exp_win)
                     yield True
-                    utils.wait_until(self.task_timer,
-                                     trial["onset"] + trial["duration"] - 1 / config.FRAME_RATE)
+                    utils.wait_until(self.task_timer, deadline)
 
                 elif trial['event_type'] == 'recall':
                     # set a random box that's not the box with number in as the start
@@ -387,18 +393,21 @@ If you can remeber all the pair, you will win the bonus points.
             elif trial['event_type'] == "feedback":
                 # update text
                 bonus_point = 0 if n_correct != int(trial["target_score"]) else int(trial["reward_level"])
+                self.trials.addData('bonus_point', bonus_point)
                 total_earned_points += bonus_point + n_correct
-                self.question.text = (
+                message = (
                     f"Out of {trial['target_score']} number pairs, "
                     f"you got {n_correct} correctly.\n"
-                    f"You got {bonus_point} bonus pionts."
-                    f"You received {n_correct + bonus_point} points from this trial.")
-                self.question.draw(exp_win)
-                if ctl_win:
+                    f"You got {bonus_point} bonus pionts. "
+                    f"You received {n_correct + bonus_point} points from "
+                    "this trial.")
+                n_frame = int(config.FRAME_RATE * trial["duration"]) - 1
+                self.question.text = message
+                for _ in range(n_frame):
                     self.question.draw(exp_win)
-                self.trials.addData('bonus_point', bonus_point)
-                yield True
-                utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] - 1 / config.FRAME_RATE)
+                    if ctl_win:
+                        self.question.draw(exp_win)
+                    yield True
 
             elif trial['event_type'] in ["effort"]:
                 # update text
@@ -407,8 +416,6 @@ If you can remeber all the pair, you will win the bonus points.
                 pos = random.randrange(0, 100)
                 self.effort.markerStart = pos
                 effort_estmation = None
-                # while self.recall_time.noResponse and \
-                #     (self.task_timer.getTime() - trial["onset"]) < trial['duration'] :
                 while self.effort.noResponse:
                     # use a sliding scale to select time one wants to use for
                     # memorising the grid
@@ -443,11 +450,14 @@ If you can remeber all the pair, you will win the bonus points.
             yield True
 
         # final results screen
-        self.question.text = (
+        message = (
             f"In this session, "
             f"you earned {total_earned_points} out of "
             f"{self.total_possible_points} pionts.")
-        for _ in range(config.FRAME_RATE * 5):
+        duration = 3
+        n_frame = int(config.FRAME_RATE * duration) - 1
+        self.question.text = message
+        for _ in range(n_frame):
             self.question.draw(exp_win)
             if ctl_win:
                 self.question.draw(exp_win)
