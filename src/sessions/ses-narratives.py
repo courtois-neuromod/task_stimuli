@@ -51,7 +51,7 @@ def get_tasks(parsed):
         story_cap = story.capitalize()
 
         yield Story(
-            sound_file=os.path.join(STIMULI_PATH, 'audio_files', f"{story}_audio.wav"),
+            sound_file=os.path.join(STIMULI_PATH, 'audio_files_filtered', f"{story}_audio.wav"),
             name=f"task-{story_cap}Story_run-01",
             use_eyetracking=True,
             et_calibrate=first_story,
@@ -65,7 +65,7 @@ def get_tasks(parsed):
 
         yield FreeRecall(
             name=f"task-{story_cap}Recall_run-01",
-            max_duration=story_duration*.4,
+            max_duration=story_duration,
             use_eyetracking=True,
             et_calibrate=False,
             )
