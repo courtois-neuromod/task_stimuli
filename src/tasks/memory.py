@@ -81,9 +81,9 @@ Try to remember the items and their location on the screen."""
 class NumberPair(Task):
 
     DEFAULT_INSTRUCTION = """You will be presented a 6 x 4 grid mixed with numbers and alphabets on the screen.
-Remember the locations of the numer pairs on screen.
-You will be asked to recall them seqentially, and win one point per correct pair.
-If you can remeber all the pair, you will win the bonus points.
+Remember the locations of the number pairs on screen.
+You will be asked to recall them sequentially, and win one point per correct pair.
+If you can remember all the pairs, you will win the bonus points.
 """
 
     def __init__(self, items_list, total_possible_points, *args, **kwargs):
@@ -126,7 +126,7 @@ If you can remeber all the pair, you will win the bonus points.
 
         message = (
             f"In this session, "
-            f"you can earn up to {self.total_possible_points} pionts.")
+            f"you can earn up to {self.total_possible_points} points.")
         duration = 3
         screen_text.text = message
         for _ in range(config.FRAME_RATE * duration):
@@ -137,13 +137,14 @@ If you can remeber all the pair, you will win the bonus points.
 
     def _setup(self, exp_win):
         # make pares of rectangels and text stim
+        grid_zero = ((self.grid_size[0]-1)/2*-.25, (self.grid_size[1]-1)/2*.25)
         self.grid = [(
             visual.TextStim(
-                exp_win, text="", pos=(-0.8 + x * 0.25, 0.7 - y * 0.25),
+                exp_win, text="", pos=(grid_zero[0] + x * 0.25, grid_zero[1] - y * 0.25),
                 alignText="center", color="white"
             ),
             visual.Rect(
-                exp_win, size=(0.2, 0.2), pos=(-0.8 + x * 0.25, 0.7 - y * 0.25),
+                exp_win, size=(0.2, 0.2), pos=(grid_zero[0] + x * 0.25, grid_zero[1] - y * 0.25),
                 fillColor=None,
             )
             )
@@ -157,12 +158,12 @@ If you can remeber all the pair, you will win the bonus points.
                               " to move on.")
         self.answer_instruction = visual.TextStim(
             exp_win, text=recall_instruction,
-            pos=(-0.8 + 2 * 0.25, 0.7 - 5 * 0.25),
+            pos=(grid_zero[0] + 2 * 0.25, grid_zero[1] - 5 * 0.25),
             alignText="left", color="white"
         )
         self.postanswer_message = visual.TextStim(
             exp_win, text="Response received. Wait for the next trial.",
-            pos=(-0.8 + 2 * 0.25, 0.7 - 5 * 0.25),
+            pos=(grid_zero[0] + 2 * 0.25, grid_zero[1] - 5 * 0.25),
             alignText="left", color="white"
         )
         self.question = visual.TextStim(
@@ -398,7 +399,7 @@ If you can remeber all the pair, you will win the bonus points.
                 message = (
                     f"Out of {trial['target_score']} number pairs, "
                     f"you got {n_correct} correctly.\n"
-                    f"You got {bonus_point} bonus pionts. "
+                    f"You got {bonus_point} bonus points. "
                     f"You received {n_correct + bonus_point} points from "
                     "this trial.")
                 n_frame = int(config.FRAME_RATE * trial["duration"]) - 1
@@ -412,7 +413,7 @@ If you can remeber all the pair, you will win the bonus points.
             elif trial['event_type'] in ["effort"]:
                 # update text
                 self.effort.reset()
-                self.question.text = f"How much effor did you put in the task?"
+                self.question.text = f"How much effort did you put in the task?"
                 pos = random.randrange(0, 100)
                 self.effort.markerStart = pos
                 effort_estmation = None
@@ -453,7 +454,7 @@ If you can remeber all the pair, you will win the bonus points.
         message = (
             f"In this session, "
             f"you earned {total_earned_points} out of "
-            f"{self.total_possible_points} pionts.")
+            f"{self.total_possible_points} points.")
         duration = 3
         n_frame = int(config.FRAME_RATE * duration) - 1
         self.question.text = message

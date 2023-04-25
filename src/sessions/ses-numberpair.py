@@ -1,6 +1,6 @@
 import os
 import re
-import pandas as pd
+import pandas as pd, csv
 import hashlib
 import numpy as np
 from itertools import product
@@ -76,7 +76,7 @@ ISI_JITTER = 2
 
 
 def generate_design_file(target_score_level, reward_level, n_design_repetition, seed):
-    """Generate memory grids based on the target score and reward leve."""
+    """Generate memory grids based on the target score and reward level."""
     # seed numpy with subject id and session to have reproducible design generation
     np.random.seed(seed)
 
@@ -499,7 +499,8 @@ if __name__ == "__main__":
         "designs",
         f"sub-{parsed.subject}_design.tsv",
     )
-    designs.to_csv(out_fname, sep="\t", index=True)
+
+    designs.to_csv(out_fname, sep="\t", quoting=csv.QUOTE_NONNUMERIC, index=True)
 
     # event
     total_n = designs.shape[0]
@@ -517,4 +518,4 @@ if __name__ == "__main__":
             f"sub-{parsed.subject}_task-numberpair_run-{i+1}_events.tsv",
         )
         event_file = event_file.reset_index()
-        event_file.to_csv(out_fname, sep="\t", index=True)
+        event_file.to_csv(out_fname, sep="\t", quoting=csv.QUOTE_NONNUMERIC, index=True)
