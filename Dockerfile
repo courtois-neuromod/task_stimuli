@@ -35,11 +35,8 @@ ENV GI_TYPELIB_PATH=/usr/local/lib/x86_64-linux-gnu/girepository-1.0/
 ENTRYPOINT ["/entrypoint.sh"]
 
 COPY . /src/task_stimuli
-
 RUN pip3 install -r /src/task_stimuli/requirements.txt
-
 COPY ./docker/.env.docker /src/task_stimuli/.env
-
 RUN pip install python-vlc==3.0.11115
 
 WORKDIR /src/task_stimuli/
