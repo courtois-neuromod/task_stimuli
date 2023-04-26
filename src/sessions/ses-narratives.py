@@ -24,7 +24,12 @@ def get_tasks(parsed):
         stderr=DEVNULL,
     )
 
-    stories = list(zip(STORIES, STORIES_DURATIONS))
+    if int(parsed.session) < 6:
+        if int(parsed.session)%2==1:
+            stories = list(zip(STORIES_BLOCK1[0], STORIES_DURATIONS_BLOCK1[0]))
+        else:
+            stories = list(zip(STORIES_BLOCK1[1], STORIES_DURATIONS_BLOCK1[1]))
+    #stories = list(zip(STORIES, STORIES_DURATIONS))
     #stories = random.sample(stories, len(stories))
 
     test_micrecord = AudioRecording(
