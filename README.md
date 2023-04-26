@@ -66,6 +66,24 @@ You can create new sessions by adding a `ses-xxxx.py` file in `src/sessions` fol
 Each file only create a `TASKS` list of task subclasses instances, that is loaded by the script and ran in the provided order.
 Check the existing files for examples.
 
+## Build the docker container without eyetracking and other extra hardware for task development
+
+Build the container:
+
+```bash
+docker build --no-cache -t task_stimuli:dev .
+```
+
+Example commend to run the task with `run_docker_dev.sh`:
+
+```bash
+bash run_docker_dev.sh --subject test --session testsession --tasks mytask -o /path/to/task/output/directory`
+```
+
+The script `run_docker_dev.sh` will bind the `src` directory to the Docker image and set up other variables needed.
+
+**`docker/` contains files for container for testing eye tracker and other shared files for docker build.**
+
 ## How to interact with the software:
 
 ### stimuli
