@@ -239,6 +239,7 @@ Please choose which of the two fragments came first.
 If you are unsure, choose the best possible answer.
 Use up/down buttons to answer.
 """
+    INSTRUCTION_DURATION = 6
 
     QUESTIONS = [
         "I like this story.",
@@ -294,6 +295,25 @@ Use up/down buttons to answer.
     def _restart(self):
         self.trials = data.TrialHandler(self.design, 1, method="random")
 
+    def _instructions(self, exp_win, ctl_win):
+        screen_text = visual.TextStim(
+            exp_win,
+            text=self.instruction,
+            alignText="center",
+            color="white",
+            wrapWidth=config.WRAP_WIDTH,
+        )
+
+        for flip_idx, _ in enumerate(utils.wait_until_yield(
+            core.monotonicClock,
+            core.getTime()+ self.INSTRUCTION_DURATION,
+            keyboard_accuracy=.01)):
+            if flip_idx < 2:
+                screen_text.draw(exp_win)
+                if ctl_win:
+                    screen_text.draw(ctl_win)
+                yield True
+            yield
 
     def _fixation(self, exp_win, offset):
         for flip, _ in enumerate(utils.wait_until_yield(
