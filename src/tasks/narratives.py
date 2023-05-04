@@ -163,6 +163,7 @@ class AudioRecording(Task):
         self._pyaudio_if.terminate()
 
     def _run(self, exp_win, ctl_win):
+        event.getKeys(self.done_key) # flush stop key
         self._start_recording()
         for _ in utils.wait_until_yield(
             self.task_timer,
@@ -368,6 +369,11 @@ Use up/down buttons to answer.
                             keyboard_accuracy=.0001)
                     break
                 yield
+            else:
+                for k in ['response', 'response_correct', 'response_onset', 'response_time']:
+                    trial[k] = ''
+                self.progress_bar.set_description(
+                    f"{Fore.RED}Trial {trial_n}: no response{Fore.RESET}")
 
             # flip to get screen clear timing
             yield True
@@ -550,8 +556,11 @@ Use up/down buttons to answer.
 
     def _save(self):
         out_fname = self._generate_unique_filename("events", "tsv")
-        self.trials.saveAsWideText(out_fname)
-        events_df = pandas.read_csv(out_fname, sep="\t")
-        events_df = pandas.concat([events_df, pandas.DataFrame(self._events)])
+        other_events = pandas.DataFrame(self._events)
+        events_df = self.trials.saveAsWideText(out_fname)
+        if isinstance(events_df, pandas.DataFrame):
+            events_df = pandas.concat([events_df, other_events])
+        else:
+            events_df = other_events
         events_df.to_csv(out_fname, sep="\t", index=False)
         return False
