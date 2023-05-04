@@ -18,11 +18,6 @@ pause_message = "You can take a short break while we stop the scanner.\n\n When 
 
 def get_tasks(parsed):
 
-    gnome_control_process = Popen(
-        ["gnome-control-center","sound"],
-        stdout=DEVNULL,
-        stderr=DEVNULL,
-    )
 
     if int(parsed.session) < 6:
         if int(parsed.session)%2==1:
@@ -31,25 +26,6 @@ def get_tasks(parsed):
             stories = list(zip(STORIES_BLOCK1[1], STORIES_DURATIONS_BLOCK1[1]))
     #stories = list(zip(STORIES, STORIES_DURATIONS))
     #stories = random.sample(stories, len(stories))
-
-    test_micrecord = AudioRecording(
-        instruction='We will test the microphone.\n Try to speak when the dot appears on the screen and we will then check the quality.',
-        initial_wait=.1,
-        final_wait=.1,
-        name=f"test-micrecord",
-        max_duration=120,
-        )
-    yield test_micrecord
-
-    audacity_process = Popen(
-        ["audacity", test_micrecord.output_wav_file],
-        stdout=DEVNULL,
-        stderr=DEVNULL,
-    )
-    yield Pause(
-        text="Please wait while we are checking the recording sample.",
-        wait_key='c',
-    )
 
     first_story = True
     for story, story_duration in stories:
