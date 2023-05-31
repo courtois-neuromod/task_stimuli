@@ -1,4 +1,3 @@
-# Don't display 'Hello from the Pygame Community!'
 from os import environ
 import numpy as np
 import pandas as pd
@@ -6,37 +5,37 @@ import os
 import argparse
 from ast import literal_eval
 
-from ..tasks import robot, task_base
+if __name__ != "__main__":
+    from ..tasks import robot, task_base
 
 environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
 # Dimensions of a cell of the maze (1/8 of the maze's dimensions), in cm
-CELL_HEIGHT = 15
-CELL_WIDTH = 15
+CELL_HEIGHT = 110 / 8
+CELL_WIDTH = 110 / 8
 
 
 def get_tasks(parsed):
     n_tasks = 2
     order_df = pd.read_csv(
-        f"data/robot/sub-{parsed.subject}_ses-{parsed.session}_cozmofriends_pilot.csv"
+        f"data/robot/cozmofriends/sub-{parsed.subject}_ses-{parsed.session}_cozmofriends_pilot.csv"
     )
     for col in ["target_position", "winning_positions"]:
         order_df[col] = order_df[col].apply(literal_eval)
     for run in range(n_tasks):
         run_order_df = order_df[order_df["run"] == run + 1].sort_values("search_order")
-        task = robot.CozmoFirstTaskPsychoPyNUC(
-            nuc_addr="10.30.10.7",
-            tcp_port_send=1025,
-            tcp_port_recv=1024,
+        task = robot.CozmoFriends(
+            source_id_imgs="cozmo_imgs_0",
+            source_id_pos="neuromod_cozmo_tracking",
+            source_id_actions="cozmo_actions_0",
             max_duration=15 * 60,
             target_names=run_order_df["target_name"].values,
             target_positions=run_order_df["winning_positions"].values,
             cell_width=CELL_WIDTH,
             cell_height=CELL_HEIGHT,
-            target_imgs_dir="data/robot/cozmofriends_imgs",
+            target_imgs_dir="data/robot/cozmofriends",
             name=f"cozmo_run-{run+1:02d}",
             instruction="Explore the maze and find the target !",
-            tracking=True,
         )
         yield task
 
@@ -74,7 +73,10 @@ def main(args):
                 orders["winning_positions"].append(TARGET_CELLS[position])
         df = pd.DataFrame.from_dict(orders)
         df.to_csv(
-            os.path.join(args.out_dir, f"sub-0{args.subject}_ses-{ses}_{args.tag}.csv"),
+            os.path.join(
+                args.out_dir,
+                f"sub-{str(args.subject).zfill(2)}_ses-{str(ses).zfill(3)}_{args.tag}.csv",
+            ),
             index=False,
         )
 
