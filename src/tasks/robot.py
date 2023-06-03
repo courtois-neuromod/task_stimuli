@@ -7,13 +7,13 @@ import copy
 from PIL import Image
 import numpy as np
 import pyglet
-import socket
 import cv2
 import pickle
 import av
 from fractions import Fraction
 import os
 from pylsl import StreamInlet, resolve_stream, StreamInfo, StreamOutlet
+from pylsl import local_clock as lsl_local_clock
 from psychopy import visual, core, logging, event
 from ast import literal_eval
 from .task_base import Task
@@ -43,9 +43,6 @@ ACTION_ACTU_DICT = {
     "head_down": "head",
 }
 COZMO_FPS = 15.0
-ADDR_FAMILY = socket.AF_INET
-SOCKET_TYPE = socket.SOCK_STREAM
-BUFF_SIZE = 65536
 
 _keyPressBuffer = []
 _keyReleaseBuffer = []
@@ -86,28 +83,30 @@ class CozmoBaseTask(Task):
         self.done = False
         self.info = None
         self.game_vis_stim = None
+        self._first_frame = None
 
     def _setup(self, exp_win):
         """need to overwrite first part of function to get first frame from cozmo"""
-
         super()._setup(exp_win)
-
         if self._first_frame is not None:
-            min_ratio = min(
-                exp_win.size[0] / self._first_frame.size[0],
-                exp_win.size[1] / self._first_frame.size[1],
-            )
-            width = int(min_ratio * self._first_frame.size[0])
-            height = int(min_ratio * self._first_frame.size[1])
+            self._set_camera_feed_stim(exp_win)
 
-            self.game_vis_stim = visual.ImageStim(
-                exp_win,
-                size=(width, height),
-                units="pix",
-                interpolate=True,
-                flipVert=True,
-                autoLog=False,
-            )
+    def _set_camera_feed_stim(self, exp_win):
+        min_ratio = min(
+            exp_win.size[0] / self._first_frame.size[0],
+            exp_win.size[1] / self._first_frame.size[1],
+        )
+        width = int(min_ratio * self._first_frame.size[0])
+        height = int(min_ratio * self._first_frame.size[1])
+
+        self.game_vis_stim = visual.ImageStim(
+            exp_win,
+            size=(width, height),
+            units="pix",
+            interpolate=True,
+            flipVert=True,
+            autoLog=False,
+        )
 
     def _handle_controller_presses(self, exp_win):  # k[0] : key, k[1] : time stamp
         exp_win.winHandle.dispatch_events()
@@ -387,329 +386,6 @@ class CozmoFirstTaskPsychoPy(CozmoBaseTask):
 
 
 # ----------------------------------------------------------------- #
-#                     Cozmo NUC Task (PsychoPy)                     #
-# ----------------------------------------------------------------- #
-class CozmoFirstTaskPsychoPyNUC(CozmoBaseTask):
-    DEFAULT_INSTRUCTION = "Let's explore the maze !"
-
-    def __init__(
-        self,
-        nuc_addr,
-        tcp_port_send,
-        tcp_port_recv,
-        tcp_port_recv_tracking,
-        max_duration=5 * 60,
-        key_actions=DEFAULT_KEY_ACTION_DICT,
-        *args,
-        **kwargs,
-    ):
-        super().__init__(*args, **kwargs)
-        self.max_duration = max_duration
-        self.actions_to_send = {
-            "forward": False,
-            "backward": False,
-            "left": False,
-            "right": False,
-            "head_up": False,
-            "head_down": False,
-        }
-        self.new_obs = False
-        self.send_timer = core.Clock()
-        self.cnter = 0
-        self.tracking_frame = None
-        self.key_actions = key_actions
-
-        self.nuc_addr = nuc_addr
-        self.tcp_port_send = tcp_port_send
-        self.tcp_port_recv = tcp_port_recv
-        self.tcp_port_recv_tracking = tcp_port_recv_tracking
-
-        self.sock_send = socket.socket(ADDR_FAMILY, SOCKET_TYPE)
-        self.sock_send.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock_send.bind(("", self.tcp_port_send))
-        self.sock_send.listen(10)
-        self.sock_send.settimeout(1.5)  # in seconds, to avoid being stuck
-
-        self.thread_send = threading.Thread(target=self.send_loop)
-        self.lock_send = threading.Lock()
-
-        self.frame_timestamp_pos_pycozmo = []
-        self.frame_timestamp_psychopy = []
-        self.curr_obs_id = None
-
-    def _instructions(self, exp_win, ctl_win):
-        screen_text = visual.TextStim(
-            exp_win,
-            text=self.instruction,
-            alignText="center",
-            color="red",
-            wrapWidth=1.2,
-        )
-        # create img stims
-        for _ in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
-            screen_text.draw(exp_win)
-            if ctl_win:
-                screen_text.draw(ctl_win)
-            yield ()
-
-    def _setup(self, exp_win):
-        cozmo_feed_fname = self._generate_unique_filename("cozmo-feed", "mp4")
-        self.container = av.open(cozmo_feed_fname, "w")
-        self.stream = self.container.add_stream(codec_name="mjpeg", rate=15)
-        self.stream.pix_fmt = "yuvj422p"
-
-        self.thread_recv = threading.Thread(target=self.recv_loop)
-        self.thread_recv.start()
-        self.lock_recv = threading.Lock()
-
-        self.thread_recv_tracking = threading.Thread(target=self.recv_loop_tracking)
-        self.thread_recv_tracking.start()
-        self.lock_recv_tracking = threading.Lock()
-
-        while self.obs is None:  # wait until a first frame is received
-            pass
-        self._first_frame = self.obs[1]
-        super()._setup(exp_win)
-
-    def _run(self, exp_win, *args, **kwargs):
-        self._set_key_handler(exp_win)
-        self._reset()
-        self._clear_key_buffers()
-        self.thread_send.start()
-        while not self.done:
-            time.sleep(0.01)
-            actions_list = self.get_actions(exp_win)
-            flip = self.loop_fun(*args, **kwargs)
-            if flip:
-                yield True  # True if new frame, False otherwise
-                self.frame_timestamp_psychopy.append(
-                    (self.curr_obs_id, self._exp_win_last_flip_time)
-                )
-            if self.max_duration and self.task_timer.getTime() > self.max_duration:
-                print("timeout !")
-                self.done = True
-
-    def _stop(self, exp_win, ctl_win):
-        cv2.destroyAllWindows()
-        self.done = True
-        self.thread_recv.join()
-        self.container.close()
-
-        # save timestamp arrays
-        self.frame_timestamp_pycozmo = np.asarray(self.frame_timestamp_pycozmo)
-        pycozmo_ts_fname = self._generate_unique_filename("timestamp-pycozmo", "npy")
-        np.save(pycozmo_ts_fname, self.frame_timestamp_pycozmo)
-        self.frame_timestamp_psychopy = np.asarray(self.frame_timestamp_psychopy)
-        psychopy_ts_fname = self._generate_unique_filename("timestamp-psychopy", "npy")
-        np.save(psychopy_ts_fname, self.frame_timestamp_psychopy)
-
-        self.thread_send.join()
-        self.sock_send.close()
-        # need to close it otherwise error 98 address already in use
-        yield True
-
-    def _reset(self):
-        pass
-
-    def _render_graphics(self, exp_win, obs, tracking_frame=None):
-        self.curr_obs_id = obs[0]
-        self.game_vis_stim.image = obs[1]
-        self.game_vis_stim.draw(exp_win)
-
-    def loop_fun(self, exp_win):
-        self.lock_recv.acquire()
-        new_obs = self.new_obs
-        self.new_obs = False
-        obs = self.obs
-        self.lock_recv.release()
-
-        if new_obs:
-            self._render_graphics(exp_win, obs, tracking_frame)
-            return True
-
-        return False
-
-    # RECEIVING SECTION
-    def recv_connect(self, tcp_port):
-        self.sock_recv = socket.socket(ADDR_FAMILY, SOCKET_TYPE)
-        self.sock_send.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        while not self.done:
-            try:
-                self.sock_recv.connect((self.nuc_addr, tcp_port))
-                break
-            except ConnectionError:
-                continue
-            except OSError as error:
-                print(error)
-
-    def save_mjpeg(self, id, buffer):
-        packet = av.packet.Packet(buffer)
-        packet.stream = self.stream
-        packet.time_base = Fraction(1, int(COZMO_FPS))
-        packet.pts = id
-        self.container.mux(packet)
-
-    def img_decode(self, img_raw, is_color_image):
-        obs_tmp = cv2.imdecode(img_raw, cv2.IMREAD_COLOR)
-        if obs_tmp is not None:
-            obs_tmp = cv2.cvtColor(
-                obs_tmp, cv2.COLOR_BGR2RGB
-            )  # OpenCV stores images in B G R ordering
-            obs_tmp = Image.fromarray(obs_tmp)
-            if is_color_image:
-                obs_tmp = obs_tmp.resize((320, 240))
-        return obs_tmp
-
-    def recv_loop(self):
-        self.recv_connect(self.tcp_port_recv)
-        id = 0
-        img_raw = np.array(0)
-        while not self.done:
-            time.sleep(1 / COZMO_FPS / 8)
-
-            received = bytearray()
-            try:
-                sz = int.from_bytes(self.sock_recv.recv(3), byteorder="big")
-                # TODO change if not long enough
-                if sz > 0:
-                    while len(received) < sz:
-                        received += self.sock_recv.recv(sz - len(received))
-                else:
-                    pass  # TODO
-            except ConnectionError as error:
-                print(error)
-                self.done = True
-
-            if len(received) > 0 and not self.done:
-                # self.save_mjpeg(id, received[3:])
-                offset = 0
-                onset = 3
-                timestamp = int.from_bytes(
-                    received[offset : offset + onset], byteorder="big"
-                )
-                # timestamp sent as 3 first bytes after 3 first bytes (size of message)
-                offset += onset
-                self.frame_timestamp_pycozmo.append((id, timestamp))
-
-                cozmo_img = received[offset:]
-                self.save_mjpeg(id, cozmo_img)
-                img_raw = np.asarray(cozmo_img, dtype="uint8")
-                is_color_image = img_raw[0] != 0
-                if img_raw.size != 0:
-                    obs_tmp = self.img_decode(img_raw, is_color_image)
-                    self.lock_recv.acquire()
-                    self.obs = (id, obs_tmp.transpose(Image.FLIP_TOP_BOTTOM))
-                    self.new_obs = True
-                    self.lock_recv.release()
-                id += 1
-
-        self.sock_recv.close()
-        # TODO: use context managers and/or generators to deal with closing
-
-    def recv_loop_tracking(self):
-        self.recv_connect(self.tcp_port_recv_tracking)
-        id = 0
-        while not self.done:
-            time.sleep(1 / COZMO_FPS / 8)
-
-            received = bytearray()
-            try:
-                sz = int.from_bytes(self.sock_recv.recv(3), byteorder="big")
-                # TODO change if not long enough
-                if sz > 0:
-                    while len(received) < sz:
-                        received += self.sock_recv.recv(sz - len(received))
-                else:
-                    pass  # TODO
-            except ConnectionError as error:
-                print(error)
-                self.done = True
-
-            if len(received) > 0 and not self.done:
-                offset = 0
-                onset = 3
-                timestamp = int.from_bytes(
-                    received[offset : offset + onset], byteorder="big"
-                )
-                # timestamp sent as 3 first bytes after 3 first bytes (size of message)
-                offset += onset
-                onset = 3
-                onset_track = onset
-                sz = int.from_bytes(received[offset : offset + onset], byteorder="big")
-                onset_track += onset
-                offset += onset
-                onset = 8
-                x_pos = struct.unpack("d", received[offset : offset + onset])
-                # x_pos encoded as C double (8 bytes)
-                y_pos = struct.unpack(
-                    "d", received[offset + onset : offset + (2 * onset)]
-                )  # y_pos encoded as C double (8 bytes)
-                self.lock_recv_tracking.acquire()
-                self.robot_pos = (x_pos, y_pos)
-                self.lock_recv_tracking.release()
-                # TODO : log position with timestamp and id.
-                id += 1
-
-        self.sock_recv.close()
-
-    # SENDING SECTION
-    def send_connect(self):
-        while not self.done:
-            try:
-                conn, _ = self.sock_send.accept()
-                break
-            except socket.timeout:
-                continue
-        if self.done:
-            return None
-        return conn
-
-    def send_loop(self):
-        conn = self.send_connect()
-        actions_prev = dict()
-        self.send_timer.reset()
-
-        while not self.done and conn:
-            time.sleep(1 / COZMO_FPS / 4)
-            self.lock_send.acquire()
-            actions = copy.deepcopy(self.actions_to_send)
-            self.lock_send.release()
-
-            if actions is not None and (
-                actions != actions_prev or self.send_timer.getTime() > 0.5
-            ):
-                actions_prev = copy.deepcopy(actions)
-                self.send_timer.reset()
-                data = pickle.dumps(actions, protocol=4)
-                try:
-                    conn.sendall(data)
-                except ConnectionError as error:
-                    print(error)
-                    self.done = True
-
-        # avoid unwanted movement
-        if conn and not self.done:
-            data = pickle.dumps(dict.fromkeys(actions, False), protocol=4)
-            conn.sendall(data)
-            conn.close()
-
-    def get_actions(self, exp_win):
-        self._handle_controller_presses(exp_win)
-        actions_to_send = dict.fromkeys(self.actions_to_send, False)  # reset to False
-        actions_list = []
-        for key in self.pressed_keys.keys():
-            if key in self.key_actions:
-                if self.key_actions[key] in actions_to_send:
-                    actions_to_send[self.key_actions[key]] = True
-                actions_list.append(self.key_actions[key])
-
-        self.lock_send.acquire()
-        self.actions_to_send = copy.deepcopy(actions_to_send)
-        self.lock_send.release()
-        return actions_list
-
-
-# ----------------------------------------------------------------- #
 #                     Cozmo Friends Task (PsychoPy)                 #
 # ----------------------------------------------------------------- #
 class CozmoFriends(CozmoBaseTask):
@@ -728,6 +404,7 @@ class CozmoFriends(CozmoBaseTask):
         *args,
         **kwargs,
     ):
+        super().__init__(**kwargs)
         self.max_duration = max_duration
         self.actions_to_send = {
             "forward": False,
@@ -763,8 +440,10 @@ class CozmoFriends(CozmoBaseTask):
         )
         self.lock_recv_pos = threading.Lock()
 
-        self.frame_timestamp_pycozmo = []
-        self.frame_timestamp_psychopy = []
+        self.frame_timestamps_pycozmo = []
+        self.frame_timestamps_psychopy = []
+        self.frame_timestamps_nuc = []
+        self.positions_log = []
         self.curr_obs_id = None
 
         self.robot_pos = None
@@ -779,9 +458,10 @@ class CozmoFriends(CozmoBaseTask):
         self.showing_next_target_inst = False
         self.showing_wrong_place_txt = False
         self.all_found = False
+        self.run_started = False
 
-        self.wrong_place_txt_duration = 5
-        self.next_target_inst_duration = 5
+        self.wrong_place_txt_duration = 2
+        self.next_target_inst_duration = 2
 
     def _instructions(self, exp_win, ctl_win):
         instruction = visual.ImageStim(
@@ -818,9 +498,13 @@ class CozmoFriends(CozmoBaseTask):
 
         # wait until a first frame and first position are received
         print("Waiting to receive first frame and position.")
+        _ = 0
         while self.obs is None or self.robot_pos is None:
+            _ += 1
+            if not _ % 300:
+                print("Searching for streams")
             time.sleep(0.01)
-            pass
+
         self._first_frame = self.obs[1]
 
         self.wrong_place_txtstim = visual.TextStim(
@@ -834,22 +518,42 @@ class CozmoFriends(CozmoBaseTask):
         super()._setup(exp_win)
 
     def _run(self, exp_win, *args, **kwargs):
+        self.run_started = True
         self._set_key_handler(exp_win)
         self._clear_key_buffers()
         self.thread_send.start()
         self.i_target = 0
+        already_pressing_find = False
         target_name = self.target_names[self.i_target]
         self._update_target_imgstim(exp_win, target_name)
+        position, current_cell_onset, last_current_cell = self.get_position()
         while not self.done:
             time.sleep(0.01)
             actions_list = self.get_actions(exp_win)
             new_obs, obs = self.get_robot_frame()
-            if "find" in actions_list:
-                current_cell = (
-                    self.robot_pos[0] // self.cell_width,
-                    self.robot_pos[1] // self.cell_height,
+            position, position_timestamp, cell = self.get_position()
+            current_cell = cell if cell is not None else current_cell
+            if current_cell != last_current_cell:
+                name = None
+                for i, target_cells in self.target_positions:
+                    if current_cell in target_cells:
+                        name = self.target_names[i]
+                        break
+                self._add_cell_event(
+                    position, current_cell, name, current_cell_onset, position_timestamp
                 )
-                if current_cell in self.target_positions[self.i_target] or True:
+                last_current_cell = current_cell
+                current_cell_onset = position_timestamp
+            if "find" in actions_list and not already_pressing_find:
+                if (
+                    current_cell in self.target_positions[self.i_target]
+                    or "head_up" in actions_list  # TODO: remove this
+                ):
+                    self._add_find_event(found=True, cell=current_cell)
+                    self._add_search_event(
+                        target_inst_offset,
+                        self._exp_win_last_flip_time - self.task_timer._timeAtLastReset,
+                    )
                     self.i_target += 1
                     if self.i_target < len(self.target_names):
                         target_name = self.target_names[self.i_target]
@@ -860,17 +564,37 @@ class CozmoFriends(CozmoBaseTask):
                         self.done = True
 
                 else:  # in wrong place
+                    self._add_find_event(found=False, cell=current_cell)
                     if self.wrong_place_txt_time is None:
                         self.wrong_place_txt_time = (
                             self.task_timer.getTime() + self.wrong_place_txt_duration
                         )
+            already_pressing_find = "find" in actions_list
 
-            flip = self._render_graphics(exp_win, new_obs, obs)
-            if flip:
-                yield True  # True if new frame, False otherwise
-                self.frame_timestamp_psychopy.append(
-                    (self.curr_obs_id, self._exp_win_last_flip_time)
+            flip, start_target_inst, end_target_inst = self._render_graphics(
+                exp_win, new_obs, obs
+            )
+            if new_obs:
+                self.frame_timestamps_psychopy.append(
+                    (
+                        self.curr_obs_id,
+                        self._exp_win_last_flip_time - self.task_timer._timeAtLastReset,
+                    )
                 )
+            if start_target_inst:
+                target_inst_onset = (
+                    self._exp_win_last_flip_time - self.task_timer._timeAtLastReset
+                )
+            elif end_target_inst:
+                self._add_next_target_instruction_event(
+                    target_inst_onset,
+                    self._exp_win_last_flip_time - self.task_timer._timeAtLastReset,
+                )
+                target_inst_offset = (
+                    self._exp_win_last_flip_time - self.task_timer._timeAtLastReset
+                )
+            if flip:
+                yield True
 
             if self.max_duration and self.task_timer.getTime() > self.max_duration:
                 print("timeout !")
@@ -878,26 +602,84 @@ class CozmoFriends(CozmoBaseTask):
                 self.done = True
 
     def _stop(self, exp_win, ctl_win):
+        self.lock_send.acquire()
+        self.actions_to_send = dict.fromkeys(self.actions_to_send, False)
+        self.lock_send.release()
         cv2.destroyAllWindows()
         self.done = True
         self.thread_recv_pos.join()
         self.thread_recv_obs.join()
+        time.sleep(0.01)  # wait for action to be sent (to stop the robot)
+        self.thread_send.join()
         self.container.close()
 
-        # save timestamp arrays
-        self.frame_timestamp_pycozmo = np.asarray(self.frame_timestamp_pycozmo)
+        # save timestamp arrays and positions
         pycozmo_ts_fname = self._generate_unique_filename("timestamp-pycozmo", "npy")
-        np.save(pycozmo_ts_fname, self.frame_timestamp_pycozmo)
+        np.save(pycozmo_ts_fname, np.asarray(self.frame_timestamps_pycozmo))
 
-        self.frame_timestamp_psychopy = np.asarray(self.frame_timestamp_psychopy)
         psychopy_ts_fname = self._generate_unique_filename("timestamp-psychopy", "npy")
-        np.save(psychopy_ts_fname, self.frame_timestamp_psychopy)
+        np.save(psychopy_ts_fname, np.asarray(self.frame_timestamps_psychopy))
 
-        self.thread_send.join()
+        nuc_ts_fname = self._generate_unique_filename("timestamp-nuc", "npy")
+        np.save(nuc_ts_fname, np.asarray(self.frame_timestamps_nuc))
+
+        pos_fname = self._generate_unique_filename("positions", "npy")
+        np.save(pos_fname, np.asarray(self.positions_log))
+
         yield True
 
     def _reset(self):
         pass
+
+    def _add_cell_event(self, position, cell, name, onset, offset):
+        event = {
+            "trial_type": "visited_cell",
+            "onset": onset,
+            "offset": offset,
+            "duration": offset - onset,
+            "robot_position": position,
+            "robot_cell": cell,
+            "character_in_cell": name,
+        }
+        self._events.append(event)
+
+    def _add_find_event(self, found, cell):
+        event = {
+            "trial_type": "find",
+            "onset": self.task_timer.getTime(),
+            "sample": time.monotonic(),
+            "found": found,
+            "robot_position": self.robot_pos,
+            "robot_cell": cell,
+            "target_name": self.target_names[self.i_target],
+            "target_cells": self.target_positions[self.i_target],
+            "target_index": self.i_target,
+        }
+        self._events.append(event)
+
+    def _add_next_target_instruction_event(self, onset, offset):
+        event = {
+            "trial_type": "next_target_instruction",
+            "onset": onset,
+            "offset": offset,
+            "duration": offset - onset,
+            "target_name": self.target_names[self.i_target],
+            "target_number": self.i_target,
+            "target_cells": self.target_positions[self.i_target],
+        }
+        self._events.append(event)
+
+    def _add_search_event(self, onset, offset):
+        event = {
+            "trial_type": "search_sequence",
+            "onset": onset,
+            "offset": offset,
+            "duration": offset - onset,
+            "target_name": self.target_names[self.i_target - 1],
+            "target_number": self.i_target - 1,
+            "target_cells": self.target_positions[self.i_target - 1],
+        }
+        self._events.append(event)
 
     def _update_target_imgstim(self, exp_win, target_name):
         next_target_img_path = os.path.join(
@@ -953,14 +735,21 @@ class CozmoFriends(CozmoBaseTask):
             if show_next_target_inst:
                 self.next_target_imgstim.draw(exp_win)
 
+        start_next_target_inst = (
+            show_next_target_inst and not self.showing_next_target_inst
+        )
+        end_next_target_inst = (
+            not show_next_target_inst and self.showing_next_target_inst
+        )
+
         flip = (
             new_obs
             or (show_wrong_place_txt and not self.showing_wrong_place_txt)
-            or (show_next_target_inst and not self.showing_next_target_inst)
+            or start_next_target_inst
         )
         self.showing_wrong_place_txt = show_wrong_place_txt
         self.showing_next_target_inst = show_next_target_inst
-        return flip
+        return flip, start_next_target_inst, end_next_target_inst
 
     def get_robot_frame(self):
         self.lock_recv_obs.acquire()
@@ -969,6 +758,20 @@ class CozmoFriends(CozmoBaseTask):
         obs = self.obs
         self.lock_recv_obs.release()
         return new_obs, obs
+
+    def get_position(self):
+        self.lock_recv_pos.acquire()
+        position = self.robot_pos
+        position_timestamp = self.robot_pos_ts
+        self.lock_recv_pos.release()
+        if not np.nan in position:
+            cell = (
+                position[0] // self.cell_width,
+                position[1] // self.cell_height,
+            )
+        else:
+            cell = None
+        return position, position_timestamp, cell
 
     def get_actions(self, exp_win):
         self._handle_controller_presses(exp_win)
@@ -1007,7 +810,7 @@ class CozmoFriends(CozmoBaseTask):
         streams = resolve_stream("source_id", source_id)
         if not streams:
             raise RuntimeError(f"Stream of id {source_id} not found.")
-        inlet = StreamInlet(streams[0])
+        inlet = StreamInlet(streams[0], processing_flags=1)
         id = 0
         while not self.done:
             data, nuc_ts = inlet.pull_sample()
@@ -1021,22 +824,36 @@ class CozmoFriends(CozmoBaseTask):
             self.obs = (id, obs_tmp.transpose(Image.FLIP_TOP_BOTTOM))
             self.new_obs = True
             self.lock_recv_obs.release()
-            id += 1
+            if self.run_started:
+                # TODO ask Basile for a smarter way to sync lsl clock with task_timer
+                lsl_clock_offset = lsl_local_clock() - self.task_timer.getTime()
+                lsl_clock_offset += -self.task_timer.getTime() + lsl_local_clock()
+                lsl_clock_offset = lsl_clock_offset / 2
+                self.frame_timestamps_pycozmo.append([id, float(pycozmo_ts)])
+                self.frame_timestamps_nuc.append([id, nuc_ts - lsl_clock_offset])
+                id += 1
 
     def recv_loop_pos(self, source_id):
         streams = resolve_stream("source_id", source_id)
         if not streams:
             raise RuntimeError(f"Stream of id {source_id} not found.")
-        inlet = StreamInlet(streams[0])
-        id = 0
+        inlet = StreamInlet(streams[0], processing_flags=1)
         while not self.done:
             pos, timestamp = inlet.pull_sample()
-            # TODO : log position
+            if self.run_started:
+                recv_ts = self.task_timer.getTime()
+                # TODO ask Basile for a smarter way to sync lsl clock with task_timer
+                lsl_clock_offset = lsl_local_clock() - self.task_timer.getTime()
+                lsl_clock_offset += -self.task_timer.getTime() + lsl_local_clock()
+                lsl_clock_offset = lsl_clock_offset / 2
             pos = np.array(pos, dtype=np.float32)
             self.lock_recv_pos.acquire()
             self.robot_pos = pos
+            if self.run_started:
+                self.robot_pos_ts = timestamp - lsl_clock_offset
             self.lock_recv_pos.release()
-            id += 1
+            if self.run_started:
+                self.positions_log.append([pos[0], pos[1], self.robot_pos_ts, recv_ts])
 
     def send_loop(self, source_id):
         info = StreamInfo(
