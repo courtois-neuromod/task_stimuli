@@ -391,6 +391,7 @@ class CozmoFirstTaskPsychoPy(CozmoBaseTask):
 class CozmoFriends(CozmoBaseTask):
     def __init__(
         self,
+        name,
         source_id_imgs,
         source_id_pos,
         source_id_actions,
@@ -419,7 +420,7 @@ class CozmoFriends(CozmoBaseTask):
             "display": False,
             "sound": False,
         }
-        self.name = "cozmofriends"
+        self.name = name
         self.done = False
         self.obs = None
         self.new_obs = False
