@@ -34,7 +34,7 @@ def get_tasks(parsed):
             cell_width=CELL_WIDTH,
             cell_height=CELL_HEIGHT,
             target_imgs_dir="data/robot/cozmofriends",
-            name=f"cozmo_run-{run+1:02d}",
+            name=f"cozmofriends_run-{run+1:02d}",
             instruction="Explore the maze and find the target !",
         )
         yield task
