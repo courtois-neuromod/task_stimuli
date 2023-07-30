@@ -6,9 +6,10 @@ def get_tasks(parsed):
     return [
         # for piloting
         multfs.multfs_dms(data_path + "pilot/pilot_DMS_loc.csv", name="task-dmsloc_run-01", feature="loc", session=parsed.session),
-        multfs.multfs_1back(data_path + "pilot/pilot_1back_cat.csv", name="task-1backcat_run-01", feature = "cat", session = parsed.session),
-        multfs.multfs_CTXDM(data_path + "pilot/pilot_ctxDM_lco.csv", name="task-ctxlco_run-01", feature="lco",session=parsed.session),
-        multfs.multfs_1back(data_path + "pilot/pilot_1back_loc.csv", name="task-1backloc_run-01", feature="loc", session=parsed.session),
+        # multfs.multfs_CTXDM(data_path + "updated_cond_file/blockfiles/ctxdm_colblock_0.csv",name="task-ctxcol_run-01",feature="col",session=parsed.session),
+        # multfs.multfs_1back(data_path + "updated_cond_file/blockfiles/nback_ctgblock_0.csv",name = "task-1backctg_run-01",feature="ctg", session = parsed.session)
+        # multfs.multfs_CTXDM(data_path + "pilot/pilot_ctxDM_lco.csv", name="task-ctxlco_run-01", feature="lco",session=parsed.session),
+        # multfs.multfs_1back(data_path + "pilot/pilot_1back_loc.csv", name="task-1backloc_run-01", feature="loc", session=parsed.session),
 
 
         # for subject task practicing

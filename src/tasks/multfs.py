@@ -10,10 +10,10 @@ psychopy.useVersion('latest')
 
 from ..shared import config
 
-STIMULI_DURATION = 0.5
-ISI_base = 3
-nback_ISI_base = 2.5
-short_ISI_base = 1
+STIMULI_DURATION = 0.75
+ISI_base = 2
+nback_ISI_base = 2
+short_ISI_base = 0.5
 IMAGES_FOLDER = "data/multfs/MULTIF_4_stim"
 
 
@@ -21,7 +21,7 @@ MULTFS_YES_KEY = "x"
 MULTFS_NO_KEY = "b"
 CONTINUE_KEY = "a"
 
-config.INSTRUCTION_DURATION = 100
+config.INSTRUCTION_DURATION = 2
 
 # TODO: modify to MRI screen size
 screensize = config.EXP_WINDOW["size"]
@@ -80,19 +80,19 @@ class multfs_base(Task):
 
         # -- prepare to start Routine "Intro" --
         # print("start of the task:", self.globalClock.getTime())
-        for frameN in range(int(np.floor(config.FRAME_RATE * 1000))):
+        for frameN in range(int(np.floor(config.FRAME_RATE * config.INSTRUCTION_DURATION))):
             screen_text_bold.draw(exp_win)
             screen_text.draw(exp_win)
             if ctl_win:
                 screen_text_bold.draw(ctl_win)
                 screen_text.draw(ctl_win)
 
-            keys = psychopy.event.getKeys(keyList=['space','a'])
-            if keys:
-                resp_time = self.globalClock.getTime()
-                # print("end of the instruction time:", resp_time) # todo: record response time for reading instructions [an empty dict in the init?]
-                if keys[-1] == "space" or 'a':
-                    break
+            # keys = psychopy.event.getKeys(keyList=['space','a'])
+            # if keys:
+            #     resp_time = self.globalClock.getTime()
+            #     # print("end of the instruction time:", resp_time) # todo: record response time for reading instructions [an empty dict in the init?]
+            #     if keys[-1] == "space" or 'a':
+            #         break
             yield ()
         # print("end of the instruction time:", resp_time)
 
@@ -114,7 +114,7 @@ class multfs_base(Task):
         screen_text = visual.TextStim(
             win=exp_win,
             name='blockintrotext',
-            text= 'New Block! \n\nEach block contains %d trials, each starts with fixation. \n\nPress A to continue!' % n_trials, # todo: modify the key instructions
+            text= 'New Block! \n\nEach block contains %d trials, each starts with fixation. \n\nWait to continue!' % n_trials, # todo: modify the key instructions
             font='Open Sans',
             pos=(0, 0), height=0.05, ori=0,
             color="white", colorSpace='rgb', opacity=1,
@@ -124,7 +124,7 @@ class multfs_base(Task):
 
         # -- prepare to start Routine "Intro" --
         print("start of the block instruction:", self.globalClock.getTime())
-        for frameN in range(config.FRAME_RATE * 1000):
+        for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
             screen_text_bold.draw(exp_win)
             screen_text.draw(exp_win)
             if ctl_win:
@@ -132,26 +132,26 @@ class multfs_base(Task):
                 screen_text.draw(ctl_win)
             keys = psychopy.event.getKeys(keyList=['space', 'x', 'X','a'])
 
-            if keys:
-                resp_time = self.globalClock.getTime()
-                # print(keys, resp_time) # todo: record response time for reading instructions [an empty dict in the init?]
-                if keys[-1] == "space" or "a":
-                    win.flip()
-                    break
+            # if keys:
+            #     resp_time = self.globalClock.getTime()
+            #     # print(keys, resp_time) # todo: record response time for reading instructions [an empty dict in the init?]
+            #     if keys[-1] == "space" or "a":
+            #         win.flip()
+            #         break
             yield ()
         print("end of the block instruction:", self.globalClock.getTime())
 
-    def _fill_in_blank(self, exp_win, ctl_win, task):
+    def _fill_in_blank(self, exp_win, ctl_win):
         curr_time = self.globalClock.getTime()
         print("does it work?!")
         print(curr_time)
-        if task == "1back":
-            for i in range(config.FRAME_RATE * (int(curr_time//config.TR)+1)* config.TR - curr_time + 0.25):
-                self.empty_text.draw(exp_win)
-                if ctl_win:
-                    self.empty_text.draw(ctl_win)
+        # if task == "1back":
+        for i in range(config.FRAME_RATE * (int(curr_time//config.TR)+1)* config.TR - curr_time):
+            self.empty_text.draw(exp_win)
+            if ctl_win:
+                self.empty_text.draw(ctl_win)
         print(self.globalClock.getTime())
-        print("updated starting time:", (self.globalClock.getTime() - 0.25) % config.TR)
+        print("updated starting time:", (self.globalClock.getTime() ) % config.TR)
         yield()
 
 
@@ -163,7 +163,7 @@ class multfs_base(Task):
         screen_text = visual.TextStim(
             win=exp_win,
             name='blockendtext',
-            text= 'End of the block! \n\nPress A to start next block', # todo: modify the key instructions
+            text= 'End of the block! \n\nWait to start next block', # todo: modify the key instructions
             font='Open Sans',
             pos=(0, 0), height=0.05, ori=0,
             color="white", colorSpace='rgb', opacity=1,
@@ -177,13 +177,13 @@ class multfs_base(Task):
             screen_text.draw(exp_win)
             if ctl_win:
                 screen_text.draw(ctl_win)
-            keys = psychopy.event.getKeys(keyList=['space', 'x', 'X','a'])
-            if keys:
-                resp_time = self.globalClock.getTime()
-                # print(keys, resp_time) # todo: record response time for reading instructions [an empty dict in the init?]
-                if keys[-1] == "space" or "a":
-                    exp_win.flip()
-                    break
+            # keys = psychopy.event.getKeys(keyList=['space', 'a'])
+            # if keys:
+            #     resp_time = self.globalClock.getTime()
+            #     # print(keys, resp_time) # todo: record response time for reading instructions [an empty dict in the init?]
+            #     if keys[-1] == "space" or "a":
+            #         exp_win.flip()
+            #         break
             yield ()
 
     def _save(self):
@@ -200,7 +200,7 @@ class multfs_dms(multfs_base):
             self.n_trials = 4
             self.n_blocks = 2
         else:
-            self.n_trials = 8
+            self.n_trials = 8 # todo to be modified to in accordance with the file => this is fine as the baseline task
             self.n_blocks = 2
 
         self.feature = feature
@@ -209,7 +209,7 @@ class multfs_dms(multfs_base):
         self.seq_len = 2
 
     def _run(self, exp_win, ctl_win):
-        self.trials = data.TrialHandler(self.item_list, 1, method="random")
+        self.trials = data.TrialHandler(self.item_list, 1, method="sequential")
         exp_win.logOnFlip(
             level=logging.EXP, msg="memory: task starting at %f" % time.time()
         )
@@ -235,9 +235,9 @@ class multfs_dms(multfs_base):
                     img.image = IMAGES_FOLDER + "/" + str(trial["objmod%s" % str(n_stim)]) + "/image.png"
                     img.pos = triplet_id_to_pos[trial["loc%s" % str(n_stim)]]
 
-                    for i in range(2):
-                        yield True
-
+                    # for i in range(2):
+                    #     yield True
+                    self._fill_in_blank(exp_win, ctl_win)
                     self.trials.addData("stimulus_%d_onset" % n_stim, self.globalClock.getTime())
                     for frameN in range(int(config.FRAME_RATE * (STIMULI_DURATION + ISI_base))):
                         multfs_answer_keys = psychopy.event.getKeys(
@@ -263,10 +263,10 @@ class multfs_dms(multfs_base):
 
                 yield ()
 
-                for frameN in range(int(config.FRAME_RATE * ISI_base/3)):
+                for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
                     self.next_trial.draw()
                     yield True
-                for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
+                for frameN in range(int(config.FRAME_RATE * ISI_base / 8)):
                     self.empty_text.draw()
                     yield True
 
@@ -297,8 +297,8 @@ class multfs_1back(multfs_base):
             self.n_trials = 2
             self.n_blocks = 1
         else:
-            self.n_trials = 4
-            self.n_blocks = 4
+            self.n_trials = 10
+            self.n_blocks = 1 # around 7 mins
 
     def _run(self, exp_win, ctl_win):
         self.trials = data.TrialHandler(self.item_list, 1, method="random")
@@ -311,8 +311,8 @@ class multfs_1back(multfs_base):
             for clearBuffer in self._block_intro(exp_win, ctl_win, self.n_trials):
                 self._flip_all_windows(exp_win, ctl_win, clearBuffer)
             # 2 flips to clear screen
-            for i in range(2):
-                yield True
+            # for i in range(2):
+            #     yield True
 
             img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="norm")
 
@@ -329,7 +329,7 @@ class multfs_1back(multfs_base):
                 # print("before alignment:",curr_time)
 
 
-                thres_time = (int(curr_time / config.TR) + 1) * config.TR + 0.25
+                thres_time = (int(curr_time / config.TR) + 1) * config.TR
 
                 while True:
                     if self.globalClock.getTime() >= thres_time:
@@ -376,10 +376,10 @@ class multfs_1back(multfs_base):
 
                 yield True
 
-                for frameN in range(int(config.FRAME_RATE * ISI_base/3)):
+                for frameN in range(int(config.FRAME_RATE * ISI_base/4)):
                     self.next_trial.draw()
                     yield True
-                for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
+                for frameN in range(int(config.FRAME_RATE * ISI_base /8)):
                     self.empty_text.draw()
                     yield True
 
@@ -390,7 +390,7 @@ class multfs_1back(multfs_base):
             for clearBuffer in self._block_end(exp_win, ctl_win):
                 self._flip_all_windows(exp_win, ctl_win, clearBuffer)
 
-            for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
+            for frameN in range(int(config.FRAME_RATE * ISI_base / 8)):
                 self.empty_text.draw()
                 yield True
 
@@ -406,8 +406,8 @@ class multfs_CTXDM(multfs_base):
             self.n_trials = 3
             self.n_blocks = 2
         else:
-            self.n_trials = 10
-            self.n_blocks = 6
+            self.n_trials = 22
+            self.n_blocks = 1
 
     def _run(self, exp_win, ctl_win):
         self.trials = data.TrialHandler(self.item_list, 1, method="random")
@@ -432,7 +432,7 @@ class multfs_CTXDM(multfs_base):
                 for i in range(2):
                     yield True
 
-                thres_time = (int(self.globalClock.getTime() / config.TR) + 1) * config.TR + 0.5
+                thres_time = (int(self.globalClock.getTime() / config.TR) + 1) * config.TR
                 # print("before alignment:", self.globalClock.getTime())
                 while True:
                     if self.globalClock.getTime() >= thres_time:
@@ -480,10 +480,10 @@ class multfs_CTXDM(multfs_base):
 
                 yield ()
 
-                for frameN in range(int(config.FRAME_RATE * ISI_base/3)):
+                for frameN in range(int(config.FRAME_RATE * ISI_base/4)):
                     self.next_trial.draw()
                     yield True
-                for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
+                for frameN in range(int(config.FRAME_RATE * ISI_base / 8)):
                     self.empty_text.draw()
                     yield True
 
@@ -494,7 +494,7 @@ class multfs_CTXDM(multfs_base):
             for clearBuffer in self._block_end(exp_win, ctl_win):
                 self._flip_all_windows(exp_win, ctl_win, clearBuffer)
 
-            for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
+            for frameN in range(int(config.FRAME_RATE * ISI_base / 8)):
                 self.empty_text.draw()
                 yield True
 
@@ -586,10 +586,10 @@ class multfs_interdms_ABAB(multfs_base):
 
                 yield ()
 
-                for frameN in range(int(config.FRAME_RATE * ISI_base/3)):
+                for frameN in range(int(config.FRAME_RATE * ISI_base/4)):
                     self.next_trial.draw()
                     yield True
-                for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
+                for frameN in range(int(config.FRAME_RATE * ISI_base / 8)):
                     self.empty_text.draw()
                     yield True
 
@@ -691,10 +691,10 @@ class multfs_interdms_ABBA(multfs_base):
 
                 yield ()
 
-                for frameN in range(int(config.FRAME_RATE * ISI_base/3)):
+                for frameN in range(int(config.FRAME_RATE * ISI_base/4)):
                     self.next_trial.draw()
                     yield True
-                for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
+                for frameN in range(int(config.FRAME_RATE * ISI_base / 8)):
                     self.empty_text.draw()
                     yield True
 
@@ -1294,74 +1294,67 @@ def instructions_converter(task_name):
     task = f"multfs_{task}"
 
     ins_dict = {
-        "multfs_dmsloc": """Press X if two stimulus are at the same location, otherwise press B/\n
-Press A to continue""",
+        "multfs_dmsloc": """Press X if two stimulus are at the same location, otherwise press B/\n""",
 
         "multfs_interdmsloc_ABBA": """
 interleaved Delay match to sample task with pattern ABBA and feature location\n
 Press X on the fourth frame if the first and fourth stimuli have the same location,  otherwise press B.\n
 Press X on the third frame if the second and third stimuli have the same location,  otherwise press B.\n
-Press A to continue
                               """,
         "multfs_interdmscat_ABBA": """
 interleaved Delay match to sample task with pattern ABBA and feature category\n
   Press X on the fourth frame if the first and fourth stimuli have the same category,  otherwise press B.\n
   Press X on the third frame if the second and third stimuli have the same category,  otherwise press B.\n
-  Press A to continue
+
                                   """,
         "multfs_interdmsobj_ABBA": """
 interleaved Delay match to sample task with pattern ABBA and feature object\n
   Press X on the fourth frame if the first and fourth stimuli are the same object,  otherwise press B.\n
   Press X on the third frame if the third and third stimuli are the same object,  otherwise press B.\n
-  Press A to continue
+
                                   """,
         "multfs_interdmsloc_ABAB": """
 interleaved Delay match to sample task with pattern ABAB and feature location\n
   Press X on the third frame if the first and third stimuli have the same location,  otherwise press B.\n
   Press X on the fourth frame if the second and fourth stimuli have the same location,  otherwise press B.\n
-  Press A to continue
+
                               """,
         "multfs_interdmscat_ABAB": """
 interleaved Delay match to sample task with pattern ABAB and feature category\n
   Press X on the third frame if the first and third stimuli have the same category,  otherwise press B.\n
   Press X on the fourth frame if the second and fourth stimuli have the same category,  otherwise press B.\n
-  Press A to continue
+
                                   """,
         "multfs_interdmsobj_ABAB": """
 interleaved Delay match to sample task with pattern ABAB and feature object\n
   Press X on the third frame if the first and third stimuli are the same object,  otherwise press B.\n
   Press X on the fourth frame if the second and fourth stimuli are the same object,  otherwise press B.\n
-  Press A to continue
+
                                   """,
         "multfs_1backloc": """
 In this task, you will see a sequence of stimulus presented one after another.\n
 Press X each time the current stimulus is at the same location as the one presented just before. \n
 Otherwise press B\n
-Press A to continue
                     """,
         "multfs_1backobj": """
 In this task, you will see a sequence of stimulus presented one after another. \n
 Press X each time the current stimulus is the same object as the one presented just before. \n
 Otherwise press B \n
-Press A to continue
                     """,
         "multfs_1backcat": """
 In this task, you will see a sequence of stimulus presented one after another.\n
 Press X each time the current stimulus belong to the same category as the one presented just before.\n
 Otherwise press B \n
-Press A to continue
                     """,
 
         "multfs_ctxcol": """
 If the presented two stimuli belong to the same category, press X if they are the same object, press B if not.\n
 If the presented two stimuli does not belong to the same category, press X if they are at the same location, press B if not.\n
-Press A to continue
                         """,
         "multfs_ctxlco": """
 contextual Decision Making task: location-category-object \n
 If the presented two stimuli are at the same location, press X if they belong to the same category, press B if not.\n
 If the presented two stimuli are not at the same location, press X if they are same object, press B if not.\n
-Press A to continue
                     """,
     }
     return ins_dict[task]
