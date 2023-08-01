@@ -12,9 +12,10 @@ class Task(object):
     DEFAULT_INSTRUCTION = ""
     PROGRESS_BAR_FORMAT = '{l_bar}{bar}{r_bar}'
 
-    def __init__(self, name, instruction=None, use_eyetracking=False):
+    def __init__(self, name, instruction=None, use_eyetracking=False, et_calibrate=True):
         self.name = name
         self.use_eyetracking = use_eyetracking
+        self.et_calibrate = et_calibrate
         if instruction is None:
             self.instruction = self.__class__.DEFAULT_INSTRUCTION
         else:
@@ -78,9 +79,10 @@ class Task(object):
             ctl_win.timeOnFlip(self, '_ctl_win_last_flip_time')
             ctl_win.flip(clearBuffer=clearBuffer)
 
-        exp_win.flip(clearBuffer=clearBuffer)
-        # set callback for next flip, to be the first callback for other callbacks to use
-        exp_win.timeOnFlip(self, '_exp_win_last_flip_time')
+        if not clearBuffer is None:
+            exp_win.flip(clearBuffer=clearBuffer)
+            # set callback for next flip, to be the first callback for other callbacks to use
+            exp_win.timeOnFlip(self, '_exp_win_last_flip_time')
 
     def instructions(self, exp_win, ctl_win):
         if hasattr(self, "_instructions"):

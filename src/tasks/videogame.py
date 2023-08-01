@@ -171,11 +171,13 @@ class VideoGameBase(Task):
             flipVert=True,
             autoLog=False,
         )
+        from ..shared.eyetracking import fixation_dot
+        self.fixation_dot = fixation_dot(exp_win)
+
 
     def _render_graphics_sound(self, obs, sound_block, exp_win, ctl_win):
         #giving a PIL image directly avoid a lot of useless rescaling/conversion
-        self.game_vis_stim.image = Image.fromarray(obs).transpose(Image.FLIP_TOP_BOTTOM)
-        #self.game_vis_stim.image = obs / 255.0
+        self.game_vis_stim.image = Image.fromarray(obs).transpose(Image.Transpose.FLIP_TOP_BOTTOM)
         self.game_vis_stim.draw(exp_win)
         if ctl_win:
             self.game_vis_stim.draw(ctl_win)
@@ -193,12 +195,11 @@ class VideoGameBase(Task):
 
     def unload(self):
         self.emulator.close()
+        del self.game_sound, self.fixation_dot, self.game_vis_stim
 
     def fixation_cross(self, exp_win):
-        from ..shared.eyetracking import fixation_dot
         yield True
-        fixation = fixation_dot(exp_win)
-        for stim in fixation:
+        for stim in self.fixation_dot:
             stim.draw(exp_win)
         yield True
         self._log_event({'trial_type':'fixation_dot', 'duration': self._fixation_duration}, clock='flip')
@@ -698,8 +699,8 @@ class VideoGameMultiLevel(VideoGame):
 
                 for n_repeat in range(self._n_repeats_level):
                     self._first_frame = self.emulator.reset()
-                    if self._nlevels > 1:
-                        self._set_recording_file()
+
+                    self._set_recording_file()
 
                     if self._fixation_duration > 0:
                         self.progress_bar.set_description("fixation")
