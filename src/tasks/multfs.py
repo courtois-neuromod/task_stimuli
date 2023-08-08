@@ -6,9 +6,12 @@ from psychopy.hardware import keyboard
 from psychopy.constants import (NOT_STARTED, STARTED, PLAYING, PAUSED, STOPPED, FINISHED, PRESSED, RELEASED, FOREVER)
 from .task_base import Task
 from .task_base import Fixation
-psychopy.useVersion('latest')
+#psychopy.useVersion('latest')
 
-from ..shared import config
+from ..shared import config, utils
+
+initial_wait = 6
+final_wait = 9
 
 STIMULI_DURATION = 0.75
 ISI_base = 2
@@ -49,7 +52,7 @@ class multfs_base(Task):
     def _setup(self, exp_win):
         self.fixation = visual.TextStim(exp_win, text="+", alignText="center", color="white")
         self.next_trial = visual.TextStim(exp_win, text="Next trial!", alignText = "center", color = "white", height = 0.1)
-        self.empty_text= visual.TextStim(exp_win, text="", alignText = "center", color = "white", height = 0.1)
+        self.empty_text = visual.TextStim(exp_win, text="", alignText = "center", color = "white", height = 0.1)
         super()._setup(exp_win)
 
     def _instructions(self, exp_win, ctl_win):
@@ -96,7 +99,7 @@ class multfs_base(Task):
             yield ()
         # print("end of the instruction time:", resp_time)
 
-    def _block_intro(self, exp_win, ctl_win, n_trials = 4):
+    def _block_intro(self, exp_win, ctl_win, onset, n_trials = 4):
         if ctl_win:
             win = ctl_win
         else:
@@ -124,38 +127,24 @@ class multfs_base(Task):
 
         # -- prepare to start Routine "Intro" --
         print("start of the block instruction:", self.globalClock.getTime())
-        for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
-            screen_text_bold.draw(exp_win)
-            screen_text.draw(exp_win)
-            if ctl_win:
-                screen_text_bold.draw(ctl_win)
-                screen_text.draw(ctl_win)
-            keys = psychopy.event.getKeys(keyList=['space', 'x', 'X','a'])
-
-            # if keys:
-            #     resp_time = self.globalClock.getTime()
-            #     # print(keys, resp_time) # todo: record response time for reading instructions [an empty dict in the init?]
-            #     if keys[-1] == "space" or "a":
-            #         win.flip()
-            #         break
-            yield ()
+        screen_text_bold.draw(exp_win)
+        screen_text.draw(exp_win)
+        if ctl_win:
+            screen_text_bold.draw(ctl_win)
+            screen_text.draw(ctl_win)
+        utils.wait_until(self.task_timer, onset - 1./config.FRAME_RATE)
+        yield True
+        self.fixation.draw()
+        utils.wait_until(
+            self.task_timer,
+            onset + config.INSTRUCTION_DURATION - 10./config.FRAME_RATE
+        )
+        yield True
+        psychopy.event.getKeys() # flush keys ?
         print("end of the block instruction:", self.globalClock.getTime())
 
-    def _fill_in_blank(self, exp_win, ctl_win):
-        curr_time = self.globalClock.getTime()
-        print("does it work?!")
-        print(curr_time)
-        # if task == "1back":
-        for i in range(config.FRAME_RATE * (int(curr_time//config.TR)+1)* config.TR - curr_time):
-            self.empty_text.draw(exp_win)
-            if ctl_win:
-                self.empty_text.draw(ctl_win)
-        print(self.globalClock.getTime())
-        print("updated starting time:", (self.globalClock.getTime() ) % config.TR)
-        yield()
 
-
-    def _block_end(self, exp_win, ctl_win):
+    def _block_end(self, exp_win, ctl_win, onset):
         if ctl_win:
             win = ctl_win
         else:
@@ -170,26 +159,92 @@ class multfs_base(Task):
             languageStyle='LTR',
             wrapWidth=config.WRAP_WIDTH,
         )
-
+        utils.wait_until(self.task_timer, onset - 1./config.FRAME_RATE)
         # -- prepare to start Routine "Intro" --
-
-        for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
-            screen_text.draw(exp_win)
-            if ctl_win:
-                screen_text.draw(ctl_win)
-            # keys = psychopy.event.getKeys(keyList=['space', 'a'])
-            # if keys:
-            #     resp_time = self.globalClock.getTime()
-            #     # print(keys, resp_time) # todo: record response time for reading instructions [an empty dict in the init?]
-            #     if keys[-1] == "space" or "a":
-            #         exp_win.flip()
-            #         break
-            yield ()
+        screen_text.draw(exp_win)
+        if ctl_win:
+            screen_text.draw(ctl_win)
+        yield True
+        self.fixation.draw()
+        utils.wait_until(
+            self.task_timer,
+            onset + config.INSTRUCTION_DURATION - 10./config.FRAME_RATE
+        )
+        yield True
 
     def _save(self):
         if hasattr(self, 'trials'):
             self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
         return None
+
+
+    def _run(self, exp_win, ctl_win):
+        self.trials = data.TrialHandler(self.item_list, 1, method=self._trial_sampling_method)
+        exp_win.logOnFlip(
+            level=logging.EXP, msg=f"memory: {task_name} starting"
+        )
+        n_blocks = self.n_blocks # TODO: CHANGE THE NUMBER OF BLOCKS PER TASK VARIATION
+
+        img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="norm")
+
+        for block in range(n_blocks):
+            onset = (
+                initial_wait +
+                (block) * config.INSTRUCTION_DURATION +
+                (block * self.n_trials) * ( self.seq_len * (STIMULI_DURATION+ISI_base/4) + ISI_base * 6./4)
+                )
+            yield from self._block_intro(exp_win, ctl_win, onset, self.n_trials)
+
+            trial_idx = 0
+            for trial in self.trials:
+                exp_win.logOnFlip(level=logging.EXP, msg=f"{self.task_name}_{self.feature}: block {block} trial {trial_idx}")
+                trial_idx += 1
+
+                for n_stim in range(self.seq_len):
+
+                    onset = (
+                        initial_wait +
+                        (block + 1) * config.INSTRUCTION_DURATION +
+                        (block * self.n_trials + (trial_idx-1)) * ( self.seq_len * STIMULI_DURATION + ISI_base * 6/4) +
+                        n_stim*(STIMULI_DURATION+ISI_base/4))
+                    print(onset)
+
+                    img.image = IMAGES_FOLDER + "/" + str(trial["objmod%s" % str(n_stim+1)]) + "/image.png"
+                    img.pos = triplet_id_to_pos[trial[f"loc{n_stim+1}"]]
+                    img.draw()
+
+                    utils.wait_until(self.task_timer, onset - 1/config.FRAME_RATE)
+                    yield True
+                    self.trials.addData(
+                        "stimulus_%d_onset" % n_stim,
+                        self._exp_win_last_flip_time - self._exp_win_first_flip_time)
+                    utils.wait_until(self.task_timer, onset + STIMULI_DURATION - 1/config.FRAME_RATE)
+                    yield True
+                    self.trials.addData(
+                        "stimulus_%d_offset" % n_stim,
+                        self._exp_win_last_flip_time - self._exp_win_first_flip_time)
+
+                    multfs_answer_keys = psychopy.event.getKeys(
+                        [MULTFS_YES_KEY, MULTFS_NO_KEY, 'space'], timeStamped=self.task_timer
+                    )
+
+                    if len(multfs_answer_keys):
+                        self.trials.addData("response_%d" % n_stim, multfs_answer_keys[-1][0])
+                        self.trials.addData("response_%d_time" % n_stim, multfs_answer_keys[-1][1])
+                        self.trials.addData("all_responses" % n_stim, multfs_answer_keys)
+
+                self.fixation.draw()
+                utils.wait_until(self.task_timer, onset + STIMULI_DURATION + ISI_base - 1./config.FRAME_RATE)
+                yield True
+                utils.wait_until(self.task_timer, onset + STIMULI_DURATION + ISI_base * 5/4. - 1./config.FRAME_RATE)
+                yield True
+
+
+                if trial_idx >= self.n_trials:
+                    self.trials.addData("trial_end", self.task_timer.getTime())
+                    break
+
+            yield from self._block_end(exp_win, ctl_win, onset + STIMULI_DURATION + ISI_base * 6/4. - 1./config.FRAME_RATE)
 
 
 class multfs_dms(multfs_base):
@@ -208,6 +263,8 @@ class multfs_dms(multfs_base):
 
         self.seq_len = 2
 
+        self._trial_sampling_method = "sequential"
+
     def _run(self, exp_win, ctl_win):
         self.trials = data.TrialHandler(self.item_list, 1, method="sequential")
         exp_win.logOnFlip(
@@ -215,75 +272,66 @@ class multfs_dms(multfs_base):
         )
         n_blocks = self.n_blocks # TODO: CHANGE THE NUMBER OF BLOCKS PER TASK VARIATION
 
-        for block in range(n_blocks):
-            for clearBuffer in self._block_intro(exp_win, ctl_win, self.n_trials):
-                self._flip_all_windows(exp_win, ctl_win, clearBuffer)
-            # 2 flips to clear screen
-            for i in range(2):
-                yield True
+        img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="norm")
 
-            img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="norm")
+        for block in range(n_blocks):
+            onset = (
+                initial_wait +
+                (block) * config.INSTRUCTION_DURATION +
+                (block * self.n_trials) * ( self.seq_len * (STIMULI_DURATION+ISI_base/4) + ISI_base * 6./4)
+                )
+            yield from self._block_intro(exp_win, ctl_win, onset, self.n_trials)
 
             trial_idx = 0
             for trial in self.trials:
                 exp_win.logOnFlip(level=logging.EXP, msg="multfs-dms_%s: block %d trial %d" % (self.feature, block, trial_idx))
                 trial_idx += 1
-                for i in range(2):
+
+                for n_stim in range(self.seq_len):
+
+                    onset = (
+                        initial_wait +
+                        (block + 1) * config.INSTRUCTION_DURATION +
+                        (block * self.n_trials + (trial_idx-1)) * ( self.seq_len * STIMULI_DURATION + ISI_base * 6/4) +
+                        n_stim*(STIMULI_DURATION+ISI_base/4))
+                    print(onset)
+
+                    img.image = IMAGES_FOLDER + "/" + str(trial["objmod%s" % str(n_stim+1)]) + "/image.png"
+                    img.pos = triplet_id_to_pos[trial["loc%s" % str(n_stim+1)]]
+                    img.draw()
+
+                    utils.wait_until(self.task_timer, onset - 1/config.FRAME_RATE)
                     yield True
-
-                for n_stim in range(1, 1+self.seq_len):
-                    img.image = IMAGES_FOLDER + "/" + str(trial["objmod%s" % str(n_stim)]) + "/image.png"
-                    img.pos = triplet_id_to_pos[trial["loc%s" % str(n_stim)]]
-
-                    # for i in range(2):
-                    #     yield True
-                    self._fill_in_blank(exp_win, ctl_win)
-                    self.trials.addData("stimulus_%d_onset" % n_stim, self.globalClock.getTime())
-                    for frameN in range(int(config.FRAME_RATE * (STIMULI_DURATION + ISI_base))):
-                        multfs_answer_keys = psychopy.event.getKeys(
-                            [MULTFS_YES_KEY, MULTFS_NO_KEY, 'space'], timeStamped=True
-                        )
-                        if len(multfs_answer_keys):
-
-                            self.trials.addData("response_%d" % n_stim, multfs_answer_keys[-1][0])
-                            self.trials.addData("response_%d_time_key" % n_stim, multfs_answer_keys[-1][1])
-                            self.trials.addData("response_%d_time_global" % n_stim, self.globalClock.getTime())
-                            if n_stim == self.seq_len:
-                                break
-
-                        if frameN <= int(config.FRAME_RATE * STIMULI_DURATION):
-                            img.draw()
-                            if frameN == int(config.FRAME_RATE * STIMULI_DURATION):
-                                self.trials.addData("stimulus_%d_offset" % n_stim, self.globalClock.getTime())
-
-                        if n_stim == 1:
-                            self.fixation.draw()
-
-                        self._flip_all_windows(exp_win, ctl_win)
-
-                yield ()
-
-                for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
-                    self.next_trial.draw()
+                    self.trials.addData(
+                        "stimulus_%d_onset" % n_stim,
+                        self._exp_win_last_flip_time - self._exp_win_first_flip_time)
+                    utils.wait_until(self.task_timer, onset + STIMULI_DURATION - 1/config.FRAME_RATE)
                     yield True
-                for frameN in range(int(config.FRAME_RATE * ISI_base / 8)):
-                    self.empty_text.draw()
-                    yield True
+                    self.trials.addData(
+                        "stimulus_%d_offset" % n_stim,
+                        self._exp_win_last_flip_time - self._exp_win_first_flip_time)
 
-                # print("current trial idx:", trial_idx)
-                # print("total number of trials:", self.n_trials)
+                    multfs_answer_keys = psychopy.event.getKeys(
+                        [MULTFS_YES_KEY, MULTFS_NO_KEY, 'space'], timeStamped=self.task_timer
+                    )
+
+                    if len(multfs_answer_keys):
+                        self.trials.addData("response_%d" % n_stim, multfs_answer_keys[-1][0])
+                        self.trials.addData("response_%d_time" % n_stim, multfs_answer_keys[-1][1])
+                        self.trials.addData("all_responses" % n_stim, multfs_answer_keys)
+
+                self.fixation.draw()
+                utils.wait_until(self.task_timer, onset + STIMULI_DURATION + ISI_base - 1./config.FRAME_RATE)
+                yield True
+                utils.wait_until(self.task_timer, onset + STIMULI_DURATION + ISI_base * 5/4. - 1./config.FRAME_RATE)
+                yield True
+
+
                 if trial_idx >= self.n_trials:
                     self.trials.addData("trial_end", self.task_timer.getTime())
                     break
 
-            for clearBuffer in self._block_end(exp_win, ctl_win):
-                self._flip_all_windows(exp_win, ctl_win, clearBuffer)
-
-            for frameN in range(int(config.FRAME_RATE * ISI_base / 4)):
-                self.empty_text.draw()
-                yield True
-
-
+            yield from self._block_end(exp_win, ctl_win, onset + STIMULI_DURATION + ISI_base * 6/4. - 1./config.FRAME_RATE)
 
 
 class multfs_1back(multfs_base):
@@ -307,92 +355,62 @@ class multfs_1back(multfs_base):
         )
         n_blocks = self.n_blocks # TODO: CHANGE THE NUMBER OF BLOCKS PER TASK VARIATION
 
-        for block in range(n_blocks):
-            for clearBuffer in self._block_intro(exp_win, ctl_win, self.n_trials):
-                self._flip_all_windows(exp_win, ctl_win, clearBuffer)
-            # 2 flips to clear screen
-            # for i in range(2):
-            #     yield True
+        img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="norm")
 
-            img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="norm")
+        for block in range(n_blocks):
+            onset = (
+                initial_wait +
+                (block) * config.INSTRUCTION_DURATION +
+                (block * self.n_trials) * ( self.seq_len * (STIMULI_DURATION+ISI_base/4) + ISI_base * 6./4)
+                )
+            yield from self._block_intro(exp_win, ctl_win, onset, self.n_trials)
+
 
             trial_idx = 0
             for trial in self.trials:
                 exp_win.logOnFlip(level=logging.EXP, msg="multfs-1back_%s: block %d trial %d" % (self.feature, block, trial_idx))
                 trial_idx += 1
-                for i in range(2):
+
+                for n_stim in range(self.seq_len):
+
+                    onset = (
+                        initial_wait +
+                        (block + 1) * config.INSTRUCTION_DURATION +
+                        (block * self.n_trials + (trial_idx-1)) * ( self.seq_len * (STIMULI_DURATION+ISI_base/4) + ISI_base * 6/4) +
+                        n_stim * (STIMULI_DURATION+ISI_base/4))
+                    print(onset)
+
+                    img.image = IMAGES_FOLDER + "/" + str(trial[f"objmod{n_stim+1}"]) + "/image.png"
+                    img.pos = triplet_id_to_pos[trial[f"loc{n_stim+1}"]]
+                    img.draw(exp_win)
+
+                    utils.wait_until(self.task_timer, onset - 1/config.FRAME_RATE)
                     yield True
-                # print("beginning of the alignment")
-                # self._fill_in_blank(exp_win, ctl_win, task="1back")
-                curr_time = self.globalClock.getTime()
-                # print("does it work?!")
-                # print("before alignment:",curr_time)
+                    self.trials.addData(
+                        "stimulus_%d_onset" % n_stim,
+                        self._exp_win_last_flip_time - self._exp_win_first_flip_time)
+                    utils.wait_until(self.task_timer, onset + STIMULI_DURATION - 1/config.FRAME_RATE)
+                    yield True
+                    self.trials.addData(
+                        "stimulus_%d_offset" % n_stim,
+                        self._exp_win_last_flip_time - self._exp_win_first_flip_time)
 
+                    multfs_answer_keys = psychopy.event.getKeys(
+                        [MULTFS_YES_KEY, MULTFS_NO_KEY, 'space'], timeStamped=self.task_timer
+                    )
 
-                thres_time = (int(curr_time / config.TR) + 1) * config.TR
+                    if len(multfs_answer_keys):
+                        self.trials.addData("response_%d" % n_stim, multfs_answer_keys[-1][0])
+                        self.trials.addData("response_%d_time" % n_stim, multfs_answer_keys[-1][1])
+                        self.trials.addData("all_responses" % n_stim, multfs_answer_keys)
 
-                while True:
-                    if self.globalClock.getTime() >= thres_time:
-                        break
-                # for i in range(int(config.FRAME_RATE * ((int(curr_time // config.TR) + 1) * config.TR - curr_time + 0.25))):
-                #     print(i)
-                #     self.empty_text.draw(exp_win)
-                #     if ctl_win:
-                #         self.empty_text.draw(ctl_win)
-                # print("end of the alignment")
-                # print(self.globalClock.getTime())
-                # print("updated starting time:", (self.globalClock.getTime() - 0.25) % config.TR)
-                for n_stim in range(1, 1+self.seq_len):
-                    img.image = IMAGES_FOLDER + "/" + str(trial["objmod%s" % str(n_stim)]) + "/image.png"
-                    img.pos = triplet_id_to_pos[trial["loc%s" % str(n_stim)]]
-
-                    for i in range(2):
-                        yield True
-
-
-                    self.trials.addData("stimulus_%d_onset" % n_stim, self.globalClock.getTime())
-
-
-                    for frameN in range(int(config.FRAME_RATE * (STIMULI_DURATION + nback_ISI_base))):
-                        multfs_answer_keys = psychopy.event.getKeys(
-                            [MULTFS_YES_KEY, MULTFS_NO_KEY, 'space'], timeStamped=True
-                        )
-
-                        if len(multfs_answer_keys):
-                            self.trials.addData("response_%d" % n_stim, multfs_answer_keys[-1][0])
-                            self.trials.addData("response_%d_time_key" % n_stim, multfs_answer_keys[-1][1])
-                            self.trials.addData("response_%d_time_global" % n_stim, self.globalClock.getTime())
-                            if n_stim == self.seq_len:
-                                break
-
-                        if frameN <= int(config.FRAME_RATE * STIMULI_DURATION):
-                            img.draw()
-                            if frameN == int(config.FRAME_RATE * STIMULI_DURATION):
-                                self.trials.addData("stimulus_%d_offset" % n_stim, self.globalClock.getTime())
-                        if n_stim == 1:
-                            self.fixation.draw()
-
-                        self._flip_all_windows(exp_win, ctl_win)
-
+                self.fixation.draw()
+                yield True
+                utils.wait_until(self.task_timer, onset + STIMULI_DURATION + ISI_base - 1./config.FRAME_RATE)
                 yield True
 
-                for frameN in range(int(config.FRAME_RATE * ISI_base/4)):
-                    self.next_trial.draw()
-                    yield True
-                for frameN in range(int(config.FRAME_RATE * ISI_base /8)):
-                    self.empty_text.draw()
-                    yield True
+            yield from self._block_end(exp_win, ctl_win, onset + STIMULI_DURATION + ISI_base * 6/4. - 1./config.FRAME_RATE)
 
-                if trial_idx > self.n_trials:
-                    self.trials.addData("trial_end", self.task_timer.getTime())
-                    break
-
-            for clearBuffer in self._block_end(exp_win, ctl_win):
-                self._flip_all_windows(exp_win, ctl_win, clearBuffer)
-
-            for frameN in range(int(config.FRAME_RATE * ISI_base / 8)):
-                self.empty_text.draw()
-                yield True
 
 class multfs_CTXDM(multfs_base):
 
@@ -417,11 +435,7 @@ class multfs_CTXDM(multfs_base):
         n_blocks = self.n_blocks # TODO: CHANGE THE NUMBER OF BLOCKS PER TASK VARIATION
 
         for block in range(n_blocks):
-            for clearBuffer in self._block_intro(exp_win, ctl_win, self.n_trials):
-                self._flip_all_windows(exp_win, ctl_win, clearBuffer)
-            # 2 flips to clear screen
-            for i in range(2):
-                yield True
+            yield from self._block_intro(exp_win, ctl_win, self.n_trials)
 
             img = visual.ImageStim(exp_win, size=STIMULI_SIZE, units="norm")
 
@@ -432,12 +446,6 @@ class multfs_CTXDM(multfs_base):
                 for i in range(2):
                     yield True
 
-                thres_time = (int(self.globalClock.getTime() / config.TR) + 1) * config.TR
-                # print("before alignment:", self.globalClock.getTime())
-                while True:
-                    if self.globalClock.getTime() >= thres_time:
-                        break
-                # print("after alignment:", self.globalClock.getTime())
                 for n_stim in range(1, 1+self.seq_len):
                     img.image = IMAGES_FOLDER + "/" + str(trial["objmod%s" % str(n_stim)]) + "/image.png"
                     img.pos = triplet_id_to_pos[trial["loc%s" % str(n_stim)]]
@@ -491,8 +499,7 @@ class multfs_CTXDM(multfs_base):
                     self.trials.addData("trial_end", self.task_timer.getTime())
                     break
 
-            for clearBuffer in self._block_end(exp_win, ctl_win):
-                self._flip_all_windows(exp_win, ctl_win, clearBuffer)
+            yield from self._block_end(exp_win, ctl_win)
 
             for frameN in range(int(config.FRAME_RATE * ISI_base / 8)):
                 self.empty_text.draw()
