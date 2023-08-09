@@ -207,7 +207,7 @@ class multfs_base(Task):
                     onset = (
                         initial_wait +
                         (block + 1) * config.INSTRUCTION_DURATION +
-                        (block * self.n_trials + (trial_idx-1)) * ( self.seq_len * STIMULI_DURATION + ISI_base * 6/4) +
+                        (block * self.n_trials + (trial_idx-1)) * ( self.seq_len * (STIMULI_DURATION+ISI_base/4) + ISI_base * 6/4) +
                         n_stim*(STIMULI_DURATION+ISI_base/4))
                     print(onset)
 
@@ -265,7 +265,7 @@ class multfs_dms(multfs_base):
 
         self.seq_len = 2
 
-        self._trial_sampling_method = "sequential"
+        self._trial_sampling_method = "sequential" # why sequential here, to figure out with Xiaoxuan
 
 
 class multfs_1back(multfs_base):
