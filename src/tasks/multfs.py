@@ -13,9 +13,10 @@ from ..shared import config, utils
 initial_wait = 6
 final_wait = 9
 
-STIMULI_DURATION = 0.75
-ISI_base = 2
-nback_ISI_base = 2
+TR = 1.49
+STIMULI_DURATION = TR
+ISI_base = 2 * TR + 1
+long_ISI_base = 2 * TR + 1
 short_ISI_base = 0.5
 IMAGES_FOLDER = "data/multfs/MULTIF_4_stim"
 
@@ -53,8 +54,8 @@ class multfs_base(Task):
 
     def _setup(self, exp_win):
         self.fixation = visual.TextStim(exp_win, text="+", alignText="center", color="white")
-        self.next_trial = visual.TextStim(exp_win, text="Next trial!", alignText = "center", color = "white", height = 0.1)
         self.empty_text = visual.TextStim(exp_win, text="", alignText = "center", color = "white", height = 0.1)
+        self.no_response_marker = visual.Circle(exp_win, 20, units='pix', fillColor=(255,0,0), fillColorSpace='rgb255')
         super()._setup(exp_win)
 
     def _instructions(self, exp_win, ctl_win):
@@ -193,7 +194,7 @@ class multfs_base(Task):
             onset = (
                 initial_wait +
                 (block) * config.INSTRUCTION_DURATION +
-                (block * self.n_trials) * ( self.seq_len * (STIMULI_DURATION+ISI_base/4) + ISI_base * 6./4)
+                (block * self.n_trials) * ( self.seq_len * STIMULI_DURATION + sum(self.trial_isis) + long_ISI_base)
                 )
             yield from self._block_intro(exp_win, ctl_win, onset, self.n_trials)
 
@@ -207,13 +208,20 @@ class multfs_base(Task):
                     onset = (
                         initial_wait +
                         (block + 1) * config.INSTRUCTION_DURATION +
-                        (block * self.n_trials + (trial_idx-1)) * ( self.seq_len * (STIMULI_DURATION+ISI_base/4) + ISI_base * 6/4) +
-                        n_stim*(STIMULI_DURATION+ISI_base/4))
-                    print(onset)
+                        (block * self.n_trials + (trial_idx-1)) *
+                        ( self.seq_len * STIMULI_DURATION + sum(self.trial_isis) + long_ISI_base) +
+                        n_stim*STIMULI_DURATION+ sum(self.trial_isis[:n_stim])
+                        )
 
                     img.image = IMAGES_FOLDER + "/" + str(trial["objmod%s" % str(n_stim+1)]) + "/image.png"
                     img.pos = triplet_id_to_pos[trial[f"loc{n_stim+1}"]]
                     img.draw()
+
+                    # flush response keys before the stimuli onset
+                    # TODO: check if there is not risks of losing keys
+                    multfs_answer_keys = psychopy.event.getKeys([MULTFS_YES_KEY, MULTFS_NO_KEY, 'space'])
+                    if n_stim in self.no_response_frames:
+                        self.no_response_marker.draw(exp_win)
 
                     utils.wait_until(self.task_timer, onset - 1/config.FRAME_RATE)
                     yield True
@@ -230,17 +238,15 @@ class multfs_base(Task):
                         [MULTFS_YES_KEY, MULTFS_NO_KEY, 'space'], timeStamped=self.task_timer
                     )
 
-                    if len(multfs_answer_keys):
-                        self.trials.addData("response_%d" % n_stim, multfs_answer_keys[-1][0])
-                        self.trials.addData("response_%d_time" % n_stim, multfs_answer_keys[-1][1])
-                        self.trials.addData("all_responses" % n_stim, multfs_answer_keys)
+                    if n_stim not in self.no_response_frames:
+                        if len(multfs_answer_keys):
+                            self.trials.addData("response_%d" % n_stim, multfs_answer_keys[-1][0])
+                            self.trials.addData("response_%d_time" % n_stim, multfs_answer_keys[-1][1])
+                            self.trials.addData("all_responses" % n_stim, multfs_answer_keys)
 
                 self.fixation.draw()
-                utils.wait_until(self.task_timer, onset + STIMULI_DURATION + ISI_base - 1./config.FRAME_RATE)
+                utils.wait_until(self.task_timer, onset + STIMULI_DURATION + short_ISI_base - 1./config.FRAME_RATE)
                 yield True
-                utils.wait_until(self.task_timer, onset + STIMULI_DURATION + ISI_base * 5/4. - 1./config.FRAME_RATE)
-                yield True
-
 
                 if trial_idx >= self.n_trials:
                     self.trials.addData("trial_end", self.task_timer.getTime())
@@ -264,7 +270,8 @@ class multfs_dms(multfs_base):
         self.session = session # todo: add progress bar
 
         self.seq_len = 2
-
+        self.no_response_frames = [0]
+        self.trial_isis = [long_ISI_base]
         self._trial_sampling_method = "sequential" # why sequential here, to figure out with Xiaoxuan
 
 
@@ -281,6 +288,9 @@ class multfs_1back(multfs_base):
         else:
             self.n_trials = 10
             self.n_blocks = 1 # around 7 mins
+        self.no_response_frames = [0]
+        self.trial_isis = [short_ISI_base] * self.seq_len
+
 
 class multfs_CTXDM(multfs_base):
 
@@ -296,6 +306,8 @@ class multfs_CTXDM(multfs_base):
         else:
             self.n_trials = 22
             self.n_blocks = 1
+        self.no_response_frames = [0]
+        self.trial_isis = [short_ISI_base, long_ISI_base]
 
 
 class multfs_interdms_ABAB(multfs_base):
@@ -312,6 +324,8 @@ class multfs_interdms_ABAB(multfs_base):
         else:
             self.n_trials = 6
             self.n_blocks = 6
+        self.no_response_frames = [0, 1]
+        self.trial_isis = [short_ISI_base, long_ISI_base, long_ISI_base]
 
 
 class multfs_interdms_ABBA(multfs_base):
@@ -328,6 +342,8 @@ class multfs_interdms_ABBA(multfs_base):
         else:
             self.n_trials = 6
             self.n_blocks = 6
+        self.no_response_frames = [0, 1]
+        self.trial_isis = [short_ISI_base, long_ISI_base, long_ISI_base]
 
 
 def instructions_converter(task_name):
