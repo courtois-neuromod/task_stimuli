@@ -137,33 +137,41 @@ If you can remember all the pairs, you will win the bonus points.
             yield True
 
     def _setup(self, exp_win):
-        # make pares of rectangels and text stim
+        # make pares of rectangles and text stim
+        box_size = 1.5 / self.grid_size[0] # grid covers 1.5 in screen width
+
         self.grid = [(
             visual.TextStim(
-                exp_win, text="", pos=(-0.8 + x * 0.25, 0.7 - y * 0.25),
+                exp_win, text="",
+                pos=( (x-(self.grid_size[0]-1)/2.) * box_size,
+                    .8 - y * box_size),
                 alignText="center", color="white"
             ),
             visual.Rect(
-                exp_win, size=(0.2, 0.2), pos=(-0.8 + x * 0.25, 0.7 - y * 0.25),
+                exp_win, size=(box_size*.8, box_size*.8),
+                pos=( (x-(self.grid_size[0]-1)/2.) * box_size,
+                    .8 - y * box_size),
                 fillColor=None,
             )
             )
             for y, x in itertools.product(range(self.grid_size[1]), range(self.grid_size[0]))
         ]  # fill the grid from top left corner, left to right first
-        recall_instruction = (f"Use the arrow keys to move the selected box."
-                              "\nI am sure: press "
+        recall_instruction = (f"Use the arrow keys to select item"
+                              "\nPress "
                               f"\"{self.confidence_keys['yes']}\" "
-                              "to move on.\nI am not sure: press "
+                              "if sure.\nPress "
                               f"\"{self.confidence_keys['no']}\""
-                              " to move on.")
+                              " if not sure.")
         self.answer_instruction = visual.TextStim(
             exp_win, text=recall_instruction,
-            pos=(-0.8 + 2 * 0.25, 0.7 - 5 * 0.25),
+            pos=(0, (self.grid[-1][0].pos[1]-1)/2),
+            wrapWidth=1.9,
             alignText="left", color="white"
         )
         self.postanswer_message = visual.TextStim(
             exp_win, text="Response received. Wait for the next trial.",
-            pos=(-0.8 + 2 * 0.25, 0.7 - 5 * 0.25),
+            pos=(0, (self.grid[-1][0].pos[1]-1)/2),
+            wrapWidth=1.9,
             alignText="left", color="white"
         )
         self.question = visual.TextStim(
@@ -398,11 +406,8 @@ If you can remember all the pairs, you will win the bonus points.
                 self.trials.addData('bonus_point', bonus_point)
                 total_earned_points += bonus_point + n_correct
                 message = (
-                    f"Out of {trial['target_score']} number pairs, "
-                    f"you got {n_correct} correctly.\n"
-                    f"You got {bonus_point} bonus points. "
-                    f"You received {n_correct + bonus_point} points from "
-                    "this trial.")
+                    f"You got {n_correct}/{trial['target_score']} number pairs correctly.\n"
+                    f"You got {n_correct} points + {bonus_point} bonus points =  {n_correct + bonus_point} points.")
                 n_frame = int(config.FRAME_RATE * trial["duration"]) - 1
                 self.question.text = message
                 for _ in range(n_frame):
@@ -414,7 +419,7 @@ If you can remember all the pairs, you will win the bonus points.
             elif trial['event_type'] in ["effort"]:
                 # update text
                 self.effort.reset()
-                self.question.text = f"How much effor did you put in the task?"
+                self.question.text = f"How much effort did you put in the task?"
                 pos = random.randrange(0, 100)
                 self.effort.markerStart = pos
                 effort_estmation = None
