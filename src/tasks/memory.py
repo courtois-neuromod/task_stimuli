@@ -1,4 +1,5 @@
 import os, sys, time, itertools, random, copy
+import pandas as pd
 from colorama import Fore
 from psychopy import visual, core, data, logging, event
 from pyglet.window import key
@@ -89,7 +90,7 @@ If you can remember all the pairs, you will win the bonus points.
     def __init__(self, items_list, total_possible_points, *args, **kwargs):
         super().__init__(**kwargs)
         self.total_possible_points = total_possible_points
-        self.item_list = data.importConditions(items_list)
+        self.item_list = pd.read_csv(items_list, sep="\t", index_col=0).to_dict("records")
         self.duration = len(self.item_list)  # not sure if this is needed
         self._progress_bar_refresh_rate = 2
         self.trials = data.TrialHandler(self.item_list, 1, method="sequential")
