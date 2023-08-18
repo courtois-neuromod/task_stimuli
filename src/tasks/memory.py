@@ -5,7 +5,7 @@ from psychopy import visual, core, data, logging, event
 from pyglet.window import key
 from .task_base import Task
 
-from ..shared import config, utils
+from ..shared import config, utils, eyetracking
 
 STIMULI_DURATION = 4
 BASELINE_BEGIN = 5
@@ -156,6 +156,7 @@ If you can remember all the pairs, you will win the bonus points.
                               "to move on.\nI am not sure: press "
                               f"\"{self.confidence_keys['no']}\""
                               " to move on.")
+        self.fixation = eyetracking.fixation_dot(exp_win)
         self.answer_instruction = visual.TextStim(
             exp_win, text=recall_instruction,
             pos=(-0.8 + 2 * 0.25, 0.7 - 5 * 0.25),
@@ -444,6 +445,10 @@ If you can remember all the pairs, you will win the bonus points.
                 yield True
 
             elif trial['event_type'] == "isi":
+                for stim in self.fixation:
+                    stim.draw(exp_win)
+                    if ctl_win:
+                        stim.draw(ctl_win)
                 utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] - 1 / config.FRAME_RATE)
                 yield True
             else:
