@@ -155,7 +155,7 @@ If you can remember all the pairs, you will win the bonus points.
                               f"\"{self.confidence_keys['yes']}\" "
                               "to move on.\nI am not sure: press "
                               f"\"{self.confidence_keys['no']}\""
-                              " to move on.")
+                              " if not sure.")
         self.fixation = eyetracking.fixation_dot(exp_win)
         self.answer_instruction = visual.TextStim(
             exp_win, text=recall_instruction,

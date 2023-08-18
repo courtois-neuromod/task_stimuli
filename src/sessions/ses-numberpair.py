@@ -30,7 +30,7 @@ def get_tasks(parsed):
             "designs",
             f"sub-{parsed.subject}_task-numberpair_run-{run + 1}_events.tsv",
         )
-        tasks.append(memory.NumberPair(name="task-numberpair_run-{run + 1}",
+        tasks.append(memory.NumberPair(name=f"task-numberpair_run-{run + 1}",
                                        items_list=session_design_filename,
                                        total_possible_points=total_possible_points))
     return tasks
