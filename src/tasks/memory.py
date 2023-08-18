@@ -81,9 +81,9 @@ Try to remember the items and their location on the screen."""
 class NumberPair(Task):
 
     DEFAULT_INSTRUCTION = """You will be presented a 6 x 4 grid mixed with numbers and alphabets on the screen.
-Remember the locations of the numer pairs on screen.
-You will be asked to recall them seqentially, and win one point per correct pair.
-If you can remeber all the pair, you will win the bonus points.
+Remember the locations of the number pairs on screen.
+You will be asked to recall them sequentially, and win one point per correct pair.
+If you can remember all the pairs, you will win the bonus points.
 """
 
     def __init__(self, items_list, total_possible_points, *args, **kwargs):
@@ -126,7 +126,7 @@ If you can remeber all the pair, you will win the bonus points.
 
         message = (
             f"In this session, "
-            f"you can earn up to {self.total_possible_points} pionts.")
+            f"you can earn up to {self.total_possible_points} points.")
         duration = 3
         screen_text.text = message
         for _ in range(config.FRAME_RATE * duration):
@@ -250,6 +250,7 @@ If you can remeber all the pair, you will win the bonus points.
                 description = (f"{Fore.RED}Trial {trial['i_grid']}: "
                                f"{trial['event_type']}-{trial['pair_number']} "
                                f"selecting {grid_memory_time}{Fore.RESET}")
+                self.progress_bar.set_description(description)
                 yield True
 
             elif trial['event_type'] in ['encoding', 'recall']:
@@ -398,7 +399,7 @@ If you can remeber all the pair, you will win the bonus points.
                 message = (
                     f"Out of {trial['target_score']} number pairs, "
                     f"you got {n_correct} correctly.\n"
-                    f"You got {bonus_point} bonus pionts. "
+                    f"You got {bonus_point} bonus points. "
                     f"You received {n_correct + bonus_point} points from "
                     "this trial.")
                 n_frame = int(config.FRAME_RATE * trial["duration"]) - 1
@@ -453,7 +454,7 @@ If you can remeber all the pair, you will win the bonus points.
         message = (
             f"In this session, "
             f"you earned {total_earned_points} out of "
-            f"{self.total_possible_points} pionts.")
+            f"{self.total_possible_points} points.")
         duration = 3
         n_frame = int(config.FRAME_RATE * duration) - 1
         self.question.text = message
