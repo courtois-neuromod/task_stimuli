@@ -518,3 +518,120 @@ class Listening(Task):
     def _save(self):
         self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
         return False
+
+class ListeningBlocks(Task):
+    """docstring for ListeningBlocks."""
+
+    def __init__(self, design_file, stimuli_path, *args, **kwargs):
+        super(ListeningBlocks, self).__init__(*args, **kwargs)
+        self.design_file = design_file
+        self.stimuli_path = stimuli_path
+        self.design = data.importConditions(design_file)
+
+    def _setup(self, exp_win):
+        self.trials = data.TrialHandler(self.design, 1, method="sequential")
+        self.fixation_dot = fixation_dot(exp_win)
+        self._stimuli = [
+            (sound.Sound(
+                os.path.join(self.stimuli_path, trial['stim_file'])) \
+                if trial['stim_file'] else None) \
+            for trial in self.design]
+        super()._setup(exp_win)
+
+    def _run(self, exp_win, ctl_win):
+
+        for trial_n, (trial, stimuli) in enumerate(zip(self.trials, self._stimuli)):
+            if trial['trial_type'] == 'fix':
+                for stim_ in self.fixation_dot:
+                    stim_.draw(exp_win)
+                if trial_n > 0:
+                    utils.wait_until(self.task_timer, trial['onset'] - 1/config.FRAME_RATE)
+
+            if stimuli:
+                stimuli.play(when = self.task_timer._timeAtLastReset + trial['onset'])
+            yield True
+            for _ in utils.wait_until_yield(
+                self.task_timer,
+                trial['onset']+trial['duration'] - 2/config.FRAME_RATE,
+                keyboard_accuracy=.1):
+                yield True
+            if stimuli and stimuli.status > 0:
+                logging.error('trial ended before the sound finished playing: check files durations')
+
+    def _restart(self):
+        self.trials = data.TrialHandler(self.design, 1, method="sequential")
+
+    def _save(self):
+        self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
+        return False
+
+    def unload(self):
+        del self._stimuli
+
+class ReadingBlocks(Task):
+    """docstring for ReadingBlocks."""
+
+    def __init__(self, design_file, *args,
+        txt_color="black", txt_font="Palatino Linotype", txt_size=42,
+        bg_color=(.5, .5, .5), press_key='a', **kwargs):
+        super(ReadingBlocks, self).__init__(*args, **kwargs)
+        self.design_file = design_file
+        self.design = data.importConditions(design_file)
+        self.txt_color = txt_color
+        self.txt_font = txt_font
+        self.txt_size = txt_size
+        self.bg_color = bg_color
+
+        self.press_key = press_key
+
+    def _setup(self, exp_win):
+        self.trials = data.TrialHandler(self.design, 1, method="sequential")
+        self.fixation_dot = fixation_dot(exp_win)
+        self.txt_stim = visual.TextStim(
+            exp_win,
+            text="+",
+            font=self.txt_font,
+            height=self.txt_size,
+            units='pix',
+            alignText="center",
+            color=self.txt_color,
+        )
+
+    def _run(self, exp_win, ctl_win):
+        last_press_trial = None
+        for trial_n, trial in enumerate(self.trials):
+            if trial['trial_type'] == 'fix':
+                for stim_ in self.fixation_dot:
+                    stim_.draw(exp_win)
+            else:
+                if trial['trial_type'] == 'press':
+                    last_press_trial = trial
+                    self.txt_stim.text = ':'
+                else:
+                    self.txt_stim.text = trial['word']
+                self.txt_stim.draw(exp_win)
+            if trial_n > 0: #
+                utils.wait_until(self.task_timer, trial['onset'] - 1/config.FRAME_RATE)
+            else: # force assignt to none, otherwise future trial will just dismiss the added fields
+                for k in ['all_keypresses', 'response_onset', 'response_time']:
+                    trial[k] = None
+            yield True
+            trial['onset_flip'] = self._exp_win_last_flip_time - self._exp_win_first_flip_time
+            yield from utils.wait_until_yield(
+                self.task_timer,
+                trial['onset']+trial['duration'] - 2/config.FRAME_RATE,
+                keyboard_accuracy=.1)
+            trial['offset_flip'] = self._exp_win_last_flip_time - self._exp_win_first_flip_time
+            kpress = event.getKeys([self.press_key], timeStamped=self.task_timer)
+            if len(kpress) and last_press_trial:
+                last_press_trial['all_keypresses'] = last_press_trial.get('all_keypresses', []) + kpress
+                if not last_press_trial.get('response_onset', None):
+                    last_press_trial['response_onset'] = kpress[0][1]
+                    last_press_trial['response_time'] = kpress[0][1] - last_press_trial['onset_flip']
+
+    def _restart(self):
+        self.trials = data.TrialHandler(self.design, 1, method="sequential")
+
+    def _save(self):
+        self.trials.saveAsWideText(self._generate_unique_filename("events", "tsv"))
+        return False
