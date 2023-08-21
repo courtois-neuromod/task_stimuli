@@ -82,17 +82,17 @@ You have to press and release immediately the button that light-up."""
             exp_win,
             image="data/game_ctrlr/ctrlr.png",
             size=(800, 481),
-            units="pixels"
+            units="pix"
         )
         if 'lr_condition' in self.design[0]:
             self._controller_img.mask = np.ones((1,2))
 
         self._cue = {
             'short': visual.Circle(
-                exp_win, pos=[0,0], radius=25, units="pixels",
+                exp_win, pos=[0,0], radius=25, units="pix",
                 lineColor=(255,165,30), fillColor=(255,165,30), colorSpace='rgb255',),
             'long': visual.Rect(
-                exp_win, width=100., height=20, units="pixels",
+                exp_win, width=100., height=20, units="pix",
                 fillColor=(40,220,120), colorSpace='rgb255',),
             }
 
@@ -108,14 +108,14 @@ You have to press and release immediately the button that light-up."""
                 visual.ShapeStim(
                     exp_win,
                     vertices=[(s - self._controller_img.size/2) * (1,-1) for s in shape],
-                    units="pixels",
+                    units="pix",
                     **buttons_aspect)
                 if len(shape)>2
                 else visual.Circle(
                     exp_win,
                     radius=shape[1],
                     pos=(shape[0] - self._controller_img.size/2) * (1,-1),
-                    units="pixels",
+                    units="pix",
                     **buttons_aspect))
                 for key, shape in self.BUTTONS.items()
                 }

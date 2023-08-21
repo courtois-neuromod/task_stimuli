@@ -1,14 +1,13 @@
 """
 (*)~---------------------------------------------------------------------------
 Pupil - eye tracking platform
-Copyright (C) 2012-2020 Pupil Labs
+Copyright (C) Pupil Labs
 
 Distributed under the terms of the GNU
 Lesser General Public License (LGPL v3.0).
 See COPYING and COPYING.LESSER for license details.
 ---------------------------------------------------------------------------~(*)
 """
-
 """
 This file contains convenience classes for communication with
 the Pupil IPC Backbone. These are intended to be used by plugins.
@@ -18,6 +17,8 @@ https://github.com/pupil-labs/pupil-helpers/tree/master/pupil_remote
 """
 
 import logging
+import traceback
+
 import msgpack as serializer
 import zmq
 from zmq.utils.monitor import recv_monitor_message
@@ -49,7 +50,9 @@ class ZMQ_handler(logging.Handler):
             record_dict["msg"] = str(record_dict["msg"])
             # stringify `exc_info` since it includes unserializable objects
             if record_dict["exc_info"]:  # do not convert if it is None
-                record_dict["exc_info"] = str(record_dict["exc_info"])
+                exc_text = "".join(traceback.format_exception(*record_dict["exc_info"]))
+                record_dict["exc_info"] = exc_text
+                record_dict["exc_text"] = exc_text
             if record_dict["args"]:
                 # format message before sending to avoid serialization issues
                 record_dict["msg"] %= record_dict["args"]
@@ -57,7 +60,7 @@ class ZMQ_handler(logging.Handler):
             self.socket.send(record_dict)
 
 
-class ZMQ_Socket(object):
+class ZMQ_Socket:
     def __del__(self):
         self.socket.close()
 
@@ -129,7 +132,7 @@ class Msg_Receiver(ZMQ_Socket):
         return payload
 
     @property
-    def new_data(self):
+    def new_data(self) -> bool:
         return self.socket.get(zmq.EVENTS) & zmq.POLLIN
 
 
@@ -139,8 +142,8 @@ class Msg_Streamer(ZMQ_Socket):
     Not threadsave. Make a new one for each thread
     """
 
-    def __init__(self, ctx, url, hwm=None):
-        self.socket = zmq.Socket(ctx, zmq.PUB)
+    def __init__(self, ctx, url, hwm=None, socket_type: int = zmq.PUB):
+        self.socket = zmq.Socket(ctx, socket_type)
         if hwm is not None:
             self.socket.set_hwm(hwm)
 
@@ -159,7 +162,7 @@ class Msg_Streamer(ZMQ_Socket):
         require exposing the pyhton memoryview interface.
         """
         assert deprecated == (), "Depracted use of send()"
-        assert "topic" in payload, "`topic` field required in {}".format(payload)
+        assert "topic" in payload, f"`topic` field required in {payload}"
 
         if "__raw_data__" not in payload:
             # IMPORTANT: serialize first! Else if there is an exception

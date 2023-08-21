@@ -28,6 +28,7 @@ EXP_WINDOW = dict(
     fullscr=True,
     gammaErrorPolicy="warn",
     #waitBlanking=False,
+    waitBlanking=True,
 )
 
 EXP_MONITOR.setSizePix(EXP_WINDOW['size'])
@@ -44,7 +45,7 @@ CTL_WINDOW = dict(
 FRAME_RATE = 60
 
 # task parameters
-INSTRUCTION_DURATION = 6
+INSTRUCTION_DURATION = 3
 
 WRAP_WIDTH = 2
 
