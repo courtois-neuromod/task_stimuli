@@ -14,8 +14,8 @@
 	path = data/retinotopy
 	url = git@github.com:courtois-neuromod/retino.stimuli.git
 	datalad-id = 52140b46-63c8-45a7-a03f-2f2cab0db23f
-[submodule "data/langauge/localizer"]
-	path = data/langauge/localizer
+[submodule "data/language/localizer"]
+	path = data/language/localizer
 	url = git@github.com:courtois-neuromod/langlocalizer.stimuli.git
 	datalad-id = dc98efba-a003-4ab6-bc11-59033fcd2846
 [submodule "data/language/triplets"]
@@ -58,3 +58,8 @@
 	url = https://github.com/OpenNeuroDatasets/ds003643.git
 	datalad-id = acc00a1b-08c3-4b06-ad19-3de01b33eeed
 	datalad-url = https://github.com/OpenNeuroDatasets/ds003643.git
+[submodule "data/language/localizer"]
+	path = data/language/localizer
+	url = git@github.com:courtois-neuromod/langlocalizer.stimuli.git
+	datalad-id = dc98efba-a003-4ab6-bc11-59033fcd2846
+	datalad-url = git@github.com:courtois-neuromod/langlocalizer.stimuli.git
