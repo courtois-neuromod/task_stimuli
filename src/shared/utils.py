@@ -1,6 +1,6 @@
 import psutil
 import time
-from psychopy import core
+from psychopy import core, logging
 import os, glob
 
 def check_power_plugged():
@@ -11,6 +11,8 @@ def check_power_plugged():
         return True
 
 def wait_until(clock, deadline, hogCPUperiod=0.1, keyboard_accuracy=.0005):
+    if deadline < clock.getTime():
+        logging.error(f'wait_until called after deadline: {deadline} < {clock.getTime()}')
     sleep_until = deadline - hogCPUperiod
     poll_windows()
     current_time = clock.getTime()
@@ -28,13 +30,15 @@ def poll_windows():
             win.winHandle.dispatch_events()  # pump events
 
 def wait_until_yield(clock, deadline, hogCPUperiod=0.1, keyboard_accuracy=.0005):
+    if deadline < clock.getTime():
+        logging.error(f'wait_until called after deadline: {deadline} < {clock.getTime()}')
     sleep_until = deadline - hogCPUperiod
     poll_windows()
     current_time = clock.getTime()
     while current_time < deadline:
         if current_time < sleep_until:
             time.sleep(keyboard_accuracy)
-            yield False
+            yield
 
         poll_windows()
         current_time = clock.getTime()
