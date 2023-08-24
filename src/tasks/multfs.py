@@ -214,7 +214,10 @@ class multfs_base(Task):
                         )
 
                     img.image = IMAGES_FOLDER + "/" + str(trial["objmod%s" % str(n_stim+1)]) + "/image.png"
-                    img.pos = triplet_id_to_pos[trial[f"loc{n_stim+1}"]]
+                    if self.name[5:10] != "inter":
+                        img.pos = triplet_id_to_pos[trial[f"loc{n_stim+1}"]]
+                    else:
+                        img.pos = triplet_id_to_pos[trial[f"locmod{n_stim+1}"]]
                     img.draw()
 
                     # flush response keys before the stimuli onset
@@ -263,8 +266,8 @@ class multfs_dms(multfs_base):
             self.n_trials = 4
             self.n_blocks = 2
         else:
-            self.n_trials = 8 # todo to be modified to in accordance with the file => this is fine as the baseline task
-            self.n_blocks = 2
+            self.n_trials = 16 # todo to be modified to in accordance with the file => this is fine as the baseline task
+            self.n_blocks = 1
 
         self.feature = feature
         self.session = session # todo: add progress bar
@@ -289,7 +292,7 @@ class multfs_1back(multfs_base):
             self.n_trials = 10
             self.n_blocks = 1 # around 7 mins
         self.no_response_frames = [0]
-        self.trial_isis = [short_ISI_base] * self.seq_len
+        self.trial_isis = [short_ISI_base,long_ISI_base,long_ISI_base,long_ISI_base, long_ISI_base,long_ISI_base]
 
 
 class multfs_CTXDM(multfs_base):
@@ -322,8 +325,8 @@ class multfs_interdms_ABAB(multfs_base):
             self.n_trials = 2
             self.n_blocks = 2
         else:
-            self.n_trials = 6
-            self.n_blocks = 6
+            self.n_trials = 16
+            self.n_blocks = 1
         self.no_response_frames = [0, 1]
         self.trial_isis = [short_ISI_base, long_ISI_base, long_ISI_base]
 
@@ -340,8 +343,8 @@ class multfs_interdms_ABBA(multfs_base):
             self.n_trials = 2
             self.n_blocks = 2
         else:
-            self.n_trials = 6
-            self.n_blocks = 6
+            self.n_trials = 16
+            self.n_blocks = 1
         self.no_response_frames = [0, 1]
         self.trial_isis = [short_ISI_base, long_ISI_base, long_ISI_base]
 
