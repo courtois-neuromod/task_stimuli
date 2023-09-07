@@ -137,7 +137,6 @@ class multfs_base(Task):
             screen_text.draw(ctl_win)
         utils.wait_until(self.task_timer, onset - 1./config.FRAME_RATE)
         yield True
-        self.fixation.draw()
         utils.wait_until(
             self.task_timer,
             onset + config.INSTRUCTION_DURATION - 10./config.FRAME_RATE
@@ -168,7 +167,6 @@ class multfs_base(Task):
         if ctl_win:
             screen_text.draw(ctl_win)
         yield True
-        self.fixation.draw()
         utils.wait_until(
             self.task_timer,
             onset + config.INSTRUCTION_DURATION - 10./config.FRAME_RATE
@@ -292,7 +290,7 @@ class multfs_1back(multfs_base):
             self.n_trials = 10
             self.n_blocks = 1 # around 7 mins
         self.no_response_frames = [0]
-        self.trial_isis = [short_ISI_base,long_ISI_base,long_ISI_base,long_ISI_base, long_ISI_base,long_ISI_base]
+        self.trial_isis = [short_ISI_base] + [long_ISI_base] * 5
 
 
 class multfs_CTXDM(multfs_base):
