@@ -1,16 +1,26 @@
 import os
-from ..tasks import language, task_base
+from ..tasks import language, narratives, task_base
 
 STIMULI_PATH = 'data/language/localizer'
 
+ALICE_INSTRUCTIONS = """
+In this task, you will listen to short passages from Alice in Wonderland in your {English/French} language, to acoustically degraded versions of those passages, and to passages in a language unfamiliar to you.
+The degraded versions will sound like bad radio reception where you hear that someone is talking but will have trouble discerning what they are saying.
+Your task is to simply listen attentively.
+"""
+
 TASKS = [
     language.ReadingBlocks(
-        os.path.join(STIMULI_PATH, 'video/langloc_fmri_run1_stim_set1.csv'),
+        os.path.join(STIMULI_PATH, 'designs/task-locreading_run-01_design.tsv'),
         name='task-locreading_run-01'),
     language.ListeningBlocks(
         os.path.join(STIMULI_PATH, 'designs/auditory_1.tsv'),
-        os.path.join(STIMULI_PATH, 'funloc_norm_clips'),
-        name='task-locauditory_run-01')
+        os.path.join(STIMULI_PATH, 'audio_list1/'),
+        name='task-locauditory_run-01'),
+    language.ListeningBlocks(
+        os.path.join(STIMULI_PATH, 'alice/alice_en_1.tsv'),
+        os.path.join(STIMULI_PATH, 'audio_list1/'),
+        name='task-aliceEn_run-01'),
 ]
 
 INITIAL_WAIT = 6
@@ -35,7 +45,6 @@ def generate_reading_designs():
         out_fname = STIMULI_PATH + f"/designs/task-locreading_run-{rsfi+1:02d}_design.tsv"
         design.to_csv(out_fname, index=False, sep='\t')
         print(out_fname)
-
 
 
 def set_to_events(reading_set):
