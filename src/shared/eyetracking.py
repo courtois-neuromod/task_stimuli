@@ -249,7 +249,10 @@ class EyetrackerCalibration_targets(Task):
                 )
 
                 print('Ǹumber of received gaze: ', str(len(self._gaze_list)))
-                val_qc = self.eyetracker.validate(self._gaze_list, self.all_refs_per_flip)
+                val_qc = self.eyetracker.validate(self._gaze_list,
+                                                  self.all_refs_per_flip,
+                                                  self.marker_duration_frames - (self.calibration_lead_in + self.calibration_lead_out),
+                                                  )
 
                 # If self.feedback = True, display calib results on screen
                 if self.feedback:
@@ -857,8 +860,7 @@ class EyeTrackerClient(threading.Thread):
 
     def assign_gaze_to_markers(self, gaze_list, markers_dict):
         '''
-        Assign gaze/fixations to markers based on their onset.
-        A fixation is assigned to a marker if its ONSET overlaps with the time the marker is on the screen
+        Assign gaze to markers based on their timestamp
         '''
         i = 0
         #print(markers_dict[0]['onset'], fixation_list[0]['timestamp'])
@@ -884,7 +886,7 @@ class EyeTrackerClient(threading.Thread):
         return markers_dict
 
 
-    def gaze_to_marker_distances(self, markers_dict, conf_thresh = 0.9):
+    def gaze_qc_per_marker(self, markers_dict, frames_per_marker, conf_thresh = 0.80):
         '''
         estimated eye-to-screen distance in pixels
         based on screen dim in pixels ((1280, 1024)) and screen deg of visual angle (17.5, 14)
@@ -892,20 +894,23 @@ class EyeTrackerClient(threading.Thread):
         dist_in_pix = 4164 # in pixels
 
         val_qc = []
-        print('Distance between gaze and target in degrees of visual angle')
-        print('Good < 0.5 deg ; Fair = [0.5, 1.5[ deg ; Poor >= 1.5 deg')
+        #print('Distance between gaze and target in degrees of visual angle')
+        #print('Good < 0.5 deg ; Fair = [0.5, 1.5[ deg ; Poor >= 1.5 deg')
 
         for count in range(len(markers_dict.keys())):
             m = markers_dict[count]
-            print('Marker ' + str(count) + ', Normalized position: ' +  str(m['norm_pos']))
-            # transform marker's normalized position into dim = (3,) vector in pixel space
-            m_vecpos = np.concatenate(((np.array(m['norm_pos']) - 0.5)*(1280, 1024), np.array([dist_in_pix])), axis=0)
+            #print(f"Marker {count}, Normalized position: {m['norm_pos']}")
 
-            if len(m['gaze_data']['timestamps']) > 0:
-                # filtrate gaze based on confidence threshold
+            num_gz = len(m['gaze_data']['timestamps'])
+            expected_gz_count = 250*(frames_per_marker/60)
+
+            if num_gz:
+                # transform marker's normalized position into dim = (3,) vector in pixel space
+                m_vecpos = np.concatenate(((np.array(m['norm_pos']) - 0.5)*(1280, 1024), np.array([dist_in_pix])), axis=0)
+
                 g_conf = np.array(m['gaze_data']['confidence'])
+                # filtrate gaze based on confidence threshold
                 g_filter = g_conf > conf_thresh
-
                 g_pos = np.array(m['gaze_data']['norm_pos'])[g_filter]
                 g_times = np.array(m['gaze_data']['timestamps'])[g_filter]
 
@@ -919,31 +924,43 @@ class EyeTrackerClient(threading.Thread):
                     distances.append(distance[0])
 
                 distances = np.array(distances)
-                assert(len(distances)==len(g_times))
                 markers_dict[count]['gaze_data']['distances'] = {'distances': distances,
                                                                  'timestamps': g_times,
                                                                  }
 
-                num_gz = len(distances)
-                good = np.sum(distances < 0.5) / num_gz
-                fair = np.sum((distances >= 0.5)*(distances < 1.5)) / num_gz
-                poor = np.sum(distances >= 1.5) / num_gz
+                num_dist = len(distances)
+                good = np.sum(distances < 0.5) / num_dist
+                fair = np.sum((distances >= 0.5)*(distances < 1.5)) / num_dist
+                poor = np.sum(distances >= 1.5) / num_dist
 
-                print('Total gaze:' + str(num_gz) + ' , Good:' + str(good) + ' , Fair:' + str(fair) + ' , Poor:' + str(poor))
+                #print('Total gaze:' + str(num_gz) + ' , Good:' + str(good) + ' , Fair:' + str(fair) + ' , Poor:' + str(poor))
                 val_qc.append({
                     'marker': count,
                     'norm_pos': m['norm_pos'],
                     'num_gz': num_gz,
+                    'gz_count_ratio': num_gz/expected_gz_count,
+                    'above_70conf_ratio': np.sum(g_conf > 0.7)/num_gz,
+                    'above_80conf_ratio': np.sum(g_conf > 0.8)/num_gz,
+                    'above_90conf_ratio': np.sum(g_conf > 0.9)/num_gz,
+                    'median_distance': np.median(distances),
                     'good': good,
                     'fair': fair,
-                    'poor': poor
+                    'poor': poor,
                 })
             else:
                 val_qc.append({
                     'marker': count,
                     'norm_pos': m['norm_pos'],
-                    'num_gz': 0
+                    'num_gz': 0,
                 })
+
+        print('EYE-TRACKING VALIDATION METRICS (per marker)')
+        print(f"RATIO OF DETECTED PUPILS: {[round(x['gz_count_ratio'], 3) for x in val_qc]}")
+        print(f"TOTAL DETECTED PUPILS: {[x['num_gz'] for x in val_qc]}")
+        print(f"CONFIDENCE >0.7 RATIO: {[round(x['above_70conf_ratio'], 3) for x in val_qc]}")
+        print(f"CONFIDENCE >0.8 RATIO: {[round(x['above_80conf_ratio'], 3) for x in val_qc]}")
+        print(f"CONFIDENCE >0.9 RATIO: {[round(x['above_90conf_ratio'], 3) for x in val_qc]}")
+        print(f"MEDIAN DISTANCE 2 TARGET (deg of visual angle): {[round(x['median_distance'], 3) for x in val_qc]}")
 
         return markers_dict, val_qc
 
@@ -993,11 +1010,14 @@ class EyeTrackerClient(threading.Thread):
         logging.info("calibration data sent to pupil")
         logging.flush()
 
-    def validate(self, gaze_list, ref_list):
+    def validate(self, gaze_list, ref_list, frames_per_marker):
 
         markers_dict = self.get_marker_dictionary(ref_list)
         markers_dict = self.assign_gaze_to_markers(gaze_list, markers_dict)
-        markers_dict, val_qc = self.gaze_to_marker_distances(markers_dict, conf_thresh = 0.9)
+        markers_dict, val_qc = self.gaze_qc_per_marker(markers_dict,
+                                                       frames_per_marker,
+                                                       conf_thresh = 0.80,
+                                                       )
 
         return val_qc
 
