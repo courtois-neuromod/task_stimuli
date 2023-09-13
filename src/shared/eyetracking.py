@@ -987,6 +987,12 @@ class EyeTrackerClient(threading.Thread):
                         validation=True
                         )
             yield task
+            if task.use_eyetracking and self.validate_calib:
+                yield EyetrackerCalibration_targets(
+                    self,
+                    name=f"eyeTrackercalib-validate-{calibration_index}",
+                    validation=True
+                    )
 
     def calibrate(self, pupil_list, ref_list):
         if len(pupil_list) < 100:
