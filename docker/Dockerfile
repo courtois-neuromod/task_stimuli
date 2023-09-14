@@ -37,11 +37,11 @@ RUN mkdir /src/ && cd /src \
   && git clone https://github.com/courtois-neuromod/pupil.git \
   && cd pupil \
   && git checkout testing \
-  && pip install -r requirements.txt
+  && pip install --no-cache-dir -r requirements.txt
 
 ARG ARAVIS_VERSION=0.8.21
 
-RUN pip3 install --upgrade meson "numpy<1.24" scipy ipython pip
+RUN pip3 install --no-cache-dir --upgrade meson "numpy<1.24" scipy ipython pip
 
 # for aravis in docker see https://github.com/AravisProject/aravis/issues/509
 RUN cd /src/ \
@@ -65,7 +65,7 @@ RUN apt-get update \
   && apt-get -y install gdb net-tools\
   && apt-get autoremove && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-binary :all: --force-reinstall pyzmq
+RUN pip install --no-cache-dir --no-binary :all: --force-reinstall pyzmq
 
 ENV GI_TYPELIB_PATH=/usr/local/lib/x86_64-linux-gnu/girepository-1.0/
 
@@ -78,6 +78,6 @@ RUN cd /src/ \
 RUN pip3 install -r /src/task_stimuli/requirements.txt
 COPY ./.env.docker /src/task_stimuli/.env
 
-RUN pip install python-vlc==3.0.11115
+RUN pip install --no-cache-dir python-vlc==3.0.11115
 
 WORKDIR /src/task_stimuli/
