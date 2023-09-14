@@ -955,12 +955,12 @@ class EyeTrackerClient(threading.Thread):
                 })
 
         print('EYE-TRACKING VALIDATION METRICS (per marker)')
-        print(f"RATIO OF DETECTED PUPILS: {[round(x['gz_count_ratio'], 3) for x in val_qc]}")
-        print(f"TOTAL DETECTED PUPILS: {[x['num_gz'] for x in val_qc]}")
-        print(f"CONFIDENCE >0.7 RATIO: {[round(x['above_70conf_ratio'], 3) for x in val_qc]}")
-        print(f"CONFIDENCE >0.8 RATIO: {[round(x['above_80conf_ratio'], 3) for x in val_qc]}")
-        print(f"CONFIDENCE >0.9 RATIO: {[round(x['above_90conf_ratio'], 3) for x in val_qc]}")
-        print(f"MEDIAN DISTANCE 2 TARGET (deg of visual angle): {[round(x['median_distance'], 3) for x in val_qc]}")
+        print(f"RATIO OF DETECTED PUPILS: {[round(x['gz_count_ratio'], 3) for x in val_qc if 'gz_count_ratio' in x]}")
+        print(f"TOTAL DETECTED PUPILS: {[x['num_gz'] for x in val_qc if 'num_gz' in x]}")
+        print(f"CONFIDENCE >0.7 RATIO: {[round(x['above_70conf_ratio'], 3) for x in val_qc if 'above_70conf_ratio' in x]}")
+        print(f"CONFIDENCE >0.8 RATIO: {[round(x['above_80conf_ratio'], 3) for x in val_qc if 'above_80conf_ratio' in x]}")
+        print(f"CONFIDENCE >0.9 RATIO: {[round(x['above_90conf_ratio'], 3) for x in val_qc if 'above_90conf_ratio' in x]}")
+        print(f"MEDIAN DISTANCE 2 TARGET (deg of visual angle): {[round(x['median_distance'], 3) for x in val_qc if 'median_distance' in x]}")
 
         return markers_dict, val_qc
 

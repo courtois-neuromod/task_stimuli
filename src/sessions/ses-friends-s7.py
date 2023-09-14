@@ -3,7 +3,7 @@ from ..tasks import video
 TASKS = []
 
 for episode in list(range(1,24)):
-    segments = "abcd" if episode in (23,) else ("abc" if episode in (16) else "ab")
+    segments = "abcd" if episode in (23,) else ("abc" if episode in (16,) else "ab")
     for segment in segments:
         TASKS.append(
             video.SingleVideo(
@@ -14,3 +14,6 @@ for episode in list(range(1,24)):
                 use_eyetracking=True,
             )
         )
+        TASKS.append(task_base.Pause(
+            text="You can take a short break.",
+        ))
