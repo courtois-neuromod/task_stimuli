@@ -12,7 +12,7 @@ from .ellipse import Ellipse
 from ..tasks.task_base import Task
 from . import config
 
-INSTRUCTION_DURATION = 4
+INSTRUCTION_DURATION = 2
 STARTCUE_DURATION = 2
 FEEDBACK_DURATION = 3
 CALIBRATE_HOTKEY = "c"
