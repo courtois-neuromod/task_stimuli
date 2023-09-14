@@ -11,4 +11,5 @@ for sub in [1,2,3,5,6]:
     quest_onset = [ev[ev.trial_type=='questionnaire-value-change'].onset.values for ev in evs_stable]
     levels = pandas.concat([ev[ev.trial_type=='gym-retro_game'].level for ev in evs_stable])
     print("stable phase duration (min)", sum([qo[0] for qo in quest_onset if len(qo)])/60.)
+    pandas.set_option('display.max_rows', 500)
     print(levels.value_counts().sort_index())
