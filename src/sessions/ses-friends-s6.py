@@ -1,4 +1,4 @@
-from ..tasks import video
+from ..tasks import task_base, video
 
 TASKS = []
 
