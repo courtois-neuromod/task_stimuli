@@ -1,8 +1,63 @@
+import os
 from ..tasks import multfs
+import pandas as pd
+
+data_path = "./data/multfs"
 
 def get_tasks(parsed):
 
-    data_path = "./data/multfs/"
+    study_design = pd.read_csv(
+        os.path.join(data_path, 'study_designs', f"sub-{int(parsed.subject):02d}_design.tsv"),
+        delimiter='\t')
+
+
+    session_runs = study_design[study_design.session.eq(int(parsed.session))]
+
+    print(session_runs)
+
+    kwargs = {'use_eyetracking':True}
+
+    for ri, runs in session_runs.iterrows():
+
+        block_file_name = runs.block_file_name
+        feat = block_file_name.split('_')[1] # TODO get consistent filenaming!
+        run_design_path = os.path.join(data_path, "updated_cond_file/blockfiles/", block_file_name + '.csv')
+        if 'dms' in block_file_name:
+            yield multfs.multfs_dms(
+                run_design_path,
+                name = f"task-dms{feat}_run-01",
+                feature=feat,
+                **kwargs
+            )
+        elif 'ctxdm' in block_file_name:
+            yield multfs.multfs_CTXDM(
+                run_design_path,
+                name = f"task-ctx{feat}_run-01",
+                feature=feat,
+                **kwargs
+            )
+        elif 'nback' in block_file_name:
+            yield multfs.multfs_1back(
+                run_design_path,
+                name = f"task-1back{feat}_run-01",
+                feature=feat,
+                **kwargs
+            )
+        elif 'interdms' in block_file_name:
+            order = block_file_name.split('_')[2]
+            kls = multfs.multfs_interdms_ABAB if order == 'ABAB' else multfs.multfs_interdms_ABBA
+            yield kls(
+                run_design_path,
+                name = f"task-interdms{feat}{order}_run-01",
+                feature = feat,
+                **kwargs
+            )
+
+
+"""
+
+
+
     return [
         # for piloting
         multfs.multfs_dms(data_path + "pilot/pilot_DMS_loc.csv", name="task-dmsloc_run-01", feature="loc", session=parsed.session),
@@ -32,3 +87,4 @@ def get_tasks(parsed):
         # multfs.multfs_interdms_ABBA(data_path + "subtraining/subtraining_interDMS_ABBA_obj.csv", name="task_interdmsobj_ABBA_run-00", feature="obj", session=parsed.session),
 
         ]
+"""

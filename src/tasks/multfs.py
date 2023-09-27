@@ -212,7 +212,7 @@ class multfs_base(Task):
                         )
 
                     img.image = IMAGES_FOLDER + "/" + str(trial["objmod%s" % str(n_stim+1)]) + "/image.png"
-                    if self.name[5:10] != "inter":
+                    if not 'dms' in self.name[5:10]:
                         img.pos = triplet_id_to_pos[trial[f"loc{n_stim+1}"]]
                     else:
                         img.pos = triplet_id_to_pos[trial[f"locmod{n_stim+1}"]]
@@ -354,6 +354,8 @@ def instructions_converter(task_name):
     ins_dict = {
         "multfs_dmsloc": """Press X if two stimulus are at the same location, otherwise press B/\n""",
 
+        "multfs_dmsobj": """Press X if two stimulus are  the same object, otherwise press B/\n""",
+
         "multfs_interdmsloc_ABBA": """
 interleaved Delay match to sample task with pattern ABBA and feature location\n
 Press X on the fourth frame if the first and fourth stimuli have the same location,  otherwise press B.\n
@@ -424,6 +426,8 @@ def abbrev_instructions_converter(task_name):
 
     ins_dict = {
         "multfs_dmsloc": "DMS-LOCATION",
+
+        "multfs_dmsobj": "DMS-OBJECT",
 
         "multfs_interdmsloc_ABBA": """interDMS-ABBA-LOCATION\n
                               """,
