@@ -25,7 +25,7 @@ MULTFS_YES_KEY = "x"
 MULTFS_NO_KEY = "b"
 CONTINUE_KEY = "a"
 
-config.INSTRUCTION_DURATION = 2
+config.INSTRUCTION_DURATION = 1
 
 # TODO: modify to MRI screen size
 screensize = config.EXP_WINDOW["size"]
@@ -86,7 +86,7 @@ class multfs_base(Task):
 
         # -- prepare to start Routine "Intro" --
         # print("start of the task:", self.globalClock.getTime())
-        for frameN in range(int(np.floor(config.FRAME_RATE * config.INSTRUCTION_DURATION))):
+        for frameN in range(int(np.floor(config.FRAME_RATE * (config.INSTRUCTION_DURATION+3)))):
             screen_text_bold.draw(exp_win)
             screen_text.draw(exp_win)
             if ctl_win:
@@ -211,7 +211,7 @@ class multfs_base(Task):
                         n_stim*STIMULI_DURATION+ sum(self.trial_isis[:n_stim])
                         )
 
-                    img.image = IMAGES_FOLDER + "/" + str(trial["objmod%s" % str(n_stim+1)]) + "/image.png"
+                    img.image = IMAGES_FOLDER + "/" + str(trial["ref%s" % str(n_stim+1)]) + "/image.png"
                     if not 'dms' in self.name[5:10]:
                         img.pos = triplet_id_to_pos[trial[f"loc{n_stim+1}"]]
                     else:
