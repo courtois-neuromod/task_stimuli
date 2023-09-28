@@ -60,7 +60,8 @@ class multfs_base(Task):
         total_duration = (
             initial_wait +
             (self.n_blocks * self.n_trials) *
-            ( self.seq_len * STIMULI_DURATION + sum(self.trial_isis) + long_ISI_base)
+            ( self.seq_len * STIMULI_DURATION + sum(self.trial_isis) + long_ISI_base) +
+            final_wait
             )
         print(f"TOTAL DURATION: {total_duration}")
 
@@ -224,7 +225,7 @@ class multfs_base(Task):
                         n_stim*STIMULI_DURATION+ sum(self.trial_isis[:n_stim])
                         )
 
-                    img.image = IMAGES_FOLDER + "/" + str(trial["objmod%s" % str(n_stim+1)]) + "/image.png"
+                    img.image = IMAGES_FOLDER + "/" + str(trial["ref%s" % str(n_stim+1)]) + "/image.png"
                     if not 'dms' in self.name:
                         img.pos = triplet_id_to_pos[trial[f"loc{n_stim+1}"]]
                     else:
