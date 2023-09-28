@@ -25,7 +25,7 @@ MULTFS_YES_KEY = "x"
 MULTFS_NO_KEY = "b"
 CONTINUE_KEY = "a"
 
-config.INSTRUCTION_DURATION = 2
+INSTRUCTION_DURATION = 16
 
 # TODO: modify to MRI screen size
 screensize = config.EXP_WINDOW["size"]
@@ -56,6 +56,14 @@ class multfs_base(Task):
         self.fixation = visual.TextStim(exp_win, text="+", alignText="center", color="white")
         self.empty_text = visual.TextStim(exp_win, text="", alignText = "center", color = "white", height = 0.1)
         self.no_response_marker = visual.Circle(exp_win, 20, units='pix', fillColor=(255,0,0), fillColorSpace='rgb255')
+
+        total_duration = (
+            initial_wait +
+            (self.n_blocks * self.n_trials) *
+            ( self.seq_len * STIMULI_DURATION + sum(self.trial_isis) + long_ISI_base)
+            )
+        print(f"TOTAL DURATION: {total_duration}")
+
         super()._setup(exp_win)
 
     def _instructions(self, exp_win, ctl_win):
@@ -86,13 +94,16 @@ class multfs_base(Task):
 
         # -- prepare to start Routine "Intro" --
         # print("start of the task:", self.globalClock.getTime())
-        for frameN in range(int(np.floor(config.FRAME_RATE * config.INSTRUCTION_DURATION))):
+        for frameN in range(int(np.floor(config.FRAME_RATE * INSTRUCTION_DURATION))):
             screen_text_bold.draw(exp_win)
             screen_text.draw(exp_win)
             if ctl_win:
                 screen_text_bold.draw(ctl_win)
                 screen_text.draw(ctl_win)
 
+            keys = psychopy.event.getKeys(keyList=['space','a'])
+            if keys:
+                break
             # keys = psychopy.event.getKeys(keyList=['space','a'])
             # if keys:
             #     resp_time = self.globalClock.getTime()
@@ -180,6 +191,8 @@ class multfs_base(Task):
 
 
     def _run(self, exp_win, ctl_win):
+        self.fixation.draw()
+        yield True
         self.trials = data.TrialHandler(self.item_list, 1, method=self._trial_sampling_method)
         exp_win.logOnFlip(
             level=logging.EXP, msg=f"memory: {self.name} starting"
@@ -191,10 +204,10 @@ class multfs_base(Task):
         for block in range(n_blocks):
             onset = (
                 initial_wait +
-                (block) * config.INSTRUCTION_DURATION +
+                #(block) * config.INSTRUCTION_DURATION +
                 (block * self.n_trials) * ( self.seq_len * STIMULI_DURATION + sum(self.trial_isis) + long_ISI_base)
                 )
-            yield from self._block_intro(exp_win, ctl_win, onset, self.n_trials)
+            #yield from self._block_intro(exp_win, ctl_win, onset, self.n_trials)
 
             trial_idx = 0
             for trial in self.trials:
@@ -205,14 +218,14 @@ class multfs_base(Task):
 
                     onset = (
                         initial_wait +
-                        (block + 1) * config.INSTRUCTION_DURATION +
+                        #(block + 1) * config.INSTRUCTION_DURATION +
                         (block * self.n_trials + (trial_idx-1)) *
                         ( self.seq_len * STIMULI_DURATION + sum(self.trial_isis) + long_ISI_base) +
                         n_stim*STIMULI_DURATION+ sum(self.trial_isis[:n_stim])
                         )
 
                     img.image = IMAGES_FOLDER + "/" + str(trial["objmod%s" % str(n_stim+1)]) + "/image.png"
-                    if not 'dms' in self.name[5:10]:
+                    if not 'dms' in self.name:
                         img.pos = triplet_id_to_pos[trial[f"loc{n_stim+1}"]]
                     else:
                         img.pos = triplet_id_to_pos[trial[f"locmod{n_stim+1}"]]
@@ -253,7 +266,14 @@ class multfs_base(Task):
                     self.trials.addData("trial_end", self.task_timer.getTime())
                     break
 
-            yield from self._block_end(exp_win, ctl_win, onset + STIMULI_DURATION + ISI_base * 6/4. - 1./config.FRAME_RATE)
+            #yield from self._block_end(exp_win, ctl_win, onset + STIMULI_DURATION + ISI_base * 6/4. - 1./config.FRAME_RATE)
+        self.fixation.draw()
+        yield True
+        baseline_offset = onset + STIMULI_DURATION + final_wait
+        utils.wait_until(
+            self.task_timer,
+            baseline_offset - 1./config.FRAME_RATE)
+        yield True
 
 
 class multfs_dms(multfs_base):
@@ -287,7 +307,7 @@ class multfs_1back(multfs_base):
             self.n_trials = 2
             self.n_blocks = 1
         else:
-            self.n_trials = 10
+            self.n_trials = 9
             self.n_blocks = 1 # around 7 mins
         self.no_response_frames = [0]
         self.trial_isis = [short_ISI_base] + [long_ISI_base] * 5
@@ -305,7 +325,7 @@ class multfs_CTXDM(multfs_base):
             self.n_trials = 3
             self.n_blocks = 2
         else:
-            self.n_trials = 22
+            self.n_trials = 20
             self.n_blocks = 1
         self.no_response_frames = [0]
         self.trial_isis = [short_ISI_base, long_ISI_base]
@@ -356,36 +376,36 @@ def instructions_converter(task_name):
 
         "multfs_dmsobj": """Press X if two stimulus are  the same object, otherwise press B/\n""",
 
-        "multfs_interdmsloc_ABBA": """
+        "multfs_interdmslocABBA": """
 interleaved Delay match to sample task with pattern ABBA and feature location\n
 Press X on the fourth frame if the first and fourth stimuli have the same location,  otherwise press B.\n
 Press X on the third frame if the second and third stimuli have the same location,  otherwise press B.\n
                               """,
-        "multfs_interdmscat_ABBA": """
+        "multfs_interdmscatABBA": """
 interleaved Delay match to sample task with pattern ABBA and feature category\n
   Press X on the fourth frame if the first and fourth stimuli have the same category,  otherwise press B.\n
   Press X on the third frame if the second and third stimuli have the same category,  otherwise press B.\n
 
                                   """,
-        "multfs_interdmsobj_ABBA": """
+        "multfs_interdmsobjABBA": """
 interleaved Delay match to sample task with pattern ABBA and feature object\n
   Press X on the fourth frame if the first and fourth stimuli are the same object,  otherwise press B.\n
   Press X on the third frame if the third and third stimuli are the same object,  otherwise press B.\n
 
                                   """,
-        "multfs_interdmsloc_ABAB": """
+        "multfs_interdmslocABAB": """
 interleaved Delay match to sample task with pattern ABAB and feature location\n
   Press X on the third frame if the first and third stimuli have the same location,  otherwise press B.\n
   Press X on the fourth frame if the second and fourth stimuli have the same location,  otherwise press B.\n
 
                               """,
-        "multfs_interdmscat_ABAB": """
+        "multfs_interdmscatABAB": """
 interleaved Delay match to sample task with pattern ABAB and feature category\n
   Press X on the third frame if the first and third stimuli have the same category,  otherwise press B.\n
   Press X on the fourth frame if the second and fourth stimuli have the same category,  otherwise press B.\n
 
                                   """,
-        "multfs_interdmsobj_ABAB": """
+        "multfs_interdmsobjABAB": """
 interleaved Delay match to sample task with pattern ABAB and feature object\n
   Press X on the third frame if the first and third stimuli are the same object,  otherwise press B.\n
   Press X on the fourth frame if the second and fourth stimuli are the same object,  otherwise press B.\n
@@ -429,17 +449,17 @@ def abbrev_instructions_converter(task_name):
 
         "multfs_dmsobj": "DMS-OBJECT",
 
-        "multfs_interdmsloc_ABBA": """interDMS-ABBA-LOCATION\n
+        "multfs_interdmslocABBA": """interDMS-ABBA-LOCATION\n
                               """,
-        "multfs_interdmscat_ABBA": """interDMS-ABBA-CATEGORY\n
+        "multfs_interdmscatABBA": """interDMS-ABBA-CATEGORY\n
                                   """,
-        "multfs_interdmsobj_ABBA": """interDMS-ABBA-IDENTITY\n
+        "multfs_interdmsobjABBA": """interDMS-ABBA-IDENTITY\n
                                   """,
-        "multfs_interdmsloc_ABAB": """interDMS-ABAB-LOCATION\n
+        "multfs_interdmslocABAB": """interDMS-ABAB-LOCATION\n
                               """,
-        "multfs_interdmscat_ABAB": """interDMS-ABAB-CATEGORY\n
+        "multfs_interdmscatABAB": """interDMS-ABAB-CATEGORY\n
                                   """,
-        "multfs_interdmsobj_ABAB": """interDMS-ABAB-IDENTITY\n
+        "multfs_interdmsobjABAB": """interDMS-ABAB-IDENTITY\n
                                   """,
         "multfs_1backloc": """1back-LOCATION\n
                     """,
