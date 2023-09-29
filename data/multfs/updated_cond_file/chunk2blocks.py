@@ -19,6 +19,4 @@ df = df.sample(frac=1, random_state=42)
 
 for i in range(n_blocks):
     curr_df = df.iloc[i*trials_per_block:(i+1)*trials_per_block]
-    curr_df.to_csv(os.path.join(basepath, "blockfiles",filename + "block_%d.csv" % i ), index=False)
-
-
+    curr_df.to_csv(os.path.join(basepath, "blockfiles",filename + "_block_%d.csv" % i ), index=False)

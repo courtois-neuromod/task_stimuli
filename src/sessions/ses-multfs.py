@@ -17,16 +17,28 @@ def get_tasks(parsed):
 
     kwargs = {'use_eyetracking':True}
 
+
+    yield multfs.multfs_dms(
+        os.path.join(data_path, "updated_cond_file/pilot_DMS_loc.csv"),
+        name = f"task-dmsloc_run-01",
+        feature='loc',
+        **kwargs
+    )
+
+
+
     for ri, runs in session_runs.iterrows():
 
         block_file_name = runs.block_file_name
         feat = block_file_name.split('_')[1] # TODO get consistent filenaming!
         run_design_path = os.path.join(data_path, "updated_cond_file/blockfiles/", block_file_name + '.csv')
-        if 'dms' in block_file_name:
-            yield multfs.multfs_dms(
+        if 'interdms' in block_file_name:
+            order = block_file_name.split('_')[2]
+            kls = multfs.multfs_interdms_ABAB if order == 'ABAB' else multfs.multfs_interdms_ABBA
+            yield kls(
                 run_design_path,
-                name = f"task-dms{feat}_run-01",
-                feature=feat,
+                name = f"task-interdms{feat}{order}_run-01",
+                feature = feat,
                 **kwargs
             )
         elif 'ctxdm' in block_file_name:
@@ -43,16 +55,27 @@ def get_tasks(parsed):
                 feature=feat,
                 **kwargs
             )
-        elif 'interdms' in block_file_name:
-            order = block_file_name.split('_')[2]
-            kls = multfs.multfs_interdms_ABAB if order == 'ABAB' else multfs.multfs_interdms_ABBA
-            yield kls(
-                run_design_path,
-                name = f"task-interdms{feat}{order}_run-01",
-                feature = feat,
-                **kwargs
-            )
 
+import glob
+def generate_designs():
+    n_blocks_nback = 16
+    n_blocks_ctxdm = 16
+    n_block_interdms = 10
+
+    blocks_path  = os.path.join(data_path, "updated_cond_file/blockfiles")
+
+    tasks_nback = [
+        os.path.split(f).split('.')[0] \
+        for f in sorted(glob.glob(os.path.join(blocks_path, "nback_*",))) ]
+    tasks_ctxdm_loc = [
+        os.path.split(f).split('.')[0] \
+        for f in sorted(glob.glob(os.path.join(blocks_path, "ctxdm_loc_*",)))]
+    tasks_ctxdm_lco = [
+        os.path.split(f).split('.')[0] \
+        for f in sorted(glob.glob(os.path.join(blocks_path, "ctxdm_loc_*",)))]
+
+    for ses in range(16):
+        ses_tasks = []
 
 """
 

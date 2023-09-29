@@ -25,7 +25,7 @@ MULTFS_YES_KEY = "x"
 MULTFS_NO_KEY = "b"
 CONTINUE_KEY = "a"
 
-INSTRUCTION_DURATION = 16
+INSTRUCTION_DURATION = 32
 
 # TODO: modify to MRI screen size
 screensize = config.EXP_WINDOW["size"]
@@ -42,7 +42,7 @@ class multfs_base(Task):
         super().__init__(**kwargs)
         self.item_list = data.importConditions(items_list)
         self.temp_dict = {}
-        self.instruction = instructions_converter(self.name)
+        self.instruction = instructions_converter(self.name) + "\n" + INSTRUCTIONS_DONE
         self.abbrev_instruction = abbrev_instructions_converter(self.name)
         # print("abbrev instruction:", self.abbrev_instruction)
         self.globalClock = core.Clock() # to track the time since experiment start
@@ -206,7 +206,7 @@ class multfs_base(Task):
             onset = (
                 initial_wait +
                 #(block) * config.INSTRUCTION_DURATION +
-                (block * self.n_trials) * ( self.seq_len * STIMULI_DURATION + sum(self.trial_isis) + long_ISI_base)
+                (block * self.n_trials) * ( self.seq_len * STIMULI_DURATION + sum(self.trial_isis))
                 )
             #yield from self._block_intro(exp_win, ctl_win, onset, self.n_trials)
 
@@ -221,12 +221,12 @@ class multfs_base(Task):
                         initial_wait +
                         #(block + 1) * config.INSTRUCTION_DURATION +
                         (block * self.n_trials + (trial_idx-1)) *
-                        ( self.seq_len * STIMULI_DURATION + sum(self.trial_isis) + long_ISI_base) +
+                        ( self.seq_len * STIMULI_DURATION + sum(self.trial_isis)) +
                         n_stim*STIMULI_DURATION+ sum(self.trial_isis[:n_stim])
                         )
 
                     img.image = IMAGES_FOLDER + "/" + str(trial["ref%s" % str(n_stim+1)]) + "/image.png"
-                    if not 'dms' in self.name:
+                    if not 'interdms' in self.name:
                         img.pos = triplet_id_to_pos[trial[f"loc{n_stim+1}"]]
                     else:
                         img.pos = triplet_id_to_pos[trial[f"locmod{n_stim+1}"]]
@@ -257,7 +257,7 @@ class multfs_base(Task):
                         if len(multfs_answer_keys):
                             self.trials.addData("response_%d" % n_stim, multfs_answer_keys[-1][0])
                             self.trials.addData("response_%d_time" % n_stim, multfs_answer_keys[-1][1])
-                            self.trials.addData("all_responses" % n_stim, multfs_answer_keys)
+                            self.trials.addData("all_responses_%d" % n_stim, multfs_answer_keys)
 
                 self.fixation.draw()
                 utils.wait_until(self.task_timer, onset + STIMULI_DURATION + short_ISI_base - 1./config.FRAME_RATE)
@@ -293,8 +293,7 @@ class multfs_dms(multfs_base):
 
         self.seq_len = 2
         self.no_response_frames = [0]
-        self.trial_isis = [long_ISI_base]
-        self._trial_sampling_method = "sequential" # why sequential here, to figure out with Xiaoxuan
+        self.trial_isis = [long_ISI_base, long_ISI_base]
 
 
 class multfs_1back(multfs_base):
@@ -329,7 +328,7 @@ class multfs_CTXDM(multfs_base):
             self.n_trials = 20
             self.n_blocks = 1
         self.no_response_frames = [0]
-        self.trial_isis = [short_ISI_base, long_ISI_base]
+        self.trial_isis = [short_ISI_base, long_ISI_base, long_ISI_base]
 
 
 class multfs_interdms_ABAB(multfs_base):
@@ -347,7 +346,7 @@ class multfs_interdms_ABAB(multfs_base):
             self.n_trials = 16
             self.n_blocks = 1
         self.no_response_frames = [0, 1]
-        self.trial_isis = [short_ISI_base, long_ISI_base, long_ISI_base]
+        self.trial_isis = [short_ISI_base, long_ISI_base, long_ISI_base, long_ISI_base]
 
 
 class multfs_interdms_ABBA(multfs_base):
@@ -365,8 +364,10 @@ class multfs_interdms_ABBA(multfs_base):
             self.n_trials = 16
             self.n_blocks = 1
         self.no_response_frames = [0, 1]
-        self.trial_isis = [short_ISI_base, long_ISI_base, long_ISI_base]
+        self.trial_isis = [short_ISI_base, long_ISI_base, long_ISI_base, long_ISI_base]
 
+
+INSTRUCTIONS_DONE = "When you understood the instruction and ready to start the task press A."
 
 def instructions_converter(task_name):
     task = task_name[5:].split('_run')[0]
