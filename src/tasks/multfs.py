@@ -60,7 +60,7 @@ class multfs_base(Task):
         total_duration = (
             initial_wait +
             (self.n_blocks * self.n_trials) *
-            ( self.seq_len * STIMULI_DURATION + sum(self.trial_isis) + long_ISI_base) +
+            ( self.seq_len * STIMULI_DURATION + sum(self.trial_isis) ) +
             final_wait
             )
         print(f"TOTAL DURATION: {total_duration}")
@@ -307,7 +307,7 @@ class multfs_1back(multfs_base):
             self.n_trials = 2
             self.n_blocks = 1
         else:
-            self.n_trials = 9
+            self.n_trials = 10
             self.n_blocks = 1 # around 7 mins
         self.no_response_frames = [0]
         self.trial_isis = [short_ISI_base] + [long_ISI_base] * 5
@@ -383,7 +383,7 @@ interleaved Delay match to sample task with pattern ABBA and feature location\n
 Press X on the fourth frame if the first and fourth stimuli have the same location,  otherwise press B.\n
 Press X on the third frame if the second and third stimuli have the same location,  otherwise press B.\n
                               """,
-        "multfs_interdmscatABBA": """
+        "multfs_interdmsctgABBA": """
 interleaved Delay match to sample task with pattern ABBA and feature category\n
   Press X on the fourth frame if the first and fourth stimuli have the same category,  otherwise press B.\n
   Press X on the third frame if the second and third stimuli have the same category,  otherwise press B.\n
@@ -401,7 +401,7 @@ interleaved Delay match to sample task with pattern ABAB and feature location\n
   Press X on the fourth frame if the second and fourth stimuli have the same location,  otherwise press B.\n
 
                               """,
-        "multfs_interdmscatABAB": """
+        "multfs_interdmsctgABAB": """
 interleaved Delay match to sample task with pattern ABAB and feature category\n
   Press X on the third frame if the first and third stimuli have the same category,  otherwise press B.\n
   Press X on the fourth frame if the second and fourth stimuli have the same category,  otherwise press B.\n
@@ -423,7 +423,7 @@ In this task, you will see a sequence of stimulus presented one after another. \
 Press X each time the current stimulus is the same object as the one presented just before. \n
 Otherwise press B \n
                     """,
-        "multfs_1backcat": """
+        "multfs_1backctg": """
 In this task, you will see a sequence of stimulus presented one after another.\n
 Press X each time the current stimulus belong to the same category as the one presented just before.\n
 Otherwise press B \n
@@ -453,13 +453,13 @@ def abbrev_instructions_converter(task_name):
 
         "multfs_interdmslocABBA": """interDMS-ABBA-LOCATION\n
                               """,
-        "multfs_interdmscatABBA": """interDMS-ABBA-CATEGORY\n
+        "multfs_interdmsctgABBA": """interDMS-ABBA-CATEGORY\n
                                   """,
         "multfs_interdmsobjABBA": """interDMS-ABBA-IDENTITY\n
                                   """,
         "multfs_interdmslocABAB": """interDMS-ABAB-LOCATION\n
                               """,
-        "multfs_interdmscatABAB": """interDMS-ABAB-CATEGORY\n
+        "multfs_interdmsctgABAB": """interDMS-ABAB-CATEGORY\n
                                   """,
         "multfs_interdmsobjABAB": """interDMS-ABAB-IDENTITY\n
                                   """,
@@ -467,7 +467,7 @@ def abbrev_instructions_converter(task_name):
                     """,
         "multfs_1backobj": """1back-IDENTITY\n
                     """,
-        "multfs_1backcat": """1back-CATEGORY\n
+        "multfs_1backctg": """1back-CATEGORY\n
                     """,
 
         "multfs_ctxcol": """ctxDM-CATEGORY-IDENTITY-LOCATION\n
