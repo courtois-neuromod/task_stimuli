@@ -40,6 +40,12 @@ def get_tasks(parsed):
             'et_calibrate': ri == 2
             }
 
+        if ri==2:
+            yield Pause(
+                text="You can take a short break.\n\n Please press A when ready to continue",
+                wait_key='a',
+            )
+
         block_file_name = runs.block_file_name
         feat = block_file_name.split('_')[1] # TODO get consistent filenaming!
         run_design_path = os.path.join(data_path, "updated_cond_file/blockfiles/", block_file_name + '.csv')
