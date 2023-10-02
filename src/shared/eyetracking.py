@@ -12,7 +12,7 @@ from .ellipse import Ellipse
 from ..tasks.task_base import Task
 from . import config
 
-INSTRUCTION_DURATION = 4
+INSTRUCTION_DURATION = 2
 STARTCUE_DURATION = 2
 FEEDBACK_DURATION = 3
 CALIBRATE_HOTKEY = "c"
@@ -954,13 +954,25 @@ class EyeTrackerClient(threading.Thread):
                     'num_gz': 0,
                 })
 
+        def abc_mapping(val_num, cutoff_vals):
+            if val_num > cutoff_vals[0]:
+                return 'A'
+            elif val_num > cutoff_vals[1]:
+                return 'B'
+            else:
+                return 'C'
+
         print('EYE-TRACKING VALIDATION METRICS (per marker)')
         print(f"RATIO OF DETECTED PUPILS: {[round(x['gz_count_ratio'], 3) for x in val_qc if 'gz_count_ratio' in x]}")
-        print(f"TOTAL DETECTED PUPILS: {[x['num_gz'] for x in val_qc if 'num_gz' in x]}")
         print(f"CONFIDENCE >0.7 RATIO: {[round(x['above_70conf_ratio'], 3) for x in val_qc if 'above_70conf_ratio' in x]}")
         print(f"CONFIDENCE >0.8 RATIO: {[round(x['above_80conf_ratio'], 3) for x in val_qc if 'above_80conf_ratio' in x]}")
         print(f"CONFIDENCE >0.9 RATIO: {[round(x['above_90conf_ratio'], 3) for x in val_qc if 'above_90conf_ratio' in x]}")
         print(f"MEDIAN DISTANCE 2 TARGET (deg of visual angle): {[round(x['median_distance'], 3) for x in val_qc if 'median_distance' in x]}")
+        print('****************QUICK SUMMARY*********************')
+        print(f"PUPIL DETECTION: {[abc_mapping(x['gz_count_ratio'], [0.97, 0.95]) for x in val_qc if 'gz_count_ratio' in x]}")
+        print(f">70% CONF: {[abc_mapping(x['above_70conf_ratio'], [0.90, 0.80]) for x in val_qc if 'above_70conf_ratio' in x]}")
+        print(f">80% CONF: {[abc_mapping(x['above_80conf_ratio'], [0.85, 0.75]) for x in val_qc if 'above_80conf_ratio' in x]}")
+        print(f"DISTANCE: {[abc_mapping(x['median_distance']*(-1), [-1.2, -2.2]) for x in val_qc if 'median_distance' in x]}")
 
         return markers_dict, val_qc
 
