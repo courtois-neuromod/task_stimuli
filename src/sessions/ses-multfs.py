@@ -1,5 +1,6 @@
 import os
 from ..tasks import multfs
+from ..tasks.task_base import Pause
 import pandas as pd
 
 data_path = "./data/multfs"
@@ -33,7 +34,7 @@ def get_tasks(parsed):
         'nback': 0
     }
 
-    for ri, runs in session_runs.iterrows():
+    for ri, (_, runs) in enumerate(session_runs.iterrows()):
 
         kwargs = {
             'use_eyetracking':True,
@@ -68,9 +69,10 @@ def get_tasks(parsed):
                 **kwargs
             )
         elif 'nback' in block_file_name:
+            tasks_idxs['nback'] += 1
             yield multfs.multfs_1back(
                 run_design_path,
-                name = f"task-1back{feat}_run-01",
+                name = f"task-1back{feat}_run-{tasks_idxs['nback']:02d}",
                 feature=feat,
                 **kwargs
             )
