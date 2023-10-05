@@ -1,5 +1,6 @@
 from psychopy import core, event, logging
 import time
+from . import utils
 
 MR_settings = {
     "TR": 2.000,  # duration (sec) per whole-brain volume
@@ -11,6 +12,7 @@ globalClock = core.Clock()
 
 
 def get_ttl():
+    utils.poll_windows()
     allKeys = event.getKeys(MR_settings["sync"])
     for key in allKeys:
         if key.lower() in MR_settings["sync"]:

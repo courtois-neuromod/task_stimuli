@@ -25,7 +25,7 @@ MULTFS_YES_KEY = "x"
 MULTFS_NO_KEY = "b"
 CONTINUE_KEY = "a"
 
-INSTRUCTION_DURATION = 32
+INSTRUCTION_DURATION = 120
 
 # TODO: modify to MRI screen size
 screensize = config.EXP_WINDOW["size"]
@@ -68,6 +68,7 @@ class multfs_base(Task):
         super()._setup(exp_win)
 
     def _instructions(self, exp_win, ctl_win):
+        yield True
         if ctl_win:
             win = ctl_win
         else:
@@ -77,7 +78,7 @@ class multfs_base(Task):
             name='introtext_bold',
             text=self.abbrev_instruction,
             font='Arial',
-            pos=(0, 0.2), height=0.1, ori=0,
+            pos=(0, 0.5), height=0.1, ori=0,
             color="white", colorSpace='rgb', opacity=1,
             languageStyle='LTR',
             wrapWidth=config.WRAP_WIDTH,
@@ -111,7 +112,7 @@ class multfs_base(Task):
             #     # print("end of the instruction time:", resp_time) # todo: record response time for reading instructions [an empty dict in the init?]
             #     if keys[-1] == "space" or 'a':
             #         break
-            yield ()
+            yield False
         # print("end of the instruction time:", resp_time)
 
     def _block_intro(self, exp_win, ctl_win, onset, n_trials = 4):
@@ -327,7 +328,7 @@ class multfs_CTXDM(multfs_base):
         else:
             self.n_trials = 20
             self.n_blocks = 1
-        self.no_response_frames = [0]
+        self.no_response_frames = [0, 1]
         self.trial_isis = [short_ISI_base, long_ISI_base, long_ISI_base]
 
 
@@ -367,76 +368,72 @@ class multfs_interdms_ABBA(multfs_base):
         self.trial_isis = [short_ISI_base, long_ISI_base, long_ISI_base, long_ISI_base]
 
 
-INSTRUCTIONS_DONE = "When you understood the instruction and ready to start the task press A."
+INSTRUCTIONS_DONE = """X = yes
+B = no \n\n
+When ready press A.
+"""
 
 def instructions_converter(task_name):
     task = task_name[5:].split('_run')[0]
     task = f"multfs_{task}"
 
     ins_dict = {
-        "multfs_dmsloc": """Press X if two stimulus are at the same location, otherwise press B/\n""",
+        "multfs_dmsloc": """Do frame 1 and 2 have same LOCATION.\n""",
 
-        "multfs_dmsobj": """Press X if two stimulus are  the same object, otherwise press B/\n""",
+        "multfs_dmsobj": """Do frame 1 and 2 have same IDENTITY.\n""",
 
         "multfs_interdmslocABBA": """
-interleaved Delay match to sample task with pattern ABBA and feature location\n
-Press X on the fourth frame if the first and fourth stimuli have the same location,  otherwise press B.\n
-Press X on the third frame if the second and third stimuli have the same location,  otherwise press B.\n
+interleaved delay match to sample task with pattern ABBA and feature LOCATION\n
+Answer on frame 3: does the LOCATION match that of frame 2. \n
+Answer on frame 4: does the LOCATION match that of frame 1. \n
                               """,
         "multfs_interdmsctgABBA": """
-interleaved Delay match to sample task with pattern ABBA and feature category\n
-  Press X on the fourth frame if the first and fourth stimuli have the same category,  otherwise press B.\n
-  Press X on the third frame if the second and third stimuli have the same category,  otherwise press B.\n
-
+interleaved delay match to sample task with pattern ABBA and feature CATEGORY\n
+Answer on frame 3: does the CATEGORY match that of frame 2. \n
+Answer on frame 4: does the CATEGORY match that of frame 1. \n
                                   """,
         "multfs_interdmsobjABBA": """
-interleaved Delay match to sample task with pattern ABBA and feature object\n
-  Press X on the fourth frame if the first and fourth stimuli are the same object,  otherwise press B.\n
-  Press X on the third frame if the third and third stimuli are the same object,  otherwise press B.\n
-
+interleaved delay match to sample task with pattern ABBA and feature IDENTITY\n
+Answer on frame 3: does the IDENTITY match that of frame 2. \n
+Answer on frame 4: does the IDENTITY match that of frame 1. \n
                                   """,
         "multfs_interdmslocABAB": """
-interleaved Delay match to sample task with pattern ABAB and feature location\n
-  Press X on the third frame if the first and third stimuli have the same location,  otherwise press B.\n
-  Press X on the fourth frame if the second and fourth stimuli have the same location,  otherwise press B.\n
-
+interleaved delay match to sample task with pattern ABAB and feature LOCATION\n
+Answer on frame 3: does the LOCATION match that of frame 1. \n
+Answer on frame 4: does the LOCATION match that of frame 2. \n
                               """,
         "multfs_interdmsctgABAB": """
-interleaved Delay match to sample task with pattern ABAB and feature category\n
-  Press X on the third frame if the first and third stimuli have the same category,  otherwise press B.\n
-  Press X on the fourth frame if the second and fourth stimuli have the same category,  otherwise press B.\n
-
+interleaved delay match to sample task with pattern ABAB and feature CATEGORY\n
+Answer on frame 3: does the CATEGORY match that of frame 1. \n
+Answer on frame 4: does the CATEGORY match that of frame 2. \n
                                   """,
         "multfs_interdmsobjABAB": """
-interleaved Delay match to sample task with pattern ABAB and feature object\n
-  Press X on the third frame if the first and third stimuli are the same object,  otherwise press B.\n
-  Press X on the fourth frame if the second and fourth stimuli are the same object,  otherwise press B.\n
-
-                                  """,
+interleaved delay match to sample task with pattern ABAB and feature IDENTITY\n
+Answer on frame 3: does the IDENTITY match that of frame 1. \n
+Answer on frame 4: does the IDENTITY match that of frame 2. \n
+    """,
         "multfs_1backloc": """
-In this task, you will see a sequence of stimulus presented one after another.\n
-Press X each time the current stimulus is at the same location as the one presented just before. \n
-Otherwise press B\n
+In this task, you will see a sequence of stimulus.\n
+
+On frame n+1: do the LOCATION match that of frame n.\n
                     """,
         "multfs_1backobj": """
-In this task, you will see a sequence of stimulus presented one after another. \n
-Press X each time the current stimulus is the same object as the one presented just before. \n
-Otherwise press B \n
+In this task, you will see a sequence of stimulus. \n
+
+On frame n+1: do the IDENTITY match that of frame n.\n
+
                     """,
         "multfs_1backctg": """
-In this task, you will see a sequence of stimulus presented one after another.\n
-Press X each time the current stimulus belong to the same category as the one presented just before.\n
-Otherwise press B \n
-                    """,
+On frame n+1: do the CATEGORY match that of frame n.\n
+""",
 
         "multfs_ctxcol": """
-If the presented two stimuli belong to the same category, press X if they are the same object, press B if not.\n
-If the presented two stimuli does not belong to the same category, press X if they are at the same location, press B if not.\n
-                        """,
+        contextual Decision Making task: CATEGORY-IDENTITY-LOCATION \n
+        If frames 1 and 2 match on CATEGORY, match frames 2 and 3 based on IDENTITY, otherwise on LOCATION.\n
+                """,
         "multfs_ctxlco": """
-contextual Decision Making task: location-category-object \n
-If the presented two stimuli are at the same location, press X if they belong to the same category, press B if not.\n
-If the presented two stimuli are not at the same location, press X if they are same object, press B if not.\n
+contextual Decision Making task: LOCATION-CATEGORY-IDENTITY \n
+If frames 1 and 2 match on LOCATION, match frames 2 and 3 based on CATEGORY, otherwise on IDENTITY.\n
                     """,
     }
     return ins_dict[task]
@@ -449,7 +446,7 @@ def abbrev_instructions_converter(task_name):
     ins_dict = {
         "multfs_dmsloc": "DMS-LOCATION",
 
-        "multfs_dmsobj": "DMS-OBJECT",
+        "multfs_dmsobj": "DMS-IDENTITY",
 
         "multfs_interdmslocABBA": """interDMS-ABBA-LOCATION\n
                               """,
