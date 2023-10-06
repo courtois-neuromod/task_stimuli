@@ -223,7 +223,7 @@ class multfs_base(Task):
                         #(block + 1) * config.INSTRUCTION_DURATION +
                         (block * self.n_trials + (trial_idx-1)) *
                         ( self.seq_len * STIMULI_DURATION + sum(self.trial_isis)) +
-                        n_stim*STIMULI_DURATION+ sum(self.trial_isis[:n_stim])
+                        n_stim*STIMULI_DURATION + sum(self.trial_isis[:n_stim])
                         )
 
                     img.image = IMAGES_FOLDER + "/" + str(trial["ref%s" % str(n_stim+1)]) + "/image.png"
@@ -234,8 +234,10 @@ class multfs_base(Task):
                     img.draw()
 
                     # flush response keys before the stimuli onset
-                    # TODO: check if there is not risks of losing keys
                     multfs_answer_keys = psychopy.event.getKeys([MULTFS_YES_KEY, MULTFS_NO_KEY, 'space'])
+                    # log responses leaking from the previous trial, in case we want to exclude corrupted trial
+                    self.trials.addData("late_responses_%d" % n_stim, multfs_answer_keys)
+
                     if n_stim in self.no_response_frames:
                         self.no_response_marker.draw(exp_win)
 
@@ -244,11 +246,23 @@ class multfs_base(Task):
                     self.trials.addData(
                         "stimulus_%d_onset" % n_stim,
                         self._exp_win_last_flip_time - self._exp_win_first_flip_time)
-                    utils.wait_until(self.task_timer, onset + STIMULI_DURATION - 1/config.FRAME_RATE)
+                    utils.wait_until(
+                        self.task_timer,
+                        onset + STIMULI_DURATION - 1/config.FRAME_RATE,
+                        keyboard_accuracy=.0001)
+                    # draw fixation for ITI
+                    if n_stim == self.seq_len-1:
+                        self.fixation.draw()
                     yield True
                     self.trials.addData(
                         "stimulus_%d_offset" % n_stim,
                         self._exp_win_last_flip_time - self._exp_win_first_flip_time)
+
+                    # wait until almost the end of the ISI to collect responses.
+                    utils.wait_until(
+                        self.task_timer,
+                        onset + STIMULI_DURATION + self.trial_isis[n_stim] - 10./config.FRAME_RATE,
+                        keyboard_accuracy=.0001)
 
                     multfs_answer_keys = psychopy.event.getKeys(
                         [MULTFS_YES_KEY, MULTFS_NO_KEY, 'space'], timeStamped=self.task_timer
@@ -260,8 +274,8 @@ class multfs_base(Task):
                             self.trials.addData("response_%d_time" % n_stim, multfs_answer_keys[-1][1])
                             self.trials.addData("all_responses_%d" % n_stim, multfs_answer_keys)
 
-                self.fixation.draw()
-                utils.wait_until(self.task_timer, onset + STIMULI_DURATION + short_ISI_base - 1./config.FRAME_RATE)
+
+                utils.wait_until(self.task_timer, onset + STIMULI_DURATION + self.trial_isis[-1] - 9./config.FRAME_RATE)
                 yield True
 
                 if trial_idx >= self.n_trials:
@@ -271,7 +285,8 @@ class multfs_base(Task):
             #yield from self._block_end(exp_win, ctl_win, onset + STIMULI_DURATION + ISI_base * 6/4. - 1./config.FRAME_RATE)
         self.fixation.draw()
         yield True
-        baseline_offset = onset + STIMULI_DURATION + final_wait
+        baseline_offset = onset + STIMULI_DURATION + self.trial_isis[-1] + final_wait
+        print(f"baseline_offset {baseline_offset}")
         utils.wait_until(
             self.task_timer,
             baseline_offset - 1./config.FRAME_RATE)
@@ -308,7 +323,7 @@ class multfs_1back(multfs_base):
             self.n_trials = 2
             self.n_blocks = 1
         else:
-            self.n_trials = 10
+            self.n_trials = 9
             self.n_blocks = 1 # around 7 mins
         self.no_response_frames = [0]
         self.trial_isis = [short_ISI_base] + [long_ISI_base] * 5

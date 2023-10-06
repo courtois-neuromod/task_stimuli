@@ -2,6 +2,7 @@ import psutil
 import time
 from psychopy import core, logging
 import os, glob
+from inspect import getframeinfo, stack
 
 def check_power_plugged():
     battery = psutil.sensors_battery()
@@ -12,7 +13,8 @@ def check_power_plugged():
 
 def wait_until(clock, deadline, hogCPUperiod=0.1, keyboard_accuracy=.0005):
     if deadline < clock.getTime():
-        logging.error(f'wait_until called after deadline: {deadline} < {clock.getTime()}')
+        caller = getframeinfo(stack()[1][0])
+        logging.error(f'wait_until called after deadline: {deadline} < {clock.getTime()} {caller.filename}:{caller.lineno}')
     sleep_until = deadline - hogCPUperiod
     poll_windows()
     current_time = clock.getTime()
@@ -31,7 +33,8 @@ def poll_windows():
 
 def wait_until_yield(clock, deadline, hogCPUperiod=0.1, keyboard_accuracy=.0005):
     if deadline < clock.getTime():
-        logging.error(f'wait_until called after deadline: {deadline} < {clock.getTime()}')
+        caller = getframeinfo(stack()[1][0])
+        logging.error(f'wait_until called after deadline: {deadline} < {clock.getTime()} {caller.filename}:{caller.lineno}')
     sleep_until = deadline - hogCPUperiod
     poll_windows()
     current_time = clock.getTime()
