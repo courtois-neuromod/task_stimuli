@@ -1,32 +1,83 @@
+import os
 from ..tasks import multfs
+from ..tasks.task_base import Pause
+import pandas as pd
+
+data_path = "./data/multfs"
 
 def get_tasks(parsed):
 
-    data_path = "./data/multfs/"
-    return [
-        # for piloting
-        multfs.multfs_dms(data_path + "pilot/pilot_DMS_loc.csv", name="task-dmsloc_run-01", feature="loc", session=parsed.session),
-        multfs.multfs_1back(data_path + "pilot/pilot_1back_cat.csv", name="task-1backcat_run-01", feature = "cat", session = parsed.session),
-        multfs.multfs_CTXDM(data_path + "pilot/pilot_ctxDM_lco.csv", name="task-ctxlco_run-01", feature="lco",session=parsed.session),
-        multfs.multfs_1back(data_path + "pilot/pilot_1back_loc.csv", name="task-1backloc_run-01", feature="loc", session=parsed.session),
+    study_design = pd.read_csv(
+        os.path.join(data_path, 'study_designs', f"sub-{int(parsed.subject):02d}_design.tsv"),
+        delimiter='\t')
 
 
-        # for subject task practicing
-        # multfs.multfs_dms(data_path + "subtraining/subtraining_dms_loc.csv", name="task-dmsloc_run-00", feature="loc", session=parsed.session),
-        #
-        # multfs.multfs_1back(data_path + "subtraining/subtraining_1back_cat.csv", name="task-1backcat_run-00", feature="cat", session=parsed.session),
-        # multfs.multfs_1back(data_path + "subtraining/subtraining_1back_loc.csv", name="task-1backloc_run-00", feature="loc", session=parsed.session),
-        # multfs.multfs_1back(data_path + "subtraining/subtraining_1back_obj.csv", name="task-1backobj_run-00", feature="obj", session=parsed.session),
-        #
-        # multfs.multfs_CTXDM(data_path + "subtraining/subtraining_ctxdm_lco.csv", name="task-ctxlco_run-00", feature="lco", session=parsed.session),
-        # multfs.multfs_CTXDM(data_path + "subtraining/subtraining_ctxdm_col.csv", name="task-ctxcol_run-00", feature="col", session=parsed.session),
+    session_runs = study_design[study_design.session.eq(int(parsed.session))]
 
-        # multfs.multfs_interdms_ABAB(data_path + "subtraining/subtraining_interDMS_ABAB_cat.csv", name="task_interdmscat_ABAB_run-00",feature="cat", session=parsed.session),
-        # multfs.multfs_interdms_ABAB(data_path + "subtraining/subtraining_interDMS_ABAB_loc.csv", name="task_interdmsloc_ABAB_run-00", feature="loc", session=parsed.session),
-        # multfs.multfs_interdms_ABAB(data_path + "subtraining/subtraining_interDMS_ABAB_obj.csv", name="task_interdmsobj_ABAB_run-00", feature="obj", session=parsed.session),
-        #
-        # multfs.multfs_interdms_ABBA(data_path + "subtraining/subtraining_interDMS_ABBA_cat.csv", name="task_interdmscat_ABBA_run-00", feature="cat", session=parsed.session),
-        # multfs.multfs_interdms_ABBA(data_path + "subtraining/subtraining_interDMS_ABBA_loc.csv", name="task_interdmsloc_ABBA_run-00", feature="loc", session=parsed.session),
-        # multfs.multfs_interdms_ABBA(data_path + "subtraining/subtraining_interDMS_ABBA_obj.csv", name="task_interdmsobj_ABBA_run-00", feature="obj", session=parsed.session),
+    print("*"*100)
+    print("Today we will run the tasks in the following order")
+    print('- func_task-dms')
+    for ri, runs in session_runs.iterrows():
+        print(f"- func_task-{runs.block_file_name.split('_')[0]}")
 
-        ]
+    yield multfs.multfs_dms(
+        os.path.join(data_path, "updated_cond_file/pilot_DMS_loc.csv"),
+        name = f"task-dmsloc_run-01",
+        feature='loc',
+        use_eyetracking=True,
+        et_calibrate=True, # first task
+    )
+
+    tasks_idxs = {
+        'interdms': 0,
+        'ctxdm': 0,
+        'nback': 0
+    }
+
+    for ri, (_, runs) in enumerate(session_runs.iterrows()):
+
+        kwargs = {
+            'use_eyetracking':True,
+            'et_calibrate': ri == 2
+            }
+
+        if ri==2:
+            yield Pause(
+                text="You can take a short break.\n\n Please press A when ready to continue",
+                wait_key='a',
+            )
+
+        kwargs = {
+            'use_eyetracking':True,
+            'et_calibrate': ri == 2
+            }
+
+        block_file_name = runs.block_file_name
+        feat = block_file_name.split('_')[1] # TODO get consistent filenaming!
+        run_design_path = os.path.join(data_path, "updated_cond_file/blockfiles/", block_file_name + '.csv')
+        if 'interdms' in block_file_name:
+            tasks_idxs['interdms'] += 1
+            order = block_file_name.split('_')[2]
+            kls = multfs.multfs_interdms_ABAB if order == 'ABAB' else multfs.multfs_interdms_ABBA
+            yield kls(
+                run_design_path,
+                name = f"task-interdms{feat}{order}_run-{tasks_idxs['interdms']:02d}",
+                feature = feat,
+                **kwargs
+            )
+        elif 'ctxdm' in block_file_name:
+            tasks_idxs['ctxdm'] += 1
+            yield multfs.multfs_CTXDM(
+                run_design_path,
+                name = f"task-ctx{feat}_run-{tasks_idxs['ctxdm']:02d}",
+                feature=feat,
+                **kwargs
+            )
+        elif 'nback' in block_file_name:
+            tasks_idxs['nback'] += 1
+            yield multfs.multfs_1back(
+                run_design_path,
+                name = f"task-1back{feat}_run-{tasks_idxs['nback']:02d}",
+                feature=feat,
+                **kwargs
+            )
