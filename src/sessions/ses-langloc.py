@@ -1,5 +1,4 @@
 import os
-from ..tasks import language, narratives, task_base
 
 STIMULI_PATH = 'data/language/localizer'
 
@@ -9,19 +8,22 @@ The degraded versions will sound like bad radio reception where you hear that so
 Your task is to simply listen attentively.
 """
 
-TASKS = [
-    language.ReadingBlocks(
-        os.path.join(STIMULI_PATH, 'designs/task-locreading_run-01_design.tsv'),
-        name='task-locreading_run-01'),
-    language.ListeningBlocks(
-        os.path.join(STIMULI_PATH, 'designs/auditory_1.tsv'),
-        os.path.join(STIMULI_PATH, 'audio_list1/'),
-        name='task-locauditory_run-01'),
-    language.ListeningBlocks(
-        os.path.join(STIMULI_PATH, 'alice/alice_en_1.tsv'),
-        os.path.join(STIMULI_PATH, 'audio_list1/'),
-        name='task-aliceEn_run-01'),
-]
+def get_tasks(parsed):
+    from ..tasks import language, narratives, task_base
+    TASKS = [
+        language.ReadingBlocks(
+            os.path.join(STIMULI_PATH, 'designs/task-locreading_run-01_design.tsv'),
+            name='task-locreading_run-01'),
+        language.ListeningBlocks(
+            os.path.join(STIMULI_PATH, 'designs/auditory_1.tsv'),
+            os.path.join(STIMULI_PATH, 'audio_list1/'),
+            name='task-locauditory_run-01'),
+        language.ListeningBlocks(
+            os.path.join(STIMULI_PATH, 'alice/alice_en_1.tsv'),
+            os.path.join(STIMULI_PATH, 'alice/English'),
+            name='task-aliceEn_run-01'),
+    ]
+    return TASKS
 
 INITIAL_WAIT = 6
 FINAL_WAIT = 9
@@ -32,10 +34,11 @@ SENTENCE_LEN = 12
 TRIAL_ISI = .1
 TRIAL_DURATION = TRIAL_ISI + WORD_DURATION * SENTENCE_LEN + BUTTON_PRESS_DURATION
 
+import glob
+import pandas as pd
+
 
 def generate_reading_designs():
-    import glob
-    import pandas as pd
 
     reading_set_files = sorted(glob.glob(STIMULI_PATH + '/video/*.csv'))
 
@@ -64,3 +67,8 @@ def set_to_events(reading_set):
 
         if block % 4 == 3 and rs_idx % 12 == 11 :
             yield dict(trial_type='fix', onset=trial_onset  + TRIAL_ISI + SENTENCE_LEN * WORD_DURATION + BUTTON_PRESS_DURATION, duration=FIXATION_DURATION)
+
+
+
+if __name__ == "__main__":
+    generate_reading_designs()
