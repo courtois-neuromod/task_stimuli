@@ -38,6 +38,9 @@ def parse_args():
     parser.add_argument(
         "--skip_n_tasks", help="skip n of the tasks", default=0, type=int
     )
+    parser.add_argument(
+        "--go-to-task", help="skip all tasks until the one than contains that string", default=None, type=str
+    )
     parser.add_argument("--ctl_win", help="show control window", action="store_true")
     parser.add_argument(
         "--no-force-resolution",
