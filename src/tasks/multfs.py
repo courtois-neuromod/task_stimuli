@@ -439,6 +439,8 @@ On frame n+1: do the IDENTITY match that of frame n.\n
 
                     """,
         "multfs_1backctg": """
+In this task, you will see a sequence of stimulus. \n
+
 On frame n+1: do the CATEGORY match that of frame n.\n
 """,
 
