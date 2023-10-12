@@ -393,64 +393,54 @@ def instructions_converter(task_name):
     task = f"multfs_{task}"
 
     ins_dict = {
-        "multfs_dmsloc": """Do frame 1 and 2 have same LOCATION.\n""",
+        "multfs_dmsloc": """Do stimulus 1 and 2 match in LOCATION? \n""",
 
-        "multfs_dmsobj": """Do frame 1 and 2 have same IDENTITY.\n""",
+        "multfs_dmsobj": """Do stimulus 1 and 2 match in IDENTITY?\n""",
 
         "multfs_interdmslocABBA": """
-interleaved delay match to sample task with pattern ABBA and feature LOCATION\n
-Answer on frame 3: does the LOCATION match that of frame 2. \n
-Answer on frame 4: does the LOCATION match that of frame 1. \n
+Match stimuli 2 and 3, then stimuli 1 and 4 based on LOCATION. Respond as fast as you can.\n
+
                               """,
         "multfs_interdmsctgABBA": """
-interleaved delay match to sample task with pattern ABBA and feature CATEGORY\n
-Answer on frame 3: does the CATEGORY match that of frame 2. \n
-Answer on frame 4: does the CATEGORY match that of frame 1. \n
+Match stimuli 2 and 3, then stimuli 1 and 4 based on CATEGORY. Respond as fast as you can.\n
                                   """,
         "multfs_interdmsobjABBA": """
-interleaved delay match to sample task with pattern ABBA and feature IDENTITY\n
-Answer on frame 3: does the IDENTITY match that of frame 2. \n
-Answer on frame 4: does the IDENTITY match that of frame 1. \n
+Match stimuli 2 and 3, then stimuli 1 and 4 based on IDENTITY. Respond as fast as you can.\n
                                   """,
         "multfs_interdmslocABAB": """
-interleaved delay match to sample task with pattern ABAB and feature LOCATION\n
-Answer on frame 3: does the LOCATION match that of frame 1. \n
-Answer on frame 4: does the LOCATION match that of frame 2. \n
+Match stimuli 1 and 3, then stimuli 2 and 4 based on LOCATION. Respond as fast as you can.\n
                               """,
         "multfs_interdmsctgABAB": """
-interleaved delay match to sample task with pattern ABAB and feature CATEGORY\n
-Answer on frame 3: does the CATEGORY match that of frame 1. \n
-Answer on frame 4: does the CATEGORY match that of frame 2. \n
+Match stimuli 1 and 3, then stimuli 2 and 4 based on CATEGORY. Respond as fast as you can.\n
                                   """,
         "multfs_interdmsobjABAB": """
-interleaved delay match to sample task with pattern ABAB and feature IDENTITY\n
-Answer on frame 3: does the IDENTITY match that of frame 1. \n
-Answer on frame 4: does the IDENTITY match that of frame 2. \n
+Match stimuli 1 and 3, then stimuli 2 and 4 based on IDENTITY. Respond as fast as you can.\n
     """,
         "multfs_1backloc": """
-In this task, you will see a sequence of stimulus.\n
+In this task, you will see sequences of six stimuli.\n
+From the second stimulus onwards, you must answer whether the current stimulus matches the previous one in LOCATION?\n 
 
-On frame n+1: do the LOCATION match that of frame n.\n
                     """,
         "multfs_1backobj": """
-In this task, you will see a sequence of stimulus. \n
+In this task, you will see sequences of six stimuli.\n
+From the second stimulus onwards,  you must answer whether the current stimulus matches the previous one in IDENTITY? \n
 
-On frame n+1: do the IDENTITY match that of frame n.\n
 
                     """,
         "multfs_1backctg": """
-In this task, you will see a sequence of stimulus. \n
+In this task, you will see sequences of six stimuli.\n
+From the second stimulus onwards,  you must answer whether the current stimulus matches the previous one in CATEGORY? \n 
 
-On frame n+1: do the CATEGORY match that of frame n.\n
 """,
 
         "multfs_ctxcol": """
-        contextual Decision Making task: CATEGORY-IDENTITY-LOCATION \n
-        If frames 1 and 2 match on CATEGORY, match frames 2 and 3 based on IDENTITY, otherwise on LOCATION.\n
-                """,
+If stimuli 1 and 2 match in CATEGORY, match stimuli 2 and 3  based on IDENTITY, otherwise on LOCATION.\n
+An answer is only required for the third stimulus.\n
+
+                    """,
         "multfs_ctxlco": """
-contextual Decision Making task: LOCATION-CATEGORY-IDENTITY \n
-If frames 1 and 2 match on LOCATION, match frames 2 and 3 based on CATEGORY, otherwise on IDENTITY.\n
+If stimuli 1 and 2 match in LOCATION, match stimuli 2 and 3 based on CATEGORY, otherwise on IDENTITY.\n
+An answer is only required for the third stimulus.\n 
                     """,
     }
     return ins_dict[task]
