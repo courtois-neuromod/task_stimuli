@@ -23,18 +23,18 @@ def get_audios(C_ORDER, C_LIST):
         order = [2,1,1,2,1,2,1,2,2,1,2,1,1,2,2,1]
 
     if C_LIST==1:
-        INT_LIST_dir = 'data/language/localizer/audio_list1/int/'
+        INT_LIST_dir = 'data/language/localizer/listening_list1/int/'
         tmp = [str(s) for s in Path(INT_LIST_dir).rglob('*wav')]
         INT_FILELIST = sorted(tmp, key=lambda x: int(x.split("/")[-1].split("_")[0]))
-        DEGR_LIST_dir = 'data/language/localizer/audio_list1/degr/'
+        DEGR_LIST_dir = 'data/language/localizer/listening_list1/degr/'
         tmp = [str(s) for s in Path(DEGR_LIST_dir).rglob('*wav')]
         DEGR_FILELIST = sorted(tmp, key=lambda x: int(x.split("/")[-1].split("_")[0]))
         
     elif C_LIST==2:
-        INT_LIST_dir = 'data/language/localizer/audio_list2/int/'
+        INT_LIST_dir = 'data/language/localizer/listening_list2/int/'
         tmp = [str(s) for s in Path(INT_LIST_dir).rglob('*wav')]
         INT_FILELIST = sorted(tmp, key=lambda x: int(x.split("/")[-1].split("_")[0]))
-        DEGR_LIST_dir = 'data/language/localizer/audio_list2/degr/'
+        DEGR_LIST_dir = 'data/language/localizer/listening_list2/degr/'
         tmp = [str(s) for s in Path(DEGR_LIST_dir).rglob('*wav')]
         DEGR_FILELIST = sorted(tmp, key=lambda x: int(x.split("/")[-1].split("_")[0]))
     int_idx = 1

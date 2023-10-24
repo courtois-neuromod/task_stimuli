@@ -14,8 +14,8 @@ TASKS = []
 for run_N in range(1, 2):
     TASKS.append(
         language.Reading(
-            f"data/language/localizer/video/langloc_fmri_run{run_N}_stim_set{set_N}.tsv",
-            name=f"langlocvideo_run{run_N}",
+            f"data/language/localizer/reading/langloc_fmri_run{run_N}_stim_set{set_N}.tsv",
+            name=f"langlocreading_run{run_N}",
             cross_duration=2,
             txt_size=124,
         )
