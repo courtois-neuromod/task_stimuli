@@ -24,7 +24,7 @@ FAMILIARITY_ASSESSMENT = ("Did you recognise the song ?", ['no', 'maybe', 'yes']
 
 class Playlist(Task):
 #Derived from SoundTaskBase (Narratives task)
-    def __init__(self, tsv_path, initial_wait=4, final_wait=2, **kwargs):
+    def __init__(self, tsv_path, initial_wait=2, final_wait=2, **kwargs):
         super().__init__(**kwargs)
 
         if not os.path.exists(tsv_path):
@@ -61,23 +61,25 @@ class Playlist(Task):
         for stim in self.fixation:
             stim.draw(exp_win)
         yield True
-        
+
         for index, track in self.playlist.iterrows():
+            print(index)
             track_path = track['path']
+            track_onset = float(track['onset'])
             track_name = os.path.split(track_path)[1]
             self.sound = sound.Sound(track_path)
+            self.duration = self.sound.duration
 
             for _ in utils.wait_until_yield(
                 self.task_timer,
-                self.initial_wait,
+                self.initial_wait + track_onset,
+                #self.initial_wait + index*(self.initial_wait+self.duration+self.final_wait),
                 keyboard_accuracy=.1):
                 yield
 
-            self.duration = self.sound.duration
-            print(track_name)
             self.sound.play()
             for _ in utils.wait_until_yield(self.task_timer,
-                                            self.sound.duration + self.final_wait, 
+                                            self.initial_wait + self.sound.duration + track_onset,
                                             keyboard_accuracy=.1):
                 yield
             while self.sound.status > 0:
