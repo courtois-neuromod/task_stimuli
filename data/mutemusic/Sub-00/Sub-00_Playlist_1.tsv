@@ -1,10 +1,9 @@
-onset duration path
-
-00 8 data/mutemusic/8s/Lyrics/Another_Brick_In_The Wall_(Part 1).wav
-15 8 data/mutemusic/8s/Orchestral/Back_To_The_Future.wav
-30 8 data/mutemusic/8s/Orchestral/Beethoven_Moonlight_Sonata.wav
-45 8 data/mutemusic/8s/Synthetic/Above_Ground_BGM_Super_Mario_Bros_3.wav
-60 8 data/mutemusic/8s/Synthetic/Aladdin_Genesis_Music_Ending.wav
+onset	duration	path
+00	8	data/mutemusic/8s/Lyrics/Another_Brick_In_The Wall_(Part 1).wav
+15	8	data/mutemusic/8s/Orchestral/Back_To_The_Future.wav
+30	8	data/mutemusic/8s/Orchestral/Beethoven_Moonlight_Sonata.wav
+45	8	data/mutemusic/8s/Synthetic/Above_Ground_BGM_Super_Mario_Bros_3.wav
+60	8	data/mutemusic/8s/Synthetic/Aladdin_Genesis_Music_Ending.wav
 
 
 

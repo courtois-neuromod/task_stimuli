@@ -1,4 +1,4 @@
-import os, time, csv, pandas
+import os, time, pandas
 
 from psychopy import prefs
 prefs.hardware['audioLib'] = ['sounddevice']
@@ -24,16 +24,16 @@ FAMILIARITY_ASSESSMENT = ("Did you recognise the song ?", ['no', 'maybe', 'yes']
 
 class Playlist(Task):
 #Derived from SoundTaskBase (Narratives task)
-    def __init__(self, csv_path, initial_wait=4, final_wait=2, **kwargs):
+    def __init__(self, tsv_path, initial_wait=4, final_wait=2, **kwargs):
         super().__init__(**kwargs)
 
-        if not os.path.exists(csv_path):
-            raise ValueError("File %s does not exists" % csv_path)   
+        if not os.path.exists(tsv_path):
+            raise ValueError("File %s does not exists" % tsv_path)   
         else :
-            file = open(csv_path, "r")
-            self.playlist = list(csv.reader(file, delimiter=","))
+            file = open(tsv_path, "r")
+            self.playlist = pandas.read_table(file, sep='\t')
             file.close()
-        
+
         self.initial_wait, self.final_wait = initial_wait, final_wait
     
     def _instructions(self, exp_win, ctl_win):
@@ -54,20 +54,17 @@ class Playlist(Task):
         yield True
 
     def _setup(self, exp_win):
-        return super()._setup(exp_win)
+        super()._setup(exp_win)
         self.fixation = fixation_dot(exp_win)            
-
 
     def _run(self, exp_win, ctl_win):
         for stim in self.fixation:
             stim.draw(exp_win)
         yield True
-        for track in self.playlist:
-
-            track_path = track[0]
+        
+        for index, track in self.playlist.iterrows():
+            track_path = track['path']
             track_name = os.path.split(track_path)[1]
-
-            #----------------doesn't appear---------------------------------------
             self.sound = sound.Sound(track_path)
 
             for _ in utils.wait_until_yield(
@@ -75,7 +72,6 @@ class Playlist(Task):
                 self.initial_wait,
                 keyboard_accuracy=.1):
                 yield
-            #----------------------------------------------------------------------
 
             self.duration = self.sound.duration
             print(track_name)
