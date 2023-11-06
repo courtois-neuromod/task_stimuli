@@ -37,6 +37,7 @@ class Playlist(Task):
         self.initial_wait, self.final_wait = initial_wait, final_wait
     
     def _instructions(self, exp_win, ctl_win):
+        print(self.instruction)
         screen_text = visual.TextStim(
             exp_win,
             text=self.instruction,
@@ -53,21 +54,31 @@ class Playlist(Task):
         yield True
 
     def _setup(self, exp_win):
-        self.sound = sound.Sound(self.sound_file)
-        self.fixation = fixation_dot(exp_win)
-        self.duration = self.sound.duration
+        return super()._setup(exp_win)
+        self.fixation = fixation_dot(exp_win)            
 
-    def _run(self, exp_win):
+
+    def _run(self, exp_win, ctl_win):
+        for stim in self.fixation:
+            stim.draw(exp_win)
+        yield True
         for track in self.playlist:
+
             track_path = track[0]
             track_name = os.path.split(track_path)[1]
 
-            self._instructions()
-            for _ in utils.wait_until_yield(self.task_timer,
-                                            INSTRUCTION_DURATION, 
-                                            keyboard_accuracy=.1):
+            #----------------doesn't appear---------------------------------------
+            self.sound = sound.Sound(track_path)
+
+            for _ in utils.wait_until_yield(
+                self.task_timer,
+                self.initial_wait,
+                keyboard_accuracy=.1):
                 yield
-            self._setup(exp_win)
+            #----------------------------------------------------------------------
+
+            self.duration = self.sound.duration
+            print(track_name)
             self.sound.play()
             for _ in utils.wait_until_yield(self.task_timer,
                                             self.sound.duration + self.final_wait, 
@@ -75,26 +86,28 @@ class Playlist(Task):
                 yield
             while self.sound.status > 0:
                 pass
-
-            imagery_form = Questionnaire(exp_win,self._events, 
-                                         trial_type='IMAGERY', name=track_name, 
-                                         question=AUDITORY_IMAGERY_ASSESSMENT[0], 
-                                         answers=AUDITORY_IMAGERY_ASSESSMENT[1])
-            imagery_form.run()    
-            familiarity_form = Questionnaire(exp_win, self._events,
-                                             trial_type='FAMILIARITY', name=track_name, 
-                                             question=FAMILIARITY_ASSESSMENT[0], 
-                                             answers=FAMILIARITY_ASSESSMENT[1])
-            familiarity_form.run()
-        self.save()
+            for stim in self.fixation:
+                stim.draw(exp_win)
+            yield True
+            #imagery_form = Questionnaire(exp_win,self._events, 
+                                         #trial_type='IMAGERY', name=track_name, 
+                                         #question=AUDITORY_IMAGERY_ASSESSMENT[0], 
+                                         #answers=AUDITORY_IMAGERY_ASSESSMENT[1])
+            #imagery_form.run()    
+            #familiarity_form = Questionnaire(exp_win, self._events,
+                                             #trial_type='FAMILIARITY', name=track_name, 
+                                             #question=FAMILIARITY_ASSESSMENT[0], 
+                                             #answers=FAMILIARITY_ASSESSMENT[1])
+            #familiarity_form.run()
+        #self.save()
 
 class Questionnaire(object):
         
         def __init__(self, exp_win, events, trial_type=None, name = None, question = None, answers = None, y_spacing=80):
             self.exp_win = exp_win
             self._events = events
-            self.ISI = core.StaticPeriod(win=self.exp_win)
-            #event.getKeys('udlra') # flush keys
+            #self.ISI = core.StaticPeriod(win=self.exp_win)
+            event.getKeys('udlra') # flush keys
             self.trial_type = trial_type
             self.name = name
             self.question = question
@@ -173,9 +186,9 @@ class Questionnaire(object):
             )
         
         def _handle_controller_presses(self):
-            self.ISI.start(0.01)
+            #self.ISI.start(0.01)
             self._new_key_pressed = event.getKeys('lra')
-            self.ISI.complete()
+            #self.ISI.complete()
 
         def run(self):
             self._setup()
