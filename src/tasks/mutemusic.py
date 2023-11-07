@@ -190,7 +190,7 @@ class Playlist(Task):
                 self.initial_wait + track_onset,
                 keyboard_accuracy=.1):
                 yield
-
+     yield True
             self.sound.play()
             for _ in utils.wait_until_yield(self.task_timer,
                                             self.initial_wait + self.sound.duration + track_onset,
