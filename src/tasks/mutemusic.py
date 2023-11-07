@@ -28,6 +28,7 @@ class Playlist(Task):
         if not os.path.exists(tsv_path):
             raise ValueError("File %s does not exists" % tsv_path)   
         else :
+            self.tsv_path = tsv_path
             file = open(tsv_path, "r")
             self.playlist = pandas.read_table(file, sep='\t')
             file.close()
@@ -135,7 +136,6 @@ class Playlist(Task):
         )
         #---run-Questionnaire--------------------------------------
         n_flips = 0
-        #while True:
         for _ in utils.wait_until_yield(
             self.task_timer,
             self.task_timer.getTime() + self.question_duration,
@@ -237,7 +237,8 @@ class Playlist(Task):
             self.playlist.at[index, 'onset']=track_onset
             previous_track_offset = self.task_timer.getTime(applyZero=True)
 
-        print(self.playlist)
+        self.playlist.to_csv(self.tsv_path, sep='\t', index=False)
+
             #yield from utils.wait_until_yield(self.task_timer,
                                         #track_onset + self.sound.duration + isi + final_wait,
                                         #keyboard_accuracy=.1)
