@@ -212,5 +212,7 @@ class Playlist(Task):
                                          #question=AUDITORY_IMAGERY_ASSESSMENT[0], 
                                          #answers=AUDITORY_IMAGERY_ASSESSMENT[1])
             #imagery_form.run()  
-
+      yield from utils.wait_until_yield(self.task_timer,
+                                  track_onset + self.sound.duration + isi + final_wait,
+                                  keyboard_accuracy=.1)
         #self.save()
