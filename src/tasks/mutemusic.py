@@ -133,7 +133,6 @@ class Playlist(Task):
             alignText="left"
         )
         #---run-Questionnaire--------------------------------------
-
         n_flips = 0
         while True:
             self._handle_controller_presses(self.ISI)
@@ -147,7 +146,7 @@ class Playlist(Task):
                 self._events.append({
                     "track": self.track_name,
                     "question": question,
-                    "value": answers[response]
+                    "value": response
                 })
                 break
 
@@ -169,47 +168,61 @@ class Playlist(Task):
                 bullet.draw(exp_win)
             yield True
 
-            n_flips += 1          
+            n_flips += 1 
+
+        #Flush questionnaire from screen   
         yield True
     
     def _run(self, exp_win, ctl_win):
-        
+        previous_track_offset = 0
+        #first bullseye
         for stim in self.fixation:
             stim.draw(exp_win)
         yield True
 
         for index, track in self.playlist.iterrows():
-            print(index)
+            #setup track
             track_path = track['path']
-            track_onset = float(track['onset'])
             self.track_name = os.path.split(track_path)[1]
             self.sound = sound.Sound(track_path)
             self.duration = self.sound.duration
 
+            #initial wait (bullseye 2s) 
             for _ in utils.wait_until_yield(
                 self.task_timer,
-                self.initial_wait + track_onset,
+                self.initial_wait + previous_track_offset,
                 keyboard_accuracy=.1):
                 yield
             
-            yield True #Flush bullseye screen before track
+            #Flush bullseye from screen before track
+            yield True
 
+            #track playing (variable timing)
+            track_onset = self.task_timer.getTime(applyZero=True)
             self.sound.play()
             for _ in utils.wait_until_yield(self.task_timer,
-                                            self.initial_wait + self.sound.duration + track_onset,
+                                            previous_track_offset + self.initial_wait + self.sound.duration,
                                             keyboard_accuracy=.1):
                 yield
+            
+            #ensure music track has been completely played
             while self.sound.status > 0:
                 pass
 
+            #display Questionnaire (variable timing, max 5s)
             yield from self._questionnaire(exp_win, ctl_win, 
                                            question=AUDITORY_IMAGERY_ASSESSMENT[0], 
                                            answers=AUDITORY_IMAGERY_ASSESSMENT[1])
             
+            #display bullseye for netx iteration
             for stim in self.fixation:
                 stim.draw(exp_win)
             yield True
+            
+            self.playlist.at[index, 'onset']=track_onset
+            previous_track_offset = self.task_timer.getTime(applyZero=True)
 
+        print(self.playlist)
             #yield from utils.wait_until_yield(self.task_timer,
                                         #track_onset + self.sound.duration + isi + final_wait,
                                         #keyboard_accuracy=.1)
