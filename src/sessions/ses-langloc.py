@@ -9,21 +9,44 @@ Your task is to simply listen attentively.
 """
 
 def get_tasks(parsed):
+    import pandas as pd
+    study_design = pd.read_csv(STIMULI_PATH + '/designs/all_localizers.tsv', sep='\t')
+
+    session_design = study_design[
+        study_design.subject_id.eq(int(parsed.subject)) &
+        study_design.session.eq(int(parsed.session))
+        ]
+
+    tasks = []
     from ..tasks import language, narratives, task_base
-    TASKS = [
-        language.ReadingBlocks(
-            os.path.join(STIMULI_PATH, 'designs/task-locreading_run-01_design.tsv'),
-            name='task-locreading_run-01'),
-        language.ListeningBlocks(
-            os.path.join(STIMULI_PATH, 'designs/auditory_1.tsv'),
-            os.path.join(STIMULI_PATH, 'audio_list1/'),
-            name='task-locauditory_run-01'),
-        language.ListeningBlocks(
-            os.path.join(STIMULI_PATH, 'alice/alice_en_1.tsv'),
-            os.path.join(STIMULI_PATH, 'alice/English'),
-            name='task-aliceEn_run-01'),
-    ]
-    return TASKS
+    for _, run in session_design.iterrows():
+        design_idx = int(run.design_file.split('_')[-1])
+        if run.task == 'reading':
+            tasks.append(
+                language.ReadingBlocks(
+                    os.path.join(
+                        STIMULI_PATH,
+                        f'designs/task-locreading_run-{design_idx:02d}_design.tsv'),
+                    name='task-reading'
+                )
+            )
+        elif run.task == 'listening':
+            tasks.append(
+                language.ListeningBlocks(
+                    os.path.join(STIMULI_PATH, f'designs/listening_run{design_idx}.tsv'),
+                    STIMULI_PATH,
+                    name='task-listening'
+                )
+            )
+        elif 'alice' in run.task:
+            tasks.append(
+                language.ListeningBlocks(
+                    os.path.join(STIMULI_PATH, f'designs/{run.task}_run{design_idx}.tsv'),
+                    os.path.join(STIMULI_PATH, 'alice'),
+                    name=f'task-{run.task}'
+                )
+            )
+    return tasks
 
 INITIAL_WAIT = 6
 FINAL_WAIT = 9

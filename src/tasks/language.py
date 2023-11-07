@@ -537,26 +537,34 @@ class ListeningBlocks(Task):
                 if trial['stim_file'] else None) \
             for trial in self.design]
         super()._setup(exp_win)
+        self.current_stimuli = None
 
     def _run(self, exp_win, ctl_win):
 
-        for trial_n, (trial, stimuli) in enumerate(zip(self.trials, self._stimuli)):
+        for trial_n, (trial, self.current_stimuli) in enumerate(zip(self.trials, self._stimuli)):
             if trial['trial_type'] == 'fix':
                 for stim_ in self.fixation_dot:
                     stim_.draw(exp_win)
                 if trial_n > 0:
                     utils.wait_until(self.task_timer, trial['onset'] - 1/config.FRAME_RATE)
 
-            if stimuli:
-                stimuli.play(when = self.task_timer._timeAtLastReset + trial['onset'])
+            if self.current_stimuli:
+                self.current_stimuli.play(when = self.task_timer._timeAtLastReset + trial['onset'])
             yield True
             for _ in utils.wait_until_yield(
                 self.task_timer,
                 trial['onset']+trial['duration'] - 2/config.FRAME_RATE,
                 keyboard_accuracy=.1):
                 yield True
-            if stimuli and stimuli.status > 0:
-                logging.error('trial ended before the sound finished playing: check files durations')
+            if self.current_stimuli:
+                if self.current_stimuli.status > 0:
+                        logging.warning('trial ended before the sound finished playing: check files durations')
+                self.current_stimuli.stop()
+
+    def _stop(self, exp_win, ctl_win):
+        if self.current_stimuli:
+            self.current_stimuli.stop()
+        yield
 
     def _restart(self):
         self.trials = data.TrialHandler(self.design, 1, method="sequential")
