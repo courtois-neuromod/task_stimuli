@@ -170,7 +170,8 @@ class Playlist(Task):
             yield True
 
             n_flips += 1          
-    yield True
+        yield True
+    
     def _run(self, exp_win, ctl_win):
         
         for stim in self.fixation:
@@ -190,7 +191,9 @@ class Playlist(Task):
                 self.initial_wait + track_onset,
                 keyboard_accuracy=.1):
                 yield
-     yield True
+            
+            yield True #Flush bullseye screen before track
+
             self.sound.play()
             for _ in utils.wait_until_yield(self.task_timer,
                                             self.initial_wait + self.sound.duration + track_onset,
@@ -199,20 +202,15 @@ class Playlist(Task):
             while self.sound.status > 0:
                 pass
 
+            yield from self._questionnaire(exp_win, ctl_win, 
+                                           question=AUDITORY_IMAGERY_ASSESSMENT[0], 
+                                           answers=AUDITORY_IMAGERY_ASSESSMENT[1])
+            
             for stim in self.fixation:
                 stim.draw(exp_win)
             yield True
 
-            yield from self._questionnaire(exp_win, ctl_win, 
-                                           question=AUDITORY_IMAGERY_ASSESSMENT[0], 
-                                           answers=AUDITORY_IMAGERY_ASSESSMENT[1])
-
-            #imagery_form = Questionnaire(exp_win,self._events, 
-                                         #trial_type='IMAGERY', name=track_name, 
-                                         #question=AUDITORY_IMAGERY_ASSESSMENT[0], 
-                                         #answers=AUDITORY_IMAGERY_ASSESSMENT[1])
-            #imagery_form.run()  
-      yield from utils.wait_until_yield(self.task_timer,
-                                  track_onset + self.sound.duration + isi + final_wait,
-                                  keyboard_accuracy=.1)
+            #yield from utils.wait_until_yield(self.task_timer,
+                                        #track_onset + self.sound.duration + isi + final_wait,
+                                        #keyboard_accuracy=.1)
         #self.save()
