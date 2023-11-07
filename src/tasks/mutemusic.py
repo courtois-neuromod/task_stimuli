@@ -22,7 +22,7 @@ AUDITORY_IMAGERY_ASSESSMENT = ("During the silences, did you imagine the missing
 
 class Playlist(Task):
 #Derived from SoundTaskBase (Narratives task)
-    def __init__(self, tsv_path, initial_wait=2, final_wait=0, **kwargs):
+    def __init__(self, tsv_path, initial_wait=2, final_wait=0, question_duration = 5, **kwargs):
         super().__init__(**kwargs)
 
         if not os.path.exists(tsv_path):
@@ -33,6 +33,7 @@ class Playlist(Task):
             file.close()
 
         self.initial_wait, self.final_wait = initial_wait, final_wait
+        self.question_duration = question_duration
     
     def _instructions(self, exp_win, ctl_win):
         print(self.instruction)
@@ -134,7 +135,12 @@ class Playlist(Task):
         )
         #---run-Questionnaire--------------------------------------
         n_flips = 0
-        while True:
+        #while True:
+        for _ in utils.wait_until_yield(
+            self.task_timer,
+            self.task_timer.getTime() + self.question_duration,
+            keyboard_accuracy=.0001):   
+
             self._handle_controller_presses(self.ISI)
             new_key_pressed = [k[0] for k in self._new_key_pressed]
 
@@ -146,7 +152,8 @@ class Playlist(Task):
                 self._events.append({
                     "track": self.track_name,
                     "question": question,
-                    "value": response
+                    "value": response,
+                    "confirmation": "yes"
                 })
                 break
 
@@ -166,9 +173,17 @@ class Playlist(Task):
             for legend, bullet in zip(legends, bullets):
                 legend.draw(exp_win)
                 bullet.draw(exp_win)
+            
             yield True
-
             n_flips += 1 
+
+        else:
+            self._events.append({
+                    "track": self.track_name,
+                    "question": question,
+                    "value": response,
+                    "confirmation": "no"})
+            pass
 
         #Flush questionnaire from screen   
         yield True
