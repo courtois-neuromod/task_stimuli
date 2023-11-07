@@ -170,7 +170,7 @@ class Playlist(Task):
             yield True
 
             n_flips += 1          
-
+    yield True
     def _run(self, exp_win, ctl_win):
         
         for stim in self.fixation:
