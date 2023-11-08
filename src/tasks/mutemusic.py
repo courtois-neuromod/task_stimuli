@@ -22,7 +22,7 @@ AUDITORY_IMAGERY_ASSESSMENT = ("During the silences, did you imagine the missing
 
 class Playlist(Task):
 #Derived from SoundTaskBase (Narratives task)
-    def __init__(self, tsv_path, initial_wait=2, final_wait=0, question_duration = 5, **kwargs):
+    def __init__(self, tsv_path, initial_wait=2, question_duration = 5, **kwargs):
         super().__init__(**kwargs)
 
         if not os.path.exists(tsv_path):
@@ -33,8 +33,9 @@ class Playlist(Task):
             self.playlist = pandas.read_table(file, sep='\t')
             file.close()
 
-        self.initial_wait, self.final_wait = initial_wait, final_wait
+        self.initial_wait = initial_wait
         self.question_duration = question_duration
+        self.instruction = DEFAULT_INSTRUCTION
     
     def _instructions(self, exp_win, ctl_win):
         print(self.instruction)
@@ -239,7 +240,4 @@ class Playlist(Task):
 
         self.playlist.to_csv(self.tsv_path, sep='\t', index=False)
 
-            #yield from utils.wait_until_yield(self.task_timer,
-                                        #track_onset + self.sound.duration + isi + final_wait,
-                                        #keyboard_accuracy=.1)
         #self.save()
