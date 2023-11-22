@@ -19,14 +19,12 @@ from ..shared.eyetracking import fixation_dot
 QUESTION_DURATION = 7 #5
 INSTRUCTION_DURATION = 25
 DEFAULT_INSTRUCTION = '''Please listen to the following songs. Try to stay as still as possible and avoid nodding your head or tapping your finger to the music rhythm.\n
-\n
 During each musical track, small segments will be silenced. During the silenced portion, try to imagine the missing part. \n
-\n
-Following each, you will be presented the rating scale below and asked to rate how well you were able to imagine the music during silences. You will have a limited time to answer so please answer as quickly as possible. \n
+Following each, you will be presented the rating scale below and asked to rate how well you were able to imagine the music during silences. You will have a limited time to answer so please answer as quickly as possible, and press the “a” button when ready to start the next track. \n
 \n
 “Please rate how well you were able to imagine the music during the pauses of the music clips.”\n
-Not at all                                Partially                     I clearly imagined it\n
-1                 2                 3                 4                 5'''
+Not at all                           Partially                 I clearly imagined it\n
+1               2               3               4               5'''
 
 AUDITORY_IMAGERY_ASSESSMENT = ("Please rate how well you were able to imagine the music during the pauses of the music clips.", 
                                ['Not at all', '', 'Partially', '', 'I clearly imagined it'])
@@ -56,7 +54,7 @@ class Playlist(Task):
             alignText="center",
             color="white",
             units='height',
-            height=0.029
+            height=0.03
         )
         screen_text.draw(exp_win)
         if ctl_win:
