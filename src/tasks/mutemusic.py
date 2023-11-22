@@ -16,7 +16,7 @@ from ..shared.eyetracking import fixation_dot
 #   step 4: Familiarity assessment
 
 #Global Variables if multiples tasks
-QUESTION_DURATION = 6 #5
+QUESTION_DURATION = 7 #5
 INSTRUCTION_DURATION = 3
 DEFAULT_INSTRUCTION = """Listen to the following tracks. After each track, you will be asked to rate how well you were able to imagine the music during silences"""
 AUDITORY_IMAGERY_ASSESSMENT = ("Please rate how well you were able to imagine the music during the pauses of the music clips.", 
@@ -225,18 +225,6 @@ class Playlist(Task):
             #ensure music track has been completely played
             while self.sound.status > 0:
                 pass
-
-            #second wait (bullseye 2s) 
-            for stim in self.fixation:
-                stim.draw(exp_win)
-            yield True
-            for _ in utils.wait_until_yield(
-                self.task_timer,
-                previous_track_offset + self.bullseye_wait + self.sound.duration + self.bullseye_wait,
-                keyboard_accuracy=.1):
-                yield            
-            #Flush bullseye from screen before track
-            yield True
 
             #display Questionnaire (variable timing, max 5s)
             yield from self._questionnaire(exp_win, ctl_win, 
