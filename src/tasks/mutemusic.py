@@ -16,9 +16,18 @@ from ..shared.eyetracking import fixation_dot
 #   step 4: Familiarity assessment
 
 #Global Variables if multiples tasks
-INSTRUCTION_DURATION = 3
-DEFAULT_INSTRUCTION = """Listen to the following tracks"""
-AUDITORY_IMAGERY_ASSESSMENT = ("During the silences, did you imagine the missing part of the music clip you’ve heard ?", ['Not at all', '', 'Partially', '', 'I clearly imagined it'])
+QUESTION_DURATION = 7 #5
+INSTRUCTION_DURATION = 25
+DEFAULT_INSTRUCTION = '''Please listen to the following songs. Try to stay as still as possible and avoid nodding your head or tapping your finger to the music rhythm.\n
+During each musical track, small segments will be silenced. During the silenced portion, try to imagine the missing part. \n
+Following each, you will be presented the rating scale below and asked to rate how well you were able to imagine the music during silences. You will have a limited time to answer so please answer as quickly as possible, and press the “a” button when ready to start the next track. \n
+\n
+“Please rate how well you were able to imagine the music during the pauses of the music clips.”\n
+Not at all                           Partially                 I clearly imagined it\n
+1               2               3               4               5'''
+
+AUDITORY_IMAGERY_ASSESSMENT = ("Please rate how well you were able to imagine the music during the pauses of the music clips.",
+                               ['Not at all', '', 'Partially', '', 'I clearly imagined it'])
 
 class Playlist(Task):
 #Derived from SoundTaskBase (Narratives task)
@@ -50,7 +59,7 @@ class Playlist(Task):
             alignText="center",
             color="white",
             units='height',
-            height=0.05
+            height=0.03
         )
         screen_text.draw(exp_win)
         if ctl_win:
