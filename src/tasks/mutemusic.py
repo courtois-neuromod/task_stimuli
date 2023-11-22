@@ -151,7 +151,7 @@ class Playlist(Task):
             elif "l" in new_key_pressed and response > 0:
                 response -= 1
             elif "a" in new_key_pressed:
-                self._events.append({
+                self._log_event({
                     "track": self.track_name,
                     "question": question,
                     "value": response,
@@ -180,7 +180,7 @@ class Playlist(Task):
             n_flips += 1 
 
         else:
-            self._events.append({
+            self._log_event({
                     "track": self.track_name,
                     "question": question,
                     "value": response,
@@ -239,6 +239,6 @@ class Playlist(Task):
             self.playlist.at[index, 'onset']=track_onset
             previous_track_offset = self.task_timer.getTime(applyZero=True)
 
-        self.playlist.to_csv(self.tsv_path, sep='\t', index=False)
+        self.playlist.to_csv(self.tsv_path, sep=' ', index=False)
 
         #self.save()
