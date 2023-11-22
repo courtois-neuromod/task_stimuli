@@ -17,8 +17,9 @@ from ..shared.eyetracking import fixation_dot
 
 #Global Variables if multiples tasks
 INSTRUCTION_DURATION = 3
-DEFAULT_INSTRUCTION = """Listen to the following tracks"""
-AUDITORY_IMAGERY_ASSESSMENT = ("During the silences, did you imagine the missing part of the music clip you’ve heard ?", ['No', '', 'Partially', '', 'Yes'])
+DEFAULT_INSTRUCTION = """Listen to the following tracks. After each track, you will be asked to rate how well you were able to imagine the music during silences"""
+AUDITORY_IMAGERY_ASSESSMENT = ("Please rate how well you were able to imagine the music during the pauses of the music clips.", 
+                               ['Not at all', '', 'Partially', '', 'I clearly imagined it'])
 
 class Playlist(Task):
 #Derived from SoundTaskBase (Narratives task)
@@ -30,7 +31,7 @@ class Playlist(Task):
         else :
             self.tsv_path = tsv_path
             file = open(tsv_path, "r")
-            self.playlist = pandas.read_table(file, sep='\t')
+            self.playlist = pandas.read_table(file, sep=' ')
             file.close()
 
         self.initial_wait = initial_wait
