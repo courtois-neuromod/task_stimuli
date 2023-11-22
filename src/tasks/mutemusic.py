@@ -16,6 +16,7 @@ from ..shared.eyetracking import fixation_dot
 #   step 4: Familiarity assessment
 
 #Global Variables if multiples tasks
+QUESTION_DURATION = 6 #5
 INSTRUCTION_DURATION = 3
 DEFAULT_INSTRUCTION = """Listen to the following tracks. After each track, you will be asked to rate how well you were able to imagine the music during silences"""
 AUDITORY_IMAGERY_ASSESSMENT = ("Please rate how well you were able to imagine the music during the pauses of the music clips.", 
@@ -23,7 +24,7 @@ AUDITORY_IMAGERY_ASSESSMENT = ("Please rate how well you were able to imagine th
 
 class Playlist(Task):
 #Derived from SoundTaskBase (Narratives task)
-    def __init__(self, tsv_path, initial_wait=2, question_duration = 5, **kwargs):
+    def __init__(self, tsv_path, initial_wait=2, question_duration = QUESTION_DURATION, **kwargs):
         super().__init__(**kwargs)
 
         if not os.path.exists(tsv_path):
@@ -34,7 +35,7 @@ class Playlist(Task):
             self.playlist = pandas.read_table(file, sep=' ')
             file.close()
 
-        self.initial_wait = initial_wait
+        self.bullseye_wait = initial_wait
         self.question_duration = question_duration
         self.instruction = DEFAULT_INSTRUCTION
     
@@ -192,10 +193,6 @@ class Playlist(Task):
     
     def _run(self, exp_win, ctl_win):
         previous_track_offset = 0
-        #first bullseye
-        for stim in self.fixation:
-            stim.draw(exp_win)
-        yield True
 
         for index, track in self.playlist.iterrows():
             #setup track
@@ -204,13 +201,16 @@ class Playlist(Task):
             self.sound = sound.Sound(track_path)
             self.duration = self.sound.duration
 
+            #first bullseye
+            for stim in self.fixation:
+                stim.draw(exp_win)
+            yield True
             #initial wait (bullseye 2s) 
             for _ in utils.wait_until_yield(
                 self.task_timer,
-                self.initial_wait + previous_track_offset,
+                self.bullseye_wait + previous_track_offset,
                 keyboard_accuracy=.1):
                 yield
-            
             #Flush bullseye from screen before track
             yield True
 
@@ -218,7 +218,7 @@ class Playlist(Task):
             track_onset = self.task_timer.getTime(applyZero=True)
             self.sound.play()
             for _ in utils.wait_until_yield(self.task_timer,
-                                            previous_track_offset + self.initial_wait + self.sound.duration,
+                                            previous_track_offset + self.bullseye_wait + self.sound.duration,
                                             keyboard_accuracy=.1):
                 yield
             
@@ -226,15 +226,22 @@ class Playlist(Task):
             while self.sound.status > 0:
                 pass
 
+            #second wait (bullseye 2s) 
+            for stim in self.fixation:
+                stim.draw(exp_win)
+            yield True
+            for _ in utils.wait_until_yield(
+                self.task_timer,
+                previous_track_offset + self.bullseye_wait + self.sound.duration + self.bullseye_wait,
+                keyboard_accuracy=.1):
+                yield            
+            #Flush bullseye from screen before track
+            yield True
+
             #display Questionnaire (variable timing, max 5s)
             yield from self._questionnaire(exp_win, ctl_win, 
                                            question=AUDITORY_IMAGERY_ASSESSMENT[0], 
                                            answers=AUDITORY_IMAGERY_ASSESSMENT[1])
-            
-            #display bullseye for netx iteration
-            for stim in self.fixation:
-                stim.draw(exp_win)
-            yield True
             
             self.playlist.at[index, 'onset']=track_onset
             previous_track_offset = self.task_timer.getTime(applyZero=True)
