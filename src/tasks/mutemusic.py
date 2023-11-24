@@ -28,6 +28,17 @@ Not at all                           Partially                 I clearly imagine
 
 Press A when ready'''
 
+DEFAULT_INSTRUCTION = '''Please listen to the following songs. Avoid any motion (head, finger) to the music rhythm.\n
+During each musical track, small segments will be silenced during which you should try to imagine the missing part. \n
+After each track, use the scale below to rate how well you imagined the music during silences.
+Answer as quickly as possible in the 7 seconds, and press the “a” button to validate. \n
+\n
+“Please rate how well you were able to imagine the music during the pauses of the music track.”\n
+Not at all                           Partially                 I clearly imagined it\n
+1               2               3               4               5
+
+Press A when ready'''
+
 AUDITORY_IMAGERY_ASSESSMENT = ("Please rate how well you were able to imagine the music during the pauses of the music clips.",
                                ['Not at all', '', 'Partially', '', 'I clearly imagined it'])
 
@@ -225,11 +236,11 @@ class Playlist(Task):
             self.track_name = os.path.split(track_path)[1]
             self.sound = sound.Sound(track_path)
             self.duration = self.sound.duration
-            self.progress_bar.update(1)
 
             self.progress_bar.set_description(
                 f"Trial {index}:: {self.track_name}"
             )
+            self.progress_bar.update(1)
 
             #initial wait (bullseye 2s)
             for _ in utils.wait_until_yield(
