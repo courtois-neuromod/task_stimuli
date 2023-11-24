@@ -24,7 +24,9 @@ Following each, you will be presented the rating scale below and asked to rate h
 \n
 “Please rate how well you were able to imagine the music during the pauses of the music clips.”\n
 Not at all                           Partially                 I clearly imagined it\n
-1               2               3               4               5'''
+1               2               3               4               5
+
+Press A when ready'''
 
 AUDITORY_IMAGERY_ASSESSMENT = ("Please rate how well you were able to imagine the music during the pauses of the music clips.",
                                ['Not at all', '', 'Partially', '', 'I clearly imagined it'])
@@ -52,7 +54,6 @@ class Playlist(Task):
         self._progress_bar_refresh_rate = None
 
     def _instructions(self, exp_win, ctl_win):
-        print(self.instruction)
         screen_text = visual.TextStim(
             exp_win,
             text=self.instruction,
@@ -61,11 +62,21 @@ class Playlist(Task):
             units='height',
             height=0.03
         )
-        screen_text.draw(exp_win)
-        if ctl_win:
-            screen_text.draw(ctl_win)
-        yield True
-        time.sleep(INSTRUCTION_DURATION)
+
+        for flip_idx, _ in enumerate(utils.wait_until_yield(
+            core.monotonicClock,
+            core.getTime()+ INSTRUCTION_DURATION,
+            keyboard_accuracy=.1)):
+            keys = event.getKeys(keyList=['space','a'])
+            if keys:
+                break
+
+            if flip_idx < 2:
+                screen_text.draw(exp_win)
+                if ctl_win:
+                    screen_text.draw(ctl_win)
+                yield True
+            yield
         yield True
 
     def _setup(self, exp_win):
@@ -256,7 +267,9 @@ class Playlist(Task):
             previous_track_offset = self.task_timer.getTime(applyZero=True)
             next_onset = previous_track_offset + self.isi
         #final wait
+        print(f"{'*'*25} PREPARE TO STOP {'*'*25}")
         yield from utils.wait_until_yield(self.task_timer, previous_track_offset + self.final_wait)
+        print(f"{'#'*25} STOP SCANNER    {'#'*25}")
 
     def _stop(self, exp_win, ctl_win):
         if hasattr(self, 'sound'):
