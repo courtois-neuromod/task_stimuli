@@ -1,11 +1,11 @@
-Groupe category title path silence_duration total_duration onset
-U Synthetic Super_Mario_64_BobOmb_Battlefield_(Extended)_Theme_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1_normalized/Synthetic/Super_Mario_64_BobOmb_Battlefield_(Extended)_Theme_silenced.wav 14 54.0 
-F Synthetic Super_Mario_Bros_3_Underwater_Theme_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1_normalized/Synthetic/Super_Mario_Bros_3_Underwater_Theme_silenced.wav 12 46.0 
-U Synthetic Space_Harrier_Music_MAIN_THEME_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1_normalized/Synthetic/Space_Harrier_Music_MAIN_THEME_silenced.wav 12 48.0 
-U Orchestral Dreaming_of_Bag_End_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1_normalized/Orchestral/Dreaming_of_Bag_End_silenced.wav 13 52.0 
-F Lyrics Creep_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1_normalized/Lyrics/Creep_silenced.wav 12 49.0 
-F Synthetic Super_Mario_Bros_3_Athletic_Theme_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1_normalized/Synthetic/Super_Mario_Bros_3_Athletic_Theme_silenced.wav 12 50.0 
-F Orchestral Star_Trek_the_Next_Generation_(Main_Title)_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1_normalized/Orchestral/Star_Trek_the_Next_Generation_(Main_Title)_silenced.wav 14 56.0 
-U Lyrics Rain_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1_normalized/Lyrics/Rain_silenced.wav 12 48.0 
-U Lyrics Synchronicity_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1_normalized/Lyrics/Synchronicity_silenced.wav 12 47.0 
-F Lyrics I_ll_Be_There_for_You_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1_normalized/Lyrics/I_ll_Be_There_for_You_silenced.wav 12 47.0 
+Groupe	category	title	path	silence_duration	total_duration	onset
+U	Synthetic	Super_Mario_64_BobOmb_Battlefield_(Extended)_Theme_silenced.wav	data/mutemusic/stimuli/Synthetic/Super_Mario_64_BobOmb_Battlefield_(Extended)_Theme_silenced.wav	14	54.0
+F	Synthetic	Super_Mario_Bros_3_Underwater_Theme_silenced.wav	data/mutemusic/stimuli/Synthetic/Super_Mario_Bros_3_Underwater_Theme_silenced.wav	12	46.0
+U	Synthetic	Space_Harrier_Music_MAIN_THEME_silenced.wav	data/mutemusic/stimuli/Synthetic/Space_Harrier_Music_MAIN_THEME_silenced.wav	12	48.0
+U	Orchestral	Dreaming_of_Bag_End_silenced.wav	data/mutemusic/stimuli/Orchestral/Dreaming_of_Bag_End_silenced.wav	13	52.0
+F	Lyrics	Creep_silenced.wav	data/mutemusic/stimuli/Lyrics/Creep_silenced.wav	12	49.0
+F	Synthetic	Super_Mario_Bros_3_Athletic_Theme_silenced.wav	data/mutemusic/stimuli/Synthetic/Super_Mario_Bros_3_Athletic_Theme_silenced.wav	12	50.0
+F	Orchestral	Star_Trek_the_Next_Generation_(Main_Title)_silenced.wav	data/mutemusic/stimuli/Orchestral/Star_Trek_the_Next_Generation_(Main_Title)_silenced.wav	14	56.0
+U	Lyrics	Rain_silenced.wav	data/mutemusic/stimuli/Lyrics/Rain_silenced.wav	12	48.0
+U	Lyrics	Synchronicity_silenced.wav	data/mutemusic/stimuli/Lyrics/Synchronicity_silenced.wav	12	47.0
+F	Lyrics	I_ll_Be_There_for_You_silenced.wav	data/mutemusic/stimuli/Lyrics/I_ll_Be_There_for_You_silenced.wav	12	47.0

@@ -1,11 +1,11 @@
-Groupe category title path silence_duration total_duration onset
-U Orchestral Lux_Aeterna_from_Requiem_for_a_Dream_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1_normalized/Orchestral/Lux_Aeterna_from_Requiem_for_a_Dream_silenced.wav 15 60.0 
-U Lyrics Another_Brick_In_The_Wall_(Part_1)_lyrics_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1_normalized/Lyrics/Another_Brick_In_The_Wall_(Part_1)_lyrics_silenced.wav 15 60.0 
-F Orchestral Seinfeld_Official_Soundtrack_(Seinfeld_Theme)_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1_normalized/Orchestral/Seinfeld_Official_Soundtrack_(Seinfeld_Theme)_silenced.wav 13 52.0 
-F Lyrics Material_Girl_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1_normalized/Lyrics/Material_Girl_silenced.wav 12 50.0 
-F Orchestral The_4_Seasons_Op_8_4_RV_297_Winter_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1_normalized/Orchestral/The_4_Seasons_Op_8_4_RV_297_Winter_silenced.wav 15 60.0 
-U Synthetic Populous_(SNES_SFC)_BGM_01_Title_Theme_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1_normalized/Synthetic/Populous_(SNES_SFC)_BGM_01_Title_Theme_silenced.wav 12 49.0 
-F Orchestral The_Pink_Panther_Theme_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1_normalized/Orchestral/The_Pink_Panther_Theme_silenced.wav 11 45.0 
-U Lyrics Goodbye_Blue_Sky_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1_normalized/Lyrics/Goodbye_Blue_Sky_silenced.wav 12 48.0 
-U Orchestral My_Name_is_Nobody_Il_Mio_Nome_e_Nessuno_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1_normalized/Orchestral/My_Name_is_Nobody_Il_Mio_Nome_e_Nessuno_silenced.wav 13 53.0 
-F Lyrics Monday_Monday_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1_normalized/Lyrics/Monday_Monday_silenced.wav 13 53.0 
+Groupe	category	title	path	silence_duration	total_duration	onset
+U	Orchestral	Lux_Aeterna_from_Requiem_for_a_Dream_silenced.wav	data/mutemusic/stimuli/Orchestral/Lux_Aeterna_from_Requiem_for_a_Dream_silenced.wav	15	60.0
+U	Lyrics	Another_Brick_In_The_Wall_(Part_1)_lyrics_silenced.wav	data/mutemusic/stimuli/Lyrics/Another_Brick_In_The_Wall_(Part_1)_lyrics_silenced.wav	15	60.0
+F	Orchestral	Seinfeld_Official_Soundtrack_(Seinfeld_Theme)_silenced.wav	data/mutemusic/stimuli/Orchestral/Seinfeld_Official_Soundtrack_(Seinfeld_Theme)_silenced.wav	13	52.0
+F	Lyrics	Material_Girl_silenced.wav	data/mutemusic/stimuli/Lyrics/Material_Girl_silenced.wav	12	50.0
+F	Orchestral	The_4_Seasons_Op_8_4_RV_297_Winter_silenced.wav	data/mutemusic/stimuli/Orchestral/The_4_Seasons_Op_8_4_RV_297_Winter_silenced.wav	15	60.0
+U	Synthetic	Populous_(SNES_SFC)_BGM_01_Title_Theme_silenced.wav	data/mutemusic/stimuli/Synthetic/Populous_(SNES_SFC)_BGM_01_Title_Theme_silenced.wav	12	49.0
+F	Orchestral	The_Pink_Panther_Theme_silenced.wav	data/mutemusic/stimuli/Orchestral/The_Pink_Panther_Theme_silenced.wav	11	45.0
+U	Lyrics	Goodbye_Blue_Sky_silenced.wav	data/mutemusic/stimuli/Lyrics/Goodbye_Blue_Sky_silenced.wav	12	48.0
+U	Orchestral	My_Name_is_Nobody_Il_Mio_Nome_e_Nessuno_silenced.wav	data/mutemusic/stimuli/Orchestral/My_Name_is_Nobody_Il_Mio_Nome_e_Nessuno_silenced.wav	13	53.0
+F	Lyrics	Monday_Monday_silenced.wav	data/mutemusic/stimuli/Lyrics/Monday_Monday_silenced.wav	13	53.0
