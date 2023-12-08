@@ -522,11 +522,27 @@ class Listening(Task):
 class ListeningBlocks(Task):
     """docstring for ListeningBlocks."""
 
-    def __init__(self, design_file, stimuli_path, *args, **kwargs):
+    def __init__(self, design_file, stimuli_path, *args, instruction=None, **kwargs):
         super(ListeningBlocks, self).__init__(*args, **kwargs)
         self.design_file = design_file
         self.stimuli_path = stimuli_path
+        self.instruction = instruction
         self.design = data.importConditions(design_file)
+
+    def _instructions(self, exp_win, ctl_win):
+        screen_text = visual.TextStim(
+            exp_win,
+            text=self.instruction,
+            alignText="center",
+            color="white",
+            wrapWidth=config.WRAP_WIDTH,
+        )
+
+        for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
+            screen_text.draw(exp_win)
+            if ctl_win:
+                screen_text.draw(ctl_win)
+            yield True
 
     def _setup(self, exp_win):
         self.trials = data.TrialHandler(self.design, 1, method="sequential")
@@ -579,7 +595,7 @@ class ListeningBlocks(Task):
 class ReadingBlocks(Task):
     """docstring for ReadingBlocks."""
 
-    def __init__(self, design_file, *args,
+    def __init__(self, design_file, *args, instruction=None,
         txt_color="black", txt_font="Palatino Linotype", txt_size=42,
         bg_color=(.5, .5, .5), press_key='a', **kwargs):
         super(ReadingBlocks, self).__init__(*args, **kwargs)
@@ -589,7 +605,7 @@ class ReadingBlocks(Task):
         self.txt_font = txt_font
         self.txt_size = txt_size
         self.bg_color = bg_color
-
+        self.instruction = instruction
         self.press_key = press_key
 
     def _setup(self, exp_win):
@@ -604,6 +620,21 @@ class ReadingBlocks(Task):
             alignText="center",
             color=self.txt_color,
         )
+
+    def _instructions(self, exp_win, ctl_win):
+        screen_text = visual.TextStim(
+            exp_win,
+            text=self.instruction,
+            alignText="center",
+            color="white",
+            wrapWidth=config.WRAP_WIDTH,
+        )
+
+        for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
+            screen_text.draw(exp_win)
+            if ctl_win:
+                screen_text.draw(ctl_win)
+            yield True
 
     def _run(self, exp_win, ctl_win):
         last_press_trial = None

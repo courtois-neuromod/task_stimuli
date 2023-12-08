@@ -2,10 +2,18 @@ import os
 
 STIMULI_PATH = 'data/language/localizer'
 
+
 ALICE_INSTRUCTIONS = """
-In this task, you will listen to short passages from Alice in Wonderland in your {English/French} language, to acoustically degraded versions of those passages, and to passages in a language unfamiliar to you.
-The degraded versions will sound like bad radio reception where you hear that someone is talking but will have trouble discerning what they are saying.
-Your task is to simply listen attentively.
+Please listen attentively to the short passages from Alice in Wonderland in different languages (English/French/Tagalog) and to degraded versions of those passages.
+"""
+
+LISTENING_INSTRUCTIONS = """
+Please listen attentively to the short passages in English and to degraded versions of those passages.
+"""
+
+READING_INSTRUCTIONS = """
+Please read attentively the sentences or sequences of word-like nonwords.
+The materials will be shown one word/nonword at a time.
 """
 
 def get_tasks(parsed):
@@ -17,6 +25,9 @@ def get_tasks(parsed):
         study_design.session.eq(int(parsed.session))
         ]
 
+    print("#"*10 + " tasks for today "+"#"*10)
+    for _, run in session_design.iterrows():
+        print(f"- func_task-{run.task}")
     tasks = []
     from ..tasks import language, narratives, task_base
     for _, run in session_design.iterrows():
@@ -27,6 +38,7 @@ def get_tasks(parsed):
                     os.path.join(
                         STIMULI_PATH,
                         f'designs/task-locreading_run-{design_idx:02d}_design.tsv'),
+                    instruction=READING_INSTRUCTIONS,
                     name='task-reading'
                 )
             )
@@ -35,6 +47,7 @@ def get_tasks(parsed):
                 language.ListeningBlocks(
                     os.path.join(STIMULI_PATH, f'designs/listening_run{design_idx}.tsv'),
                     STIMULI_PATH,
+                    instruction=LISTENING_INSTRUCTIONS,
                     name='task-listening'
                 )
             )
@@ -43,6 +56,7 @@ def get_tasks(parsed):
                 language.ListeningBlocks(
                     os.path.join(STIMULI_PATH, f'designs/{run.task}_run{design_idx}.tsv'),
                     os.path.join(STIMULI_PATH, 'alice'),
+                    instruction = ALICE_INSTRUCTIONS,
                     name=f'task-{run.task}'
                 )
             )
