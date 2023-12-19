@@ -55,6 +55,11 @@
 	url = https://github.com/OpenNeuroDatasets/ds003643.git
 	datalad-id = acc00a1b-08c3-4b06-ad19-3de01b33eeed
 	datalad-url = https://github.com/OpenNeuroDatasets/ds003643.git
+[submodule "data/language/localizer"]
+	path = data/language/localizer
+	url = git@github.com:courtois-neuromod/langlocalizer.stimuli.git
+	datalad-id = dc98efba-a003-4ab6-bc11-59033fcd2846
+	datalad-url = git@github.com:courtois-neuromod/langlocalizer.stimuli.git
 [submodule "data/mutemusic/stimuli"]
 	path = data/mutemusic/stimuli
 	url = git@github.com:courtois-neuromod/mutemusic.stimuli.git
