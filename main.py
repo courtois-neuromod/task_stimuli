@@ -26,6 +26,10 @@ def run(parsed):
             tasks = itertools.islice(tasks, parsed.skip_n_tasks, None)
         else:
             tasks = tasks[parsed.skip_n_tasks:]
+    if parsed.go_to_task:
+        if not isinstance(tasks, Iterator):
+            t1_idx = [parsed.go_to_task in t.name for t in tasks].index(True)
+            tasks = tasks[t1_idx:]
     try:
         cli.main_loop(
             tasks,

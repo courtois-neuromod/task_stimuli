@@ -2,7 +2,6 @@ import os, sys, time
 
 #import psychopy
 #psychopy.prefs.hardware['audioLib'] = ['PTB', 'sounddevice', 'pyo','pygame'] # for local dev (laptop)
-import numpy as np
 from psychopy import visual, core, data, logging
 from .task_base import Task
 
@@ -246,7 +245,6 @@ and fixate the dot whenever it appears."""
 
     def _stop(self, exp_win, ctl_win):
         self.movie_stim.stop()
-
         for frameN in range(config.FRAME_RATE * FADE_TO_GREY_DURATION):
             grey = [float(frameN) / config.FRAME_RATE / FADE_TO_GREY_DURATION - 1] * 3
             exp_win.setColor(grey, colorSpace='rgb')

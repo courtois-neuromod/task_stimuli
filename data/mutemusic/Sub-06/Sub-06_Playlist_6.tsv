@@ -1,0 +1,11 @@
+Groupe	category	title	path	silence_duration	total_duration	onset
+U	Synthetic	Mortal_Kombat_(Sega_Genesis)_Opening_Theme_silenced.wav	data/mutemusic/stimuli/Synthetic/Mortal_Kombat_(Sega_Genesis)_Opening_Theme_silenced.wav	12	48.0
+F	Orchestral	Star_Trek_the_Next_Generation_(Main_Title)_silenced.wav	data/mutemusic/stimuli/Orchestral/Star_Trek_the_Next_Generation_(Main_Title)_silenced.wav	14	56.0
+U	Orchestral	Body_and_soul_silenced.wav	data/mutemusic/stimuli/Orchestral/Body_and_soul_silenced.wav	15	59.0
+F	Lyrics	Gangstas_Paradise_silenced.wav	data/mutemusic/stimuli/Lyrics/Gangstas_Paradise_silenced.wav	15	61.0
+F	Synthetic	Super_Mario_Bros_3_Boss_Battle_silenced.wav	data/mutemusic/stimuli/Synthetic/Super_Mario_Bros_3_Boss_Battle_silenced.wav	14	57.0
+U	Orchestral	il_porco_rosso_silenced.wav	data/mutemusic/stimuli/Orchestral/il_porco_rosso_silenced.wav	16	66.0
+F	Lyrics	I_Will_Survive_silenced.wav	data/mutemusic/stimuli/Lyrics/I_Will_Survive_silenced.wav	17	68.0
+F	Orchestral	Stairway_To_Heaven_silenced.wav	data/mutemusic/stimuli/Orchestral/Stairway_To_Heaven_silenced.wav	13	52.0
+U	Lyrics	Cant_Live_With_You_Cant_Live_Without_You_silenced.wav	data/mutemusic/stimuli/Lyrics/Cant_Live_With_You_Cant_Live_Without_You_silenced.wav	15	60.0
+U	Lyrics	Why_You_Wanna_Trip_on_Me_silenced.wav	data/mutemusic/stimuli/Lyrics/Why_You_Wanna_Trip_on_Me_silenced.wav	13	53.0

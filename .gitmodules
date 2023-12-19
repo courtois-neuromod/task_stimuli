@@ -59,3 +59,8 @@
 	url = git@github.com:courtois-neuromod/langlocalizer.stimuli.git
 	datalad-id = dc98efba-a003-4ab6-bc11-59033fcd2846
 	datalad-url = git@github.com:courtois-neuromod/langlocalizer.stimuli.git
+[submodule "data/mutemusic/stimuli"]
+	path = data/mutemusic/stimuli
+	url = git@github.com:courtois-neuromod/mutemusic.stimuli.git
+	datalad-id = a16a9cdf-f450-4ffe-a981-f910c96929f1
+	datalad-url = git@github.com:courtois-neuromod/mutemusic.stimuli.git

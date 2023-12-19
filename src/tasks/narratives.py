@@ -38,6 +38,7 @@ class SoundTaskBase(Task):
     def _setup(self, exp_win):
         self.sound = sound.Sound(self.sound_file)
         self.fixation = fixation_dot(exp_win)
+        self.duration = self.sound.duration
 
     def _run(self, exp_win, ctl_win):
 
@@ -55,6 +56,8 @@ class SoundTaskBase(Task):
             self.initial_wait + self.sound.duration + self.final_wait,
             keyboard_accuracy=.1):
             yield
+            self.progress_bar.n = int(self.task_timer.getTime())
+            self.progress_bar.refresh()
         while self.sound.status > 0:
             pass
         print(f"{'#'*25} STOP SCANNER {'#'*25}")
@@ -160,6 +163,7 @@ class AudioRecording(Task):
         self._pyaudio_if.terminate()
 
     def _run(self, exp_win, ctl_win):
+        event.getKeys(self.done_key) # flush stop key
         self._start_recording()
         for _ in utils.wait_until_yield(
             self.task_timer,
@@ -172,6 +176,8 @@ class AudioRecording(Task):
             self.max_duration - self.final_wait,
             keyboard_accuracy=.005)):
             self._poll_audio()
+            self.progress_bar.n = int(self.task_timer.getTime())
+            self.progress_bar.refresh()
             if len(event.getKeys(self.done_key)):
                 break
             if flip_idx < 2:
@@ -180,6 +186,7 @@ class AudioRecording(Task):
                 yield True
             yield
 
+        print(f"{'*'*25} PREPARE TO STOP {'*'*25}")
         for flip_idx,_ in enumerate(utils.wait_until_yield(
             self.task_timer,
             self.task_timer.getTime() + self.final_wait,
@@ -362,6 +369,11 @@ Use up/down buttons to answer.
                             keyboard_accuracy=.0001)
                     break
                 yield
+            else:
+                for k in ['response', 'response_correct', 'response_onset', 'response_time']:
+                    trial[k] = ''
+                self.progress_bar.set_description(
+                    f"{Fore.RED}Trial {trial_n}: no response{Fore.RESET}")
 
             # flip to get screen clear timing
             yield True
@@ -391,11 +403,14 @@ Use up/down buttons to answer.
             self._events[-1]['onset'] + self.final_wait
             )
         # final_wait with fixation
+        print(f"{'*'*25} PREPARE TO STOP {'*'*25}")
         yield from self._fixation(exp_win, final_wait)
-        print(f"{'#'*25} STOP SCANNER {'#'*25}")
+        print(f"{'#'*25} STOP SCANNER    {'#'*25}")
 
 
     def _questionnaire(self, exp_win, ctl_win, questions):
+        event.getKeys('udlra') # flush keys
+
         if questions is None:
             return
         exp_win.setColor([0] * 3, colorSpace='rgb')
@@ -541,8 +556,11 @@ Use up/down buttons to answer.
 
     def _save(self):
         out_fname = self._generate_unique_filename("events", "tsv")
-        self.trials.saveAsWideText(out_fname)
-        events_df = pandas.read_csv(out_fname, sep="\t")
-        events_df = pandas.concat([events_df, pandas.DataFrame(self._events)])
+        other_events = pandas.DataFrame(self._events)
+        events_df = self.trials.saveAsWideText(out_fname)
+        if isinstance(events_df, pandas.DataFrame):
+            events_df = pandas.concat([events_df, other_events])
+        else:
+            events_df = other_events
         events_df.to_csv(out_fname, sep="\t", index=False)
         return False

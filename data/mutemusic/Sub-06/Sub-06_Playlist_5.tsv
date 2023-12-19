@@ -1,0 +1,11 @@
+Groupe	category	title	path	silence_duration	total_duration	onset
+U	Synthetic	Shinobi_3_Return_Of_The_Ninja_Master_OST_Japonesque_(level_1_1)_silenced.wav	data/mutemusic/stimuli/Synthetic/Shinobi_3_Return_Of_The_Ninja_Master_OST_Japonesque_(level_1_1)_silenced.wav	11	44.0	2.0014891624450684
+U	Synthetic	Castlevania_4_Bloody_Tears_(Super_Nintendo)_silenced.wav	data/mutemusic/stimuli/Synthetic/Castlevania_4_Bloody_Tears_(Super_Nintendo)_silenced.wav	14	58.0	53.06440711021423
+F	Synthetic	Super_Mario_Bros_(NES)_Music_Underground_Theme_silenced.wav	data/mutemusic/stimuli/Synthetic/Super_Mario_Bros_(NES)_Music_Underground_Theme_silenced.wav	12	49.0	118.12000799179077
+U	Orchestral	Gnossienne_No1_silenced.wav	data/mutemusic/stimuli/Orchestral/Gnossienne_No1_silenced.wav	16	63.0	174.17296314239502
+U	Lyrics	Babooshka_silenced.wav	data/mutemusic/stimuli/Lyrics/Babooshka_silenced.wav	14	55.0	244.23668313026428
+F	Lyrics	Its_Raining_Men_silenced.wav	data/mutemusic/stimuli/Lyrics/Its_Raining_Men_silenced.wav	16	62.0	306.2910900115967
+F	Orchestral	Seinfeld_Official_Soundtrack_(Seinfeld_Theme)_silenced.wav	data/mutemusic/stimuli/Orchestral/Seinfeld_Official_Soundtrack_(Seinfeld_Theme)_silenced.wav	13	52.0	375.32994318008423
+F	Synthetic	Aladdin_Genesis_Music_Ending_silenced.wav	data/mutemusic/stimuli/Synthetic/Aladdin_Genesis_Music_Ending_silenced.wav	16	65.0	434.37532114982605
+U	Lyrics	Rain_silenced.wav	data/mutemusic/stimuli/Lyrics/Rain_silenced.wav	12	48.0	506.4237401485443
+F	Lyrics	No_Woman_No_Cry_silenced.wav	data/mutemusic/stimuli/Lyrics/No_Woman_No_Cry_silenced.wav	16	64.0	561.4814150333405
