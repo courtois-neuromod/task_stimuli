@@ -30,6 +30,7 @@ def get_tasks(parsed):
         print(f"- func_task-{run.task}")
     tasks = []
     from ..tasks import language, narratives, task_base
+    first_task = True
     for _, run in session_design.iterrows():
         design_idx = int(run.design_file.split('_')[-1])
         if run.task == 'reading':
@@ -39,6 +40,8 @@ def get_tasks(parsed):
                         STIMULI_PATH,
                         f'designs/task-locreading_run-{design_idx:02d}_design.tsv'),
                     instruction=READING_INSTRUCTIONS,
+                    use_eyetracking=True,
+                    et_calibrate=True,
                     name='task-reading'
                 )
             )
@@ -48,6 +51,8 @@ def get_tasks(parsed):
                     os.path.join(STIMULI_PATH, f'designs/listening_run{design_idx}.tsv'),
                     STIMULI_PATH,
                     instruction=LISTENING_INSTRUCTIONS,
+                    use_eyetracking=True,
+                    et_calibrate=first_task,
                     name='task-listening'
                 )
             )
@@ -57,9 +62,12 @@ def get_tasks(parsed):
                     os.path.join(STIMULI_PATH, f'designs/{run.task}_run{design_idx}.tsv'),
                     os.path.join(STIMULI_PATH, 'alice'),
                     instruction = ALICE_INSTRUCTIONS,
+                    use_eyetracking=True,
+                    et_calibrate=first_task,
                     name=f'task-{run.task}'
                 )
             )
+            first_task = False
     return tasks
 
 INITIAL_WAIT = 6
