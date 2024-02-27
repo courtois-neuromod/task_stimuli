@@ -10,21 +10,22 @@ def get_tasks(parsed):
     playlist_order = pandas.read_csv(playlists_order_path, sep=' ')
 
     current_playlist = len(playlist_order)
-    for i, playlist in playlist_order.iterrows():
-        if not playlist['done']:
+    for i, row in playlist_order.iterrows():
+        if not row['done']:
             current_playlist = i
             break
 
     playlist_sequence = playlist_order[current_playlist:]
-    for i, playlist in playlist_sequence.iterrows():
-        pli = playlist['playlist']
+    for i, row in playlist_sequence.iterrows():
+        pli = row['playlist']
         playlist_file = f'{sub}_Playlist_{pli}.tsv'
         playlist_path = os.path.join(STIMULI_PATH, sub, playlist_file)
-        yield Playlist(
+        playlist = Playlist(
             tsv_path=playlist_path,
             use_eyetracking=True,
             et_calibrate=i==current_playlist,
             name=f"task-mutemusic_run-{i}")
+        yield playlist
         
         if playlist._task_completed:
             playlist_order['done'].iloc[i] = 1
