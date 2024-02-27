@@ -1,29 +1,31 @@
 import os
-import json
+import pandas
 from ..tasks.mutemusic import Playlist
 
 STIMULI_PATH  = 'data/mutemusic'
 
 def get_tasks(parsed):
-    bids_sub = "sub-%s" % parsed.subject
-    savestate_path = os.path.join(parsed.output, f"{bids_sub}_phase-stable_task-mutemusic_savestate.json")
-    # savestate_path = os.path.abspath(os.path.join(parsed.output, "sourcedata",bids_sub, f"{bids_sub}_phase-stable_task-mutemusic_savestate.json"))
-    # check for a "savestate"
-    if os.path.exists(savestate_path):
-        with open(savestate_path) as f:
-            savestate = json.load(f)
-    else:
-        savestate = {"index": 0}
+    sub = f'Sub-{parsed.subject}'
+    playlists_order_path = os.path.join(STIMULI_PATH, sub, f'{sub}_Playlist_order.tsv')
+    playlist_order = pandas.read_csv(playlists_order_path, sep=' ')
 
-    for last_playlist in range(savestate['index'], 6):
+    current_playlist = len(playlist_order)
+    for i, playlist in playlist_order.iterrows():
+        if not playlist['done']:
+            current_playlist = i
+            break
 
-        playlist_file = f'Sub-{parsed.subject}_Playlist_{last_playlist+1}.tsv'
-        playlist_path = os.path.join(STIMULI_PATH, f'Sub-{parsed.subject}', playlist_file)
-
-        playlist = Playlist(tsv_path=playlist_path, name=f"task-mutemusic_run-{last_playlist}")
-        yield playlist
+    playlist_sequence = playlist_order[current_playlist:]
+    for i, playlist in playlist_sequence.iterrows():
+        pli = playlist['playlist']
+        playlist_file = f'{sub}_Playlist_{pli}.tsv'
+        playlist_path = os.path.join(STIMULI_PATH, sub, playlist_file)
+        yield Playlist(
+            tsv_path=playlist_path,
+            use_eyetracking=True,
+            et_calibrate=i==current_playlist,
+            name=f"task-mutemusic_run-{i}")
         
         if playlist._task_completed:
-            savestate['index'] += 1
-            with open(savestate_path, 'w') as f:
-                json.dump(savestate, f)
+            playlist_order['done'].iloc[i] = 1
+            playlist_order.to_csv(playlists_order_path, sep=' ', index=False)
