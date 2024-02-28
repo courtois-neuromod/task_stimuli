@@ -1,0 +1,11 @@
+Groupe	category	title	path	silence_duration	total_duration	onset
+U	Orchestral	Gnossienne_No1_silenced.wav	data/mutemusic/stimuli/Orchestral/Gnossienne_No1_silenced.wav	16	63.0
+F	Synthetic	Super_Mario_Bros_3_Overworld_1_Theme_silenced.wav	data/mutemusic/stimuli/Synthetic/Super_Mario_Bros_3_Overworld_1_Theme_silenced.wav	14	54.0
+F	Lyrics	Take_Me_Home_Country_Roads_silenced.wav	data/mutemusic/stimuli/Lyrics/Take_Me_Home_Country_Roads_silenced.wav	14	54.0
+U	Orchestral	Hook_prologue_silenced.wav	data/mutemusic/stimuli/Orchestral/Hook_prologue_silenced.wav	11	44.0
+U	Lyrics	Rain_silenced.wav	data/mutemusic/stimuli/Lyrics/Rain_silenced.wav	12	48.0
+F	Orchestral	2001_l_odyssée_de_l_espace_silenced.wav	data/mutemusic/stimuli/Orchestral/2001_l_odyssée_de_l_espace_silenced.wav	15	61.0
+F	Synthetic	Super_Mario_Bros_3_Airship_silenced.wav	data/mutemusic/stimuli/Synthetic/Super_Mario_Bros_3_Airship_silenced.wav	15	60.0
+U	Orchestral	Kikis_Delivery_Service_silenced.wav	data/mutemusic/stimuli/Orchestral/Kikis_Delivery_Service_silenced.wav	12	48.0
+U	Lyrics	No_Woman_No_Cry_silenced.wav	data/mutemusic/stimuli/Lyrics/No_Woman_No_Cry_silenced.wav	16	64.0
+F	Lyrics	Another_Brick_In_The_Wall_(Part_1)_lyrics_silenced.wav	data/mutemusic/stimuli/Lyrics/Another_Brick_In_The_Wall_(Part_1)_lyrics_silenced.wav	15	60.0
