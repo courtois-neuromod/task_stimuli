@@ -1,0 +1,11 @@
+Groupe	category	title	path	silence_duration	total_duration	onset
+U	Synthetic	Final_Fantasy_7_Music_Aeriths_Theme_silenced.wav	data/mutemusic/stimuli/Synthetic/Final_Fantasy_7_Music_Aeriths_Theme_silenced.wav	14	57.0
+F	Orchestral	My_Name_is_Nobody_Il_Mio_Nome_e_Nessuno_silenced.wav	data/mutemusic/stimuli/Orchestral/My_Name_is_Nobody_Il_Mio_Nome_e_Nessuno_silenced.wav	13	53.0
+U	Synthetic	Legend_of_Zelda_The_(NES)_Music_Overworld_Theme_silenced.wav	data/mutemusic/stimuli/Synthetic/Legend_of_Zelda_The_(NES)_Music_Overworld_Theme_silenced.wav	12	50.0
+F	Synthetic	Super_Mario_Bros_3_Underwater_Theme_silenced.wav	data/mutemusic/stimuli/Synthetic/Super_Mario_Bros_3_Underwater_Theme_silenced.wav	12	46.0
+F	Lyrics	I_Can't_Get_No_Satisfaction_silenced.wav	data/mutemusic/stimuli/Lyrics/I_Can't_Get_No_Satisfaction_silenced.wav	17	67.0
+U	Orchestral	Main_Title_Terminator_2_Theme_(Remastered_2017)_silenced.wav	data/mutemusic/stimuli/Orchestral/Main_Title_Terminator_2_Theme_(Remastered_2017)_silenced.wav	14	54.0
+U	Synthetic	Donkey_Kong_Country_OST_(Super_Nintendo)_DK_Island_Swing_silenced.wav	data/mutemusic/stimuli/Synthetic/Donkey_Kong_Country_OST_(Super_Nintendo)_DK_Island_Swing_silenced.wav	15	59.0
+F	Synthetic	Shinobi_3_Return_Of_The_Ninja_Master_OST_Japonesque_(level_1_1)_silenced.wav	data/mutemusic/stimuli/Synthetic/Shinobi_3_Return_Of_The_Ninja_Master_OST_Japonesque_(level_1_1)_silenced.wav	11	44.0
+F	Lyrics	Jailhouse_Rock_silenced.wav	data/mutemusic/stimuli/Lyrics/Jailhouse_Rock_silenced.wav	13	52.0
+U	Orchestral	il_porco_rosso_silenced.wav	data/mutemusic/stimuli/Orchestral/il_porco_rosso_silenced.wav	16	66.0
