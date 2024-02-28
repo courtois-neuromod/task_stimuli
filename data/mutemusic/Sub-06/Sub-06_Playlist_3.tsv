@@ -1,11 +1,11 @@
-Groupe category title path silence_duration total_duration onset
-F Synthetic Original_Tetris_theme_(Tetris_Soundtrack)_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1/Synthetic/Original_Tetris_theme_(Tetris_Soundtrack)_silenced.wav 12 50.0 
-U Lyrics Make_Em_Laugh_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1/Lyrics/Make_Em_Laugh_silenced.wav 16 65.0 
-F Lyrics I_Can't_Get_No_Satisfaction_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1/Lyrics/I_Can't_Get_No_Satisfaction_silenced.wav 17 67.0 
-F Synthetic Super_Mario_Bros_(NES)_Music_Overworld_Theme_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1/Synthetic/Super_Mario_Bros_(NES)_Music_Overworld_Theme_silenced.wav 15 59.0 
-U Synthetic Space_Harrier_Music_MAIN_THEME_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1/Synthetic/Space_Harrier_Music_MAIN_THEME_silenced.wav 12 48.0 
-U Orchestral Kikis_Delivery_Service_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1/Orchestral/Kikis_Delivery_Service_silenced.wav 12 48.0 
-U Synthetic Sonic_The_Hedgehog_OST_Green_Hill_Zone_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1/Synthetic/Sonic_The_Hedgehog_OST_Green_Hill_Zone_silenced.wav 13 52.0 
-F Orchestral The_Imperial_March_(Darth_Vaders_Theme)_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1/Orchestral/The_Imperial_March_(Darth_Vaders_Theme)_silenced.wav 12 48.0 
-F Lyrics Never_Gonna_Give_You_Up_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1/Lyrics/Never_Gonna_Give_You_Up_silenced.wav 12 50.0 
-U Lyrics Living_Together_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1/Lyrics/Living_Together_silenced.wav 18 71.0 
+Groupe	category	title	path	silence_duration	total_duration	onset
+F	Synthetic	Original_Tetris_theme_(Tetris_Soundtrack)_silenced.wav	data/mutemusic/stimuli/Synthetic/Original_Tetris_theme_(Tetris_Soundtrack)_silenced.wav	12	50.0
+U	Lyrics	Make_Em_Laugh_silenced.wav	data/mutemusic/stimuli/Lyrics/Make_Em_Laugh_silenced.wav	16	65.0
+F	Lyrics	I_Can't_Get_No_Satisfaction_silenced.wav	data/mutemusic/stimuli/Lyrics/I_Can't_Get_No_Satisfaction_silenced.wav	17	67.0
+F	Synthetic	Super_Mario_Bros_(NES)_Music_Overworld_Theme_silenced.wav	data/mutemusic/stimuli/Synthetic/Super_Mario_Bros_(NES)_Music_Overworld_Theme_silenced.wav	15	59.0
+U	Synthetic	Space_Harrier_Music_MAIN_THEME_silenced.wav	data/mutemusic/stimuli/Synthetic/Space_Harrier_Music_MAIN_THEME_silenced.wav	12	48.0
+U	Orchestral	Kikis_Delivery_Service_silenced.wav	data/mutemusic/stimuli/Orchestral/Kikis_Delivery_Service_silenced.wav	12	48.0
+U	Synthetic	Shinobi_3_Return_Of_The_Ninja_Master_OST_Shinobi_Walk_(level_4_2)_silenced.wav	data/mutemusic/stimuli/Synthetic/Shinobi_3_Return_Of_The_Ninja_Master_OST_Shinobi_Walk_(level_4_2)_silenced.wav	13	52.0
+F	Orchestral	The_Imperial_March_(Darth_Vaders_Theme)_silenced.wav	data/mutemusic/stimuli/Orchestral/The_Imperial_March_(Darth_Vaders_Theme)_silenced.wav	12	48.0
+F	Lyrics	Never_Gonna_Give_You_Up_silenced.wav	data/mutemusic/stimuli/Lyrics/Never_Gonna_Give_You_Up_silenced.wav	12	50.0
+U	Lyrics	Living_Together_silenced.wav	data/mutemusic/stimuli/Lyrics/Living_Together_silenced.wav	18	71.0

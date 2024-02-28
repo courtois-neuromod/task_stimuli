@@ -1,11 +1,11 @@
-Groupe category title path silence_duration total_duration onset
-F Synthetic Super_Mario_Bros_3_Castle_Theme_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1/Synthetic/Super_Mario_Bros_3_Castle_Theme_silenced.wav 13 53.0 
-U Lyrics Paperback_writer_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1/Lyrics/Paperback_writer_silenced.wav 12 46.0 
-U Synthetic Donkey_Kong_Country_OST_(Super_Nintendo)_DK_Island_Swing_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1/Synthetic/Donkey_Kong_Country_OST_(Super_Nintendo)_DK_Island_Swing_silenced.wav 15 59.0 
-F Orchestral Moonlight_Sonata_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1/Orchestral/Moonlight_Sonata_silenced.wav 12 47.0 
-U Orchestral Hook_prologue_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1/Orchestral/Hook_prologue_silenced.wav 11 44.0 
-U Orchestral My_Name_is_Nobody_Il_Mio_Nome_e_Nessuno_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1/Orchestral/My_Name_is_Nobody_Il_Mio_Nome_e_Nessuno_silenced.wav 13 53.0 
-U Lyrics Murder_by_Numbers_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1/Lyrics/Murder_by_Numbers_silenced.wav 15 60.0 
-F Orchestral Lux_Aeterna_from_Requiem_for_a_Dream_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1/Orchestral/Lux_Aeterna_from_Requiem_for_a_Dream_silenced.wav 15 60.0 
-F Lyrics Monday_Monday_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1/Lyrics/Monday_Monday_silenced.wav 13 53.0 
-F Lyrics I_ll_Be_There_for_You_silenced.wav /home/maellef/git/MuteMusic/data/StimuliFinal/silenced1/Lyrics/I_ll_Be_There_for_You_silenced.wav 12 47.0 
+Groupe	category	title	path	silence_duration	total_duration	onset
+F	Synthetic	Super_Mario_Bros_3_Castle_Theme_silenced.wav	data/mutemusic/stimuli/Synthetic/Super_Mario_Bros_3_Castle_Theme_silenced.wav	13	53.0	2.0097107887268066
+U	Lyrics	Paperback_writer_silenced.wav	data/mutemusic/stimuli/Lyrics/Paperback_writer_silenced.wav	12	46.0	58.829073905944824
+U	Synthetic	Donkey_Kong_Country_OST_(Super_Nintendo)_DK_Island_Swing_silenced.wav	data/mutemusic/stimuli/Synthetic/Donkey_Kong_Country_OST_(Super_Nintendo)_DK_Island_Swing_silenced.wav	15	59.0	108.68362379074097
+F	Orchestral	Moonlight_Sonata_silenced.wav	data/mutemusic/stimuli/Orchestral/Moonlight_Sonata_silenced.wav	12	47.0	174.7454798221588
+U	Orchestral	Hook_prologue_silenced.wav	data/mutemusic/stimuli/Orchestral/Hook_prologue_silenced.wav	11	44.0	228.79563999176025
+U	Orchestral	My_Name_is_Nobody_Il_Mio_Nome_e_Nessuno_silenced.wav	data/mutemusic/stimuli/Orchestral/My_Name_is_Nobody_Il_Mio_Nome_e_Nessuno_silenced.wav	13	53.0	276.09195590019226
+U	Lyrics	Murder_by_Numbers_silenced.wav	data/mutemusic/stimuli/Lyrics/Murder_by_Numbers_silenced.wav	15	60.0	332.8935389518738
+F	Orchestral	Lux_Aeterna_from_Requiem_for_a_Dream_silenced.wav	data/mutemusic/stimuli/Orchestral/Lux_Aeterna_from_Requiem_for_a_Dream_silenced.wav	15	60.0	399.95643877983093
+F	Lyrics	Monday_Monday_silenced.wav	data/mutemusic/stimuli/Lyrics/Monday_Monday_silenced.wav	13	53.0	463.84476685523987
+F	Lyrics	I_ll_Be_There_for_You_silenced.wav	data/mutemusic/stimuli/Lyrics/I_ll_Be_There_for_You_silenced.wav	12	47.0	523.8911929130554

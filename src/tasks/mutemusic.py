@@ -24,30 +24,47 @@ Following each, you will be presented the rating scale below and asked to rate h
 \n
 “Please rate how well you were able to imagine the music during the pauses of the music clips.”\n
 Not at all                           Partially                 I clearly imagined it\n
-1               2               3               4               5'''
+1               2               3               4               5
 
-AUDITORY_IMAGERY_ASSESSMENT = ("Please rate how well you were able to imagine the music during the pauses of the music clips.", 
+Press A when ready'''
+
+DEFAULT_INSTRUCTION = '''Please listen to the following songs. Avoid any motion (head, finger) to the music rhythm.\n
+During each musical track, small segments will be silenced during which you should try to imagine the missing part. \n
+After each track, use the scale below to rate how well you imagined the music during silences.
+Answer as quickly as possible in the 7 seconds, and press the “a” button to validate. \n
+\n
+“Please rate how well you were able to imagine the music during the pauses of the music track.”\n
+Not at all                           Partially                 I clearly imagined it\n
+1               2               3               4               5
+
+Press A when ready'''
+
+AUDITORY_IMAGERY_ASSESSMENT = ("Please rate how well you were able to imagine the music during the pauses of the music clips.",
                                ['Not at all', '', 'Partially', '', 'I clearly imagined it'])
 
 class Playlist(Task):
 #Derived from SoundTaskBase (Narratives task)
-    def __init__(self, tsv_path, initial_wait=2, question_duration = QUESTION_DURATION, **kwargs):
+    def __init__(self, tsv_path, initial_wait=6, final_wait=9, question_duration = 5, isi=2, **kwargs):
         super().__init__(**kwargs)
 
         if not os.path.exists(tsv_path):
-            raise ValueError("File %s does not exists" % tsv_path)   
+            raise ValueError("File %s does not exists" % tsv_path)
         else :
             self.tsv_path = tsv_path
             file = open(tsv_path, "r")
-            self.playlist = pandas.read_table(file, sep=' ')
+            self.playlist = pandas.read_table(file, sep='\t')
             file.close()
 
-        self.bullseye_wait = initial_wait
+        self.initial_wait = initial_wait
+        self.final_wait = final_wait
+        self.isi = 2
         self.question_duration = question_duration
         self.instruction = DEFAULT_INSTRUCTION
-    
+
+        self.duration = self.playlist.shape[0]
+        self._progress_bar_refresh_rate = None
+
     def _instructions(self, exp_win, ctl_win):
-        print(self.instruction)
         screen_text = visual.TextStim(
             exp_win,
             text=self.instruction,
@@ -56,25 +73,32 @@ class Playlist(Task):
             units='height',
             height=0.03
         )
-        screen_text.draw(exp_win)
-        if ctl_win:
-            screen_text.draw(ctl_win)
-        yield True
-        time.sleep(INSTRUCTION_DURATION)
+
+        for flip_idx, _ in enumerate(utils.wait_until_yield(
+            core.monotonicClock,
+            core.getTime()+ INSTRUCTION_DURATION,
+            keyboard_accuracy=.1)):
+            keys = event.getKeys(keyList=['space','a'])
+            if keys:
+                break
+
+            if flip_idx < 2:
+                screen_text.draw(exp_win)
+                if ctl_win:
+                    screen_text.draw(ctl_win)
+                yield True
+            yield
         yield True
 
     def _setup(self, exp_win):
         super()._setup(exp_win)
         self.fixation = fixation_dot(exp_win)
 
-    def _handle_controller_presses(self, ISI):
-        ISI.start(0.01)
+    def _handle_controller_presses(self):
         self._new_key_pressed = event.getKeys('lra')
-        ISI.complete()
 
     def _questionnaire(self, exp_win, ctl_win, question, answers):
         event.getKeys('lra') # flush keys
-        self.ISI = core.StaticPeriod(win=exp_win)
         n_pts = len(answers)
         legends = []
         default_response = n_pts // 2
@@ -99,7 +123,7 @@ class Playlist(Task):
                 autoLog=False,
                 lineColor=(-1, -1, -1)
             )
-        
+
         bullets = [
                 visual.Circle(
                     exp_win,
@@ -137,7 +161,7 @@ class Playlist(Task):
             text = question,
             units="pix",
 
-            pos=(-(scales_block_x + extent), 
+            pos=(-(scales_block_x + extent),
                     y_pos + exp_win.size[1] * 0.30),
             wrapWidth= win_width-(win_width*0.1),
             height= y_spacing / 3,
@@ -149,9 +173,9 @@ class Playlist(Task):
         for _ in utils.wait_until_yield(
             self.task_timer,
             self.task_timer.getTime() + self.question_duration,
-            keyboard_accuracy=.0001):   
+            keyboard_accuracy=.0001):
 
-            self._handle_controller_presses(self.ISI)
+            self._handle_controller_presses()
             new_key_pressed = [k[0] for k in self._new_key_pressed]
 
             if "r" in new_key_pressed and response < n_pts - 1:
@@ -159,7 +183,7 @@ class Playlist(Task):
             elif "l" in new_key_pressed and response > 0:
                 response -= 1
             elif "a" in new_key_pressed:
-                self._log_event({
+                self._events.append({
                     "track": self.track_name,
                     "question": question,
                     "value": response,
@@ -177,29 +201,34 @@ class Playlist(Task):
 
             for bullet_n, bullet in enumerate(bullets):
                 bullet.fillColor = (1, 1, 1) if response == bullet_n else (-1, -1, -1)
-            
+
             line.draw(exp_win)
             text.draw(exp_win)
             for legend, bullet in zip(legends, bullets):
                 legend.draw(exp_win)
                 bullet.draw(exp_win)
-            
+
             yield True
-            n_flips += 1 
+            n_flips += 1
 
         else:
-            self._log_event({
+            self._events.append({
                     "track": self.track_name,
                     "question": question,
                     "value": response,
                     "confirmation": "no"})
             pass
 
-        #Flush questionnaire from screen   
+        #Flush questionnaire from screen
         yield True
-    
+
     def _run(self, exp_win, ctl_win):
         previous_track_offset = 0
+        #first bullseye
+        for stim in self.fixation:
+            stim.draw(exp_win)
+        yield True
+        next_onset = self.initial_wait
 
         for index, track in self.playlist.iterrows():
             #setup track
@@ -208,16 +237,18 @@ class Playlist(Task):
             self.sound = sound.Sound(track_path)
             self.duration = self.sound.duration
 
-            #first bullseye
-            for stim in self.fixation:
-                stim.draw(exp_win)
-            yield True
-            #initial wait (bullseye 2s) 
+            self.progress_bar.set_description(
+                f"Trial {index}:: {self.track_name}"
+            )
+            self.progress_bar.update(1)
+
+            #initial wait (bullseye 2s)
             for _ in utils.wait_until_yield(
                 self.task_timer,
-                self.bullseye_wait + previous_track_offset,
+                next_onset,
                 keyboard_accuracy=.1):
                 yield
+
             #Flush bullseye from screen before track
             yield True
 
@@ -225,22 +256,36 @@ class Playlist(Task):
             track_onset = self.task_timer.getTime(applyZero=True)
             self.sound.play()
             for _ in utils.wait_until_yield(self.task_timer,
-                                            previous_track_offset + self.bullseye_wait + self.sound.duration,
+                                            next_onset + self.initial_wait + self.sound.duration,
                                             keyboard_accuracy=.1):
                 yield
-            
+
             #ensure music track has been completely played
             while self.sound.status > 0:
                 pass
 
             #display Questionnaire (variable timing, max 5s)
-            yield from self._questionnaire(exp_win, ctl_win, 
-                                           question=AUDITORY_IMAGERY_ASSESSMENT[0], 
+            yield from self._questionnaire(exp_win, ctl_win,
+                                           question=AUDITORY_IMAGERY_ASSESSMENT[0],
                                            answers=AUDITORY_IMAGERY_ASSESSMENT[1])
-            
+
+            #display bullseye for netx iteration
+            for stim in self.fixation:
+                stim.draw(exp_win)
+            yield True
+
             self.playlist.at[index, 'onset']=track_onset
             previous_track_offset = self.task_timer.getTime(applyZero=True)
+            next_onset = previous_track_offset + self.isi
+        #final wait
+        print(f"{'*'*25} PREPARE TO STOP {'*'*25}")
+        yield from utils.wait_until_yield(self.task_timer, previous_track_offset + self.final_wait)
+        print(f"{'#'*25} STOP SCANNER    {'#'*25}")
 
-        self.playlist.to_csv(self.tsv_path, sep=' ', index=False)
+    def _stop(self, exp_win, ctl_win):
+        if hasattr(self, 'sound'):
+            self.sound.stop()
+        yield True
 
-        #self.save()
+    def _save(self):
+        self.playlist.to_csv(self._generate_unique_filename("events", "tsv"), sep='\t', index=False)

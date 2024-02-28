@@ -5,6 +5,7 @@ from ..tasks.mutemusic import Playlist
 STIMULI_PATH  = 'data/mutemusic'
 
 def get_tasks(parsed):
+
     sub = f'Sub-{parsed.subject}'
     playlists_order_path = os.path.join(STIMULI_PATH, sub, f'{sub}_Playlist_order.tsv')
     playlist_order = pandas.read_csv(playlists_order_path, sep=' ')
@@ -30,3 +31,4 @@ def get_tasks(parsed):
         if playlist._task_completed:
             playlist_order['done'].iloc[i] = 1
             playlist_order.to_csv(playlists_order_path, sep=' ', index=False)
+
