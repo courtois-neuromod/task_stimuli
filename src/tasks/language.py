@@ -417,7 +417,7 @@ class Reading(Task):
             text="+",
             font=self.txt_font,
             height=self.txt_size,
-            units='pixels',
+            units='pix',
             alignText="center",
             color=self.txt_color,
         )
