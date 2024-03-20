@@ -1,0 +1,11 @@
+Groupe	category	title	path	silence_duration	total_duration	onset
+U	Orchestral	Lux_Aeterna_from_Requiem_for_a_Dream_silenced.wav	data/mutemusic/stimuli/Orchestral/Lux_Aeterna_from_Requiem_for_a_Dream_silenced.wav	15	60.0	
+U	Lyrics	Living_Together_silenced.wav	data/mutemusic/stimuli/Lyrics/Living_Together_silenced.wav	18	71.0	
+F	Orchestral	Game_of_Thrones_Main_Title_silenced.wav	data/mutemusic/stimuli/Orchestral/Game_of_Thrones_Main_Title_silenced.wav	14	56.0	
+F	Lyrics	I_Will_Survive_silenced.wav	data/mutemusic/stimuli/Lyrics/I_Will_Survive_silenced.wav	17	68.0	
+F	Orchestral	The_4_Seasons_Op_8_4_RV_297_Winter_silenced.wav	data/mutemusic/stimuli/Orchestral/The_4_Seasons_Op_8_4_RV_297_Winter_silenced.wav	15	60.0	
+U	Synthetic	Aladdin_Genesis_Music_Ending_silenced.wav	data/mutemusic/stimuli/Synthetic/Aladdin_Genesis_Music_Ending_silenced.wav	16	65.0	
+F	Orchestral	The_Pink_Panther_Theme_silenced.wav	data/mutemusic/stimuli/Orchestral/The_Pink_Panther_Theme_silenced.wav	11	45.0	
+U	Lyrics	Paperback_writer_silenced.wav	data/mutemusic/stimuli/Lyrics/Paperback_writer_silenced.wav	12	46.0	
+U	Orchestral	Another_Brick_In_The_Wall_(Part_1)_orchestral_silenced.wav	data/mutemusic/stimuli/Orchestral/Another_Brick_In_The_Wall_(Part_1)_orchestral_silenced.wav	11	45.0	
+F	Lyrics	Babooshka_silenced.wav	data/mutemusic/stimuli/Lyrics/Babooshka_silenced.wav	14	55.0	
