@@ -1,0 +1,11 @@
+Groupe	category	title	path	silence_duration	total_duration	onset
+F	Orchestral	The_Imperial_March_(Darth_Vaders_Theme)_silenced.wav	data/mutemusic/stimuli/Orchestral/The_Imperial_March_(Darth_Vaders_Theme)_silenced.wav	12	48.0	
+U	Lyrics	Good_Morning_silenced.wav	data/mutemusic/stimuli/Lyrics/Good_Morning_silenced.wav	14	58.0	
+U	Lyrics	Body_And_Soul_Lyrics_silenced.wav	data/mutemusic/stimuli/Lyrics/Body_And_Soul_Lyrics_silenced.wav	14	56.0	
+U	Synthetic	Sid_Meiers_Civilization_SNES_OST_06_City_Menu_silenced.wav	data/mutemusic/stimuli/Synthetic/Sid_Meiers_Civilization_SNES_OST_06_City_Menu_silenced.wav	15	60.0	
+F	Lyrics	Murder_by_Numbers_silenced.wav	data/mutemusic/stimuli/Lyrics/Murder_by_Numbers_silenced.wav	15	60.0	
+U	Orchestral	My_Name_is_Nobody_Il_Mio_Nome_e_Nessuno_silenced.wav	data/mutemusic/stimuli/Orchestral/My_Name_is_Nobody_Il_Mio_Nome_e_Nessuno_silenced.wav	13	53.0	
+F	Orchestral	The_Pink_Panther_Theme_Long_silenced.wav	data/mutemusic/stimuli/Orchestral/The_Pink_Panther_Theme_Long_silenced.wav	19	77.0	
+F	Synthetic	Super_Mario_Bros_(NES)_Music_Overworld_Theme_silenced.wav	data/mutemusic/stimuli/Synthetic/Super_Mario_Bros_(NES)_Music_Overworld_Theme_silenced.wav	15	59.0	
+U	Lyrics	Babooshka_silenced.wav	data/mutemusic/stimuli/Lyrics/Babooshka_silenced.wav	14	55.0	
+F	Synthetic	Super_Mario_Bros_3_Castle_Theme_silenced.wav	data/mutemusic/stimuli/Synthetic/Super_Mario_Bros_3_Castle_Theme_silenced.wav	13	53.0	

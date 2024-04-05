@@ -1,0 +1,11 @@
+Groupe	category	title	path	silence_duration	total_duration	onset
+U	Orchestral	Lux_Aeterna_from_Requiem_for_a_Dream_silenced.wav	data/mutemusic/stimuli/Orchestral/Lux_Aeterna_from_Requiem_for_a_Dream_silenced.wav	15	60.0	
+U	Lyrics	Paperback_writer_silenced.wav	data/mutemusic/stimuli/Lyrics/Paperback_writer_silenced.wav	12	46.0	
+F	Orchestral	Stairway_To_Heaven_silenced.wav	data/mutemusic/stimuli/Orchestral/Stairway_To_Heaven_silenced.wav	13	52.0	
+F	Lyrics	I_ll_Be_There_for_You_silenced.wav	data/mutemusic/stimuli/Lyrics/I_ll_Be_There_for_You_silenced.wav	12	47.0	
+F	Orchestral	Star_Trek_the_Next_Generation_(Main_Title)_silenced.wav	data/mutemusic/stimuli/Orchestral/Star_Trek_the_Next_Generation_(Main_Title)_silenced.wav	14	56.0	
+U	Synthetic	Final_Fantasy_7_Music_Aeriths_Theme_silenced.wav	data/mutemusic/stimuli/Synthetic/Final_Fantasy_7_Music_Aeriths_Theme_silenced.wav	14	57.0	
+F	Orchestral	The_Office_(Main_Theme)_silenced.wav	data/mutemusic/stimuli/Orchestral/The_Office_(Main_Theme)_silenced.wav	16	62.0	
+U	Lyrics	The_Last_Goodbye_silenced.wav	data/mutemusic/stimuli/Lyrics/The_Last_Goodbye_silenced.wav	14	54.0	
+U	Orchestral	Waltz_No_2_Short_silenced.wav	data/mutemusic/stimuli/Orchestral/Waltz_No_2_Short_silenced.wav	12	49.0	
+F	Lyrics	Creep_silenced.wav	data/mutemusic/stimuli/Lyrics/Creep_silenced.wav	12	49.0	
