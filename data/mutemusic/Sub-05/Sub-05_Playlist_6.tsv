@@ -1,0 +1,11 @@
+Groupe	category	title	path	silence_duration	total_duration	onset
+U	Orchestral	My_Name_is_Nobody_Good_Luck_Jack_silenced.wav	data/mutemusic/stimuli/Orchestral/My_Name_is_Nobody_Good_Luck_Jack_silenced.wav	13	53.0	
+F	Synthetic	Aladdin_Genesis_Music_Ending_silenced.wav	data/mutemusic/stimuli/Synthetic/Aladdin_Genesis_Music_Ending_silenced.wav	16	65.0	
+F	Lyrics	Living_Together_silenced.wav	data/mutemusic/stimuli/Lyrics/Living_Together_silenced.wav	18	71.0	
+U	Orchestral	The_Moldau_silenced.wav	data/mutemusic/stimuli/Orchestral/The_Moldau_silenced.wav	14	54.0	
+U	Lyrics	The_Wedding_List_silenced.wav	data/mutemusic/stimuli/Lyrics/The_Wedding_List_silenced.wav	15	59.0	
+F	Orchestral	2001_l_odyssée_de_l_espace_silenced.wav	data/mutemusic/stimuli/Orchestral/2001_l_odyssée_de_l_espace_silenced.wav	15	61.0	
+F	Synthetic	Super_Mario_Bros_3_Boss_Battle_silenced.wav	data/mutemusic/stimuli/Synthetic/Super_Mario_Bros_3_Boss_Battle_silenced.wav	14	57.0	
+U	Orchestral	Kikis_Delivery_Service_silenced.wav	data/mutemusic/stimuli/Orchestral/Kikis_Delivery_Service_silenced.wav	12	48.0	
+U	Lyrics	Make_Em_Laugh_silenced.wav	data/mutemusic/stimuli/Lyrics/Make_Em_Laugh_silenced.wav	16	65.0	
+F	Lyrics	Everybody_Wants_To_Rule_The_World_silenced.wav	data/mutemusic/stimuli/Lyrics/Everybody_Wants_To_Rule_The_World_silenced.wav	14	58.0	

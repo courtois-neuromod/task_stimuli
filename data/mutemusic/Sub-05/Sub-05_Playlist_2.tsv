@@ -1,0 +1,11 @@
+Groupe	category	title	path	silence_duration	total_duration	onset
+U	Synthetic	Shinobi_3_Return_Of_The_Ninja_Master_OST_Idaten_(level_5_1)_silenced.wav	data/mutemusic/stimuli/Synthetic/Shinobi_3_Return_Of_The_Ninja_Master_OST_Idaten_(level_5_1)_silenced.wav	15	61.0	
+F	Orchestral	Yakety_Sax(1983_version)_silenced.wav	data/mutemusic/stimuli/Orchestral/Yakety_Sax(1983_version)_silenced.wav	11	45.0	
+U	Synthetic	Sonic_The_Hedgehog_OST_Green_Hill_Zone_silenced.wav	data/mutemusic/stimuli/Synthetic/Sonic_The_Hedgehog_OST_Green_Hill_Zone_silenced.wav	13	52.0	
+F	Synthetic	Original_Tetris_theme_(Tetris_Soundtrack)_silenced.wav	data/mutemusic/stimuli/Synthetic/Original_Tetris_theme_(Tetris_Soundtrack)_silenced.wav	12	50.0	
+F	Lyrics	Jailhouse_Rock_silenced.wav	data/mutemusic/stimuli/Lyrics/Jailhouse_Rock_silenced.wav	13	52.0	
+U	Orchestral	il_porco_rosso_silenced.wav	data/mutemusic/stimuli/Orchestral/il_porco_rosso_silenced.wav	16	66.0	
+U	Synthetic	Space_Harrier_Music_MAIN_THEME_silenced.wav	data/mutemusic/stimuli/Synthetic/Space_Harrier_Music_MAIN_THEME_silenced.wav	12	48.0	
+F	Synthetic	Super_Mario_Bros_3_Overworld_1_Theme_silenced.wav	data/mutemusic/stimuli/Synthetic/Super_Mario_Bros_3_Overworld_1_Theme_silenced.wav	14	54.0	
+F	Lyrics	Never_Gonna_Give_You_Up_silenced.wav	data/mutemusic/stimuli/Lyrics/Never_Gonna_Give_You_Up_silenced.wav	12	50.0	
+U	Orchestral	Make_Em_Laugh_silenced.wav	data/mutemusic/stimuli/Orchestral/Make_Em_Laugh_silenced.wav	15	60.0	
