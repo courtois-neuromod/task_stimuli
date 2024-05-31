@@ -65,3 +65,8 @@
 	url = git@github.com:courtois-neuromod/mutemusic.stimuli.git
 	datalad-id = a16a9cdf-f450-4ffe-a981-f910c96929f1
 	datalad-url = git@github.com:courtois-neuromod/mutemusic.stimuli.git
+[submodule "data/videos/ood"]
+	path = data/videos/ood
+	url = git@github.com:courtois-neuromod/ood.stimuli.git
+	datalad-id = 5cd5fe4c-93fb-4b34-bb8f-175e2cf5cb8f
+	datalad-url = git@github.com:courtois-neuromod/ood.stimuli.git
