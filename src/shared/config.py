@@ -50,3 +50,6 @@ WRAP_WIDTH = 2
 
 # port for meg setup
 PARALLEL_PORT_ADDRESS = "/dev/parport1"
+
+# serial port for eeg setup
+SERIAL_PORT_ADDRESS = "/dev/ttyACM0"
