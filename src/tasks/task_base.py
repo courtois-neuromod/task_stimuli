@@ -21,6 +21,8 @@ class Task(object):
             self.instruction = instruction
         self._task_completed = False
 
+        self.flags = 0
+
     # setup large files for accurate start with other recordings (scanner, biopac...)
     def setup(
         self,
@@ -109,9 +111,9 @@ class Task(object):
             # yield first to allow external draw before flip
             yield
             if meg.MEG_MARKERS_ON_FLIP and self.use_meg:
-                exp_win.callOnFlip(meg.set_trigger_signal)
+                exp_win.callOnFlip(meg.send_signal, self.flags | (flip_idx%2))
             if eeg.EEG_MARKERS_ON_FLIP and self.use_eeg:
-                exp_win.callOnFlip(eeg.set_trigger_signal)
+                exp_win.callOnFlip(meg.send_signal, self.flags | (flip_idx%2))
             self._flip_all_windows(exp_win, ctl_win, clearBuffer)
             # increment the progress bar depending on task flip rate
             if self.progress_bar:

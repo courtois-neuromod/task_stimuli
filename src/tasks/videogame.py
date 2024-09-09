@@ -339,6 +339,7 @@ class VideoGame(VideoGameBase):
                 "stim_file": self.movie_path,
             },
         )
+        self.flags = 4
         yield True
         self._rep_event = self._events[-1] #save event here to later add duration...
         _nextFrameT = self.task_timer.getTime()
@@ -373,7 +374,7 @@ class VideoGame(VideoGameBase):
                 logging.warning(f"frame {level_step} dropped")
                 continue # drop frame
             yield False
-
+        self.flags = 0
         self._rep_event['nframes'] = level_step
         self._rep_event['offset'] = self.task_timer.getTime()
         self._rep_event['duration'] = self._rep_event['offset'] - self._rep_event['onset']
