@@ -7,26 +7,28 @@ EEG_MARKERS_ON_FLIP = True
 EEG_MARKER_DURATION = .001
 
 EEG_settings = {
-    "TASK_START_CODE": int("00000001", 2),
-    "TASK_STOP_CODE": int("00000001", 2),
-    "TASK_FLIP": int("000000010", 2),
+    "TASK_START_CODE": 100,
+    "TASK_STOP_CODE": 50,
+    "TASK_FLIP": 1,
 }
 
 port = None
 current_signal = 0
-reset = 0
+reset = False
+reset_value = 0
 
-def send_signal(data):
-    global port
+def send_signal(data, reset=False):
+    global port, reset_value
     if not port:
         port = serial.Serial(config.SERIAL_PORT_ADDRESS)
-    start=time.monotonic()
+    if reset:
+        start=time.monotonic()
     port.write(data.to_bytes(1, byteorder='big'))
     # hog cpu for accurate timing
-    while time.monotonic() < start + EEG_MARKER_DURATION:
-        continue
-    port.write(reset.to_bytes(1, byteorder='big'))  # reset
-
+    if reset:
+        while time.monotonic() < start + EEG_MARKER_DURATION:
+            continue
+        port.write(reset_value.to_bytes(1, byteorder='big'))  # reset
 
 def set_trigger_signal():
     global port, current_signal
