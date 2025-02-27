@@ -170,6 +170,8 @@ class AudioRecording(Task):
             self.initial_wait,
             keyboard_accuracy=.05):
             self._poll_audio()
+            self.progress_bar.n = int(self.task_timer.getTime())
+            self.progress_bar.refresh()
 
         for flip_idx, _ in enumerate(utils.wait_until_yield(
             self.task_timer,
@@ -193,6 +195,8 @@ class AudioRecording(Task):
             keyboard_accuracy=.05)):
             self._poll_audio()
             yield flip_idx < 2
+            self.progress_bar.n = int(self.task_timer.getTime())
+            self.progress_bar.refresh()
 
         print(f"{'#'*25} STOP SCANNER {'#'*25}")
 

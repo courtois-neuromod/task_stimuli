@@ -14,7 +14,7 @@ OUTPUT_DIR = "output"
 
 EYETRACKING_ROI = (60, 30, 660, 450)
 
-EXP_SCREEN_XRANDR_NAME = "DP-2"
+EXP_SCREEN_XRANDR_NAME = "eDP-1"
 
 EXP_MONITOR = Monitor(
     name='__blank__',
@@ -51,8 +51,3 @@ WRAP_WIDTH = 2
 
 # port for meg setup
 PARALLEL_PORT_ADDRESS = "/dev/parport0"
-
-
-# remove a bunch of warnings when in production
-import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
