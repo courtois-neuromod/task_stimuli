@@ -43,7 +43,10 @@ class Task(object):
 
 
         self._setup(exp_win)
-        # initialize a progress bar if we know the duration of the task
+        self._init_progress_bar()
+
+    # initialize a progress bar if we know the duration of the task
+    def _init_progress_bar(self):
         self.progress_bar = (
             tqdm.tqdm(total=self.duration,
             bar_format=self.PROGRESS_BAR_FORMAT,
@@ -132,6 +135,10 @@ class Task(object):
             self._flip_all_windows(exp_win, ctl_win, True)
 
     def restart(self):
+        if self.progress_bar:
+            self.progress_bar.clear()
+            self.progress_bar.close()
+            self._init_progress_bar()
         if hasattr(self, "_restart"):
             self._restart()
 
