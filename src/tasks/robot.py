@@ -12,7 +12,7 @@ import pickle
 import av
 from fractions import Fraction
 import os
-from pylsl import StreamInlet, resolve_stream, StreamInfo, StreamOutlet
+from pylsl import StreamInlet, resolve_byprop, StreamInfo, StreamOutlet
 from pylsl import local_clock as lsl_local_clock
 from psychopy import visual, core, logging, event
 from ast import literal_eval
@@ -405,7 +405,7 @@ class CozmoFriends(CozmoBaseTask):
         *args,
         **kwargs,
     ):
-        super().__init__(**kwargs)
+        super().__init__(name=name, **kwargs)
         self.max_duration = max_duration
         self.actions_to_send = {
             "forward": False,
@@ -448,6 +448,7 @@ class CozmoFriends(CozmoBaseTask):
         self.curr_obs_id = None
 
         self.robot_pos = None
+        self.robot_pos_ts = None
         self.target_names = target_names
         self.target_positions = target_positions
         self.target_imgs_dir = target_imgs_dir
@@ -498,12 +499,14 @@ class CozmoFriends(CozmoBaseTask):
         self.thread_recv_pos.start()
 
         # wait until a first frame and first position are received
-        print("Waiting to receive first frame and position.")
         _ = 0
         while self.obs is None or self.robot_pos is None:
             _ += 1
             if not _ % 300:
-                print("Searching for streams")
+                if self.obs is None:
+                    print("Waiting to receive images.")
+                if self.robot_pos is None:
+                    print("Waiting to receive position.")
             time.sleep(0.01)
 
         self._first_frame = self.obs[1]
@@ -778,7 +781,7 @@ class CozmoFriends(CozmoBaseTask):
         self._handle_controller_presses(exp_win)
         actions_to_send = dict.fromkeys(self.actions_to_send, False)  # reset to False
         actions_list = []
-        for key in self.pressed_keys.keys():
+        for key in self.pressed_keys:
             if key in self.key_actions:
                 if self.key_actions[key] in actions_to_send:
                     actions_to_send[self.key_actions[key]] = True
@@ -808,21 +811,19 @@ class CozmoFriends(CozmoBaseTask):
         return obs_tmp
 
     def recv_loop_obs(self, source_id):
-        streams = resolve_stream("source_id", source_id)
+        streams = resolve_byprop("source_id", source_id, timeout=300)
         if not streams:
             raise RuntimeError(f"Stream of id {source_id} not found.")
         inlet = StreamInlet(streams[0], processing_flags=1)
         id = 0
+        print("Found image stream.")
         while not self.done:
             data, nuc_ts = inlet.pull_sample()
             obs = literal_eval(data[0])
+            self.obs = (id, Image.frombytes(mode="RGB", size=(320, 240), data=obs).transpose(Image.FLIP_TOP_BOTTOM))
             pycozmo_ts = data[1]
-            img_raw = np.frombuffer(obs, dtype=np.uint8)
             self.save_mjpeg(id, obs)
-            is_color_image = img_raw[0] != 0
-            obs_tmp = self.img_decode(img_raw, is_color_image)
             self.lock_recv_obs.acquire()
-            self.obs = (id, obs_tmp.transpose(Image.FLIP_TOP_BOTTOM))
             self.new_obs = True
             self.lock_recv_obs.release()
             if self.run_started:
@@ -835,10 +836,11 @@ class CozmoFriends(CozmoBaseTask):
                 id += 1
 
     def recv_loop_pos(self, source_id):
-        streams = resolve_stream("source_id", source_id)
+        streams = resolve_byprop("source_id", source_id, timeout=300)
         if not streams:
             raise RuntimeError(f"Stream of id {source_id} not found.")
         inlet = StreamInlet(streams[0], processing_flags=1)
+        print("Found position stream.")
         while not self.done:
             pos, timestamp = inlet.pull_sample()
             if self.run_started:
