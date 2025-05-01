@@ -108,46 +108,34 @@ class CozmoBaseTask(Task):
             autoLog=False,
         )
 
-    def _handle_controller_presses(self, exp_win):  # k[0] : key, k[1] : time stamp
+    def _handle_controller_presses(self, exp_win):
         exp_win.winHandle.dispatch_events()
         global _keyPressBuffer, _keyReleaseBuffer
 
         for k in _keyReleaseBuffer:
-            if k[0] == "5" or k[0] == "percent" or k[0] == "lshift":
-                continue
-            if k[0] not in self.pressed_keys:
-                continue  # weird case
-            event = {
-                "trial_type": "keypress",
-                "onset": self.pressed_keys[k[0]]
-                - self.task_timer._timeAtLastReset
-                + core.monotonicClock._timeAtLastReset,
-                "offset": k[1]
-                - self.task_timer._timeAtLastReset
-                + core.monotonicClock._timeAtLastReset,
-                "duration": k[1] - self.pressed_keys[k[0]],
-                "key": k[0],
-                "sample": time.monotonic(),
-            }
-            self._events.append(event)
-
-            if k[0] in self.pressed_keys:
-                # check in case twice same key in keyreleasebuffer (happened once)
-                del self.pressed_keys[k[0]]
-
+            self.pressed_keys.discard(k[0])
             logging.data(f"Keyrelease: {k[0]}", t=k[1])
-        _keyReleaseBuffer.clear()
 
-        for k in _keyPressBuffer:
-            self.pressed_keys[k[0]] = k[1]  # key : onset
+        for kp in _keyPressBuffer:
+            already_released = False
+            for kr in _keyReleaseBuffer:
+                if kp[0] == kr[0] and kp[1] < kr[1]:
+                    already_released = True
+                    break
+            if not already_released:
+                self.pressed_keys.add(kp[0])
 
         self._new_key_pressed = _keyPressBuffer[:]  # copy
+
         _keyPressBuffer.clear()
+        _keyReleaseBuffer.clear()
+
+        return self.pressed_keys
 
     def _set_key_handler(self, exp_win):
         exp_win.winHandle.on_key_press = _onPygletKeyPress
         exp_win.winHandle.on_key_release = _onPygletKeyRelease
-        self.pressed_keys = dict()
+        self.pressed_keys = set()
 
     def _unset_key_handler(self, exp_win):
         # deactivate custom keys handling
@@ -820,7 +808,12 @@ class CozmoFriends(CozmoBaseTask):
         while not self.done:
             data, nuc_ts = inlet.pull_sample()
             obs = literal_eval(data[0])
-            self.obs = (id, Image.frombytes(mode="RGB", size=(320, 240), data=obs).transpose(Image.FLIP_TOP_BOTTOM))
+            self.obs = (
+                id,
+                Image.frombytes(mode="RGB", size=(320, 240), data=obs).transpose(
+                    Image.FLIP_TOP_BOTTOM
+                ),
+            )
             pycozmo_ts = data[1]
             self.save_mjpeg(id, obs)
             self.lock_recv_obs.acquire()
