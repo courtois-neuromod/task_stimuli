@@ -23,6 +23,11 @@ _keyPressBuffer = []
 _keyReleaseBuffer = []
 import pyglet
 
+GAME_EXTRA_MARKERS = {
+    "repetition-start": 4,
+    "repetition-stop": 5
+}
+
 
 def _onPygletKeyPress(symbol, modifier):
     if modifier:
@@ -174,11 +179,14 @@ class VideoGame(VideoGameBase):
             wrapWidth=config.WRAP_WIDTH,
         )
 
-        for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
+        last_win_flip = self._exp_win_last_flip_time
+        for frameN in range(2):
             screen_text.draw(exp_win)
             if ctl_win:
                 screen_text.draw(ctl_win)
             yield frameN < 2
+        utils.wait_until( last_win_flip + config.INSTRUCTION_DURATION )
+        yield True
         yield True
 
     def _setup(self, exp_win):
@@ -264,7 +272,9 @@ class VideoGame(VideoGameBase):
                 "stim_file": self.movie_path,
             },
         )
+        self._extra_markers |= GAME_EXTRA_MARKERS["repetition-start"]
         yield True
+        self._extra_markers &= ~GAME_EXTRA_MARKERS["repetition-start"]
         _nextFrameT = self.task_timer.getTime()	+ self._retraceInterval
         while not _done:
             level_step += 1
@@ -286,10 +296,11 @@ class VideoGame(VideoGameBase):
                     msg="VideoGame %s: %s stopped at %f"
                     % (self.game_name, self.state_name, time.time()),
                 )
+                self._extra_markers |= GAME_EXTRA_MARKERS["repetition-stop"]
             if not level_step % config.FRAME_RATE:
                 exp_win.logOnFlip(level=logging.EXP, msg="level step: %d" % level_step)
             yield True
-
+            self._extra_markers &= ~GAME_EXTRA_MARKERS["repetition-stop"]
             _nextFrameT += self._frameInterval
         self._completed = self._completed or self._game_info['lives'] > -1
         self.game_sound.flush()

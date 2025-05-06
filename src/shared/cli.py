@@ -28,12 +28,14 @@ def listen_shortcuts():
     return False
 
 
-def run_task_loop(task, loop, eyetracker=None, gaze_drawer=None, record_movie=False):
+def run_task_loop(task, loop, exp_win, eyetracker=None, gaze_drawer=None, record_movie=False):
     for frameN, _ in enumerate(loop):
         if gaze_drawer:
             gaze = eyetracker.get_gaze()
             if not gaze is None:
                 gaze_drawer.draw_gazepoint(gaze)
+        if task.use_meg && task._extra_markers:
+            exp_win.callOnFlip(meg.send_signal, task._extra_markers)
         if record_movie and frameN % 6 == 0:
             record_movie.getMovieFrame(buffer="back")
         # check for global event keys
@@ -51,6 +53,7 @@ def run_task(
     shortcut_evt = run_task_loop(
         task,
         task.instructions(exp_win, ctl_win),
+        exp_win,
         eyetracker,
         gaze_drawer,
         record_movie=exp_win if record_movie else False,
@@ -73,6 +76,7 @@ def run_task(
         shortcut_evt = run_task_loop(
             task,
             task.run(exp_win, ctl_win),
+            exp_win,
             eyetracker,
             gaze_drawer,
             record_movie=exp_win if record_movie else False,
@@ -88,6 +92,7 @@ def run_task(
     run_task_loop(
         task,
         task.stop(exp_win, ctl_win),
+        exp_win,
         eyetracker,
         gaze_drawer,
         record_movie=exp_win if record_movie else False,

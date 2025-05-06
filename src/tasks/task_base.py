@@ -39,6 +39,7 @@ class Task(object):
         self._exp_win_last_flip_time = None
         self._ctl_win_last_flip_time = None
         self._task_completed = False
+        self._extra_markers = 0
 
         self._setup(exp_win)
         # initialize a progress bar if we know the duration of the task
