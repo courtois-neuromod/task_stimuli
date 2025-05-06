@@ -179,7 +179,7 @@ class VideoGame(VideoGameBase):
             wrapWidth=config.WRAP_WIDTH,
         )
 
-        clock = self.task_timer or core.MonotonicClock(0)
+        clock = self.task_timer if hasattr(self, "task_timer") else core.MonotonicClock(0)
         last_win_flip = self._exp_win_last_flip_time or clock.getTime()
         for frameN in range(2):
             screen_text.draw(exp_win)
