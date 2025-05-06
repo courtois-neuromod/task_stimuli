@@ -5,7 +5,7 @@ import threading
 from psychopy import visual, core, data, logging, event, sound, constants
 from .task_base import Task
 
-from ..shared import config
+from ..shared import config, utils
 
 import retro
 
