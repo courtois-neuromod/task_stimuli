@@ -34,7 +34,7 @@ def run_task_loop(task, loop, exp_win, eyetracker=None, gaze_drawer=None, record
             gaze = eyetracker.get_gaze()
             if not gaze is None:
                 gaze_drawer.draw_gazepoint(gaze)
-        if task.use_meg && task._extra_markers:
+        if task.use_meg and task._extra_markers:
             exp_win.callOnFlip(meg.send_signal, task._extra_markers)
         if record_movie and frameN % 6 == 0:
             record_movie.getMovieFrame(buffer="back")
