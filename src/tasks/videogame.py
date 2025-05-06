@@ -179,13 +179,13 @@ class VideoGame(VideoGameBase):
             wrapWidth=config.WRAP_WIDTH,
         )
 
-        last_win_flip = self._exp_win_last_flip_time
+        last_win_flip = self._exp_win_last_flip_time or core.MonotonicClock.getTime()
         for frameN in range(2):
             screen_text.draw(exp_win)
             if ctl_win:
                 screen_text.draw(ctl_win)
             yield frameN < 2
-        utils.wait_until( last_win_flip + config.INSTRUCTION_DURATION )
+        utils.wait_until(core.MonotonicClock, last_win_flip + config.INSTRUCTION_DURATION )
         yield True
         yield True
 
