@@ -115,6 +115,7 @@ def main_loop(
     enable_eyetracker=False,
     use_fmri=False,
     use_meg=False,
+    use_eeg=False,
     show_ctl_win=False,
     allow_run_on_battery=False,
     enable_ptt=False,
@@ -251,6 +252,7 @@ Thanks for your participation!"""
                 log_name_prefix,
                 use_fmri=use_fmri,
                 use_meg=use_meg,
+                use_eeg=use_eeg,
             )
             print("READY")
 

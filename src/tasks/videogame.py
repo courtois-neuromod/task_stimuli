@@ -6,7 +6,7 @@ from psychopy import visual, core, data, logging, event, sound, constants
 from .task_base import Task
 
 from ..shared import config, utils
-
+from PIL import Image
 import retro
 
 DEFAULT_GAME_NAME = "ShinobiIIIReturnOfTheNinjaMaster-Genesis"
@@ -377,9 +377,17 @@ class VideoGame(VideoGameBase):
                 self._extra_markers |= GAME_EXTRA_MARKERS["repetition-stop"]
             if not level_step % config.FRAME_RATE:
                 exp_win.logOnFlip(level=logging.EXP, msg="level step: %d" % level_step)
-            yield True
-            self._extra_markers &= ~GAME_EXTRA_MARKERS["repetition-stop"]
-            _nextFrameT += self._frameInterval
+            while _nextFrameT > (self.task_timer.getTime() + self._retraceInterval*.9):
+                time.sleep(.0001)
+                utils.poll_windows()
+            if _nextFrameT < self.task_timer.getTime():
+                logging.warning(f"frame {level_step} dropped")
+                continue # drop frame
+            yield False
+        self.flags = 0
+        self._rep_event['nframes'] = level_step
+        self._rep_event['offset'] = self.task_timer.getTime()
+        self._rep_event['duration'] = self._rep_event['offset'] - self._rep_event['onset']
         self._completed = self._completed or self._game_info['lives'] > -1
         self.game_sound.flush()
         self.game_sound.stop()
@@ -681,9 +689,11 @@ class VideoGameMultiLevel(VideoGame):
         self._set_key_handler(exp_win)
         self._nlevels = 0
 
-        exp_win.setColor(self._bg_color, colorSpace='rgb255')
-        if ctl_win:
-            ctl_win.setColor(self._bg_color, colorSpace='rgb255')
+        for i in range(2):
+            exp_win.setColor(self._bg_color, colorSpace='rgb255')
+            if ctl_win:
+                ctl_win.setColor(self._bg_color, colorSpace='rgb255')
+            yield True
         while True:
             for level, scenario in zip(self._state_names, self._scenarii):
 

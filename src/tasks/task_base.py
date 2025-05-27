@@ -4,7 +4,7 @@ import time
 import pandas
 from psychopy import logging, visual, core, event
 
-from ..shared import fmri, meg, config
+from ..shared import fmri, meg, eeg, config
 
 
 class Task(object):
@@ -21,6 +21,8 @@ class Task(object):
             self.instruction = instruction
         self._task_completed = False
 
+        self.flags = 0
+
     # setup large files for accurate start with other recordings (scanner, biopac...)
     def setup(
         self,
@@ -29,11 +31,13 @@ class Task(object):
         output_fname_base,
         use_fmri=False,
         use_meg=False,
+        use_eeg=False,
     ):
         self.output_path = output_path
         self.output_fname_base = output_fname_base
         self.use_fmri = use_fmri
         self.use_meg = use_meg
+        self.use_eeg = use_eeg
         self._events = []
 
         self._exp_win_first_flip_time = None
@@ -108,7 +112,9 @@ class Task(object):
             # yield first to allow external draw before flip
             yield
             if meg.MEG_MARKERS_ON_FLIP and self.use_meg:
-                exp_win.callOnFlip(meg.send_signal, meg.MEG_settings["TASK_FLIP"])
+                exp_win.callOnFlip(meg.send_signal, self.flags | (flip_idx%2))
+            if eeg.EEG_MARKERS_ON_FLIP and self.use_eeg:
+                exp_win.callOnFlip(meg.send_signal, self.flags | (flip_idx%2))
             self._flip_all_windows(exp_win, ctl_win, clearBuffer)
             # increment the progress bar depending on task flip rate
             if self.progress_bar:

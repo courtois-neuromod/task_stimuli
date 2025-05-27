@@ -21,6 +21,11 @@ def parse_args():
         action="store_true",
     )
     parser.add_argument(
+        "--eeg",
+        help="Send signal to parallel port to start trigger to EEG and Biopac.",
+        action="store_true",
+    )
+    parser.add_argument(
         "--eyetracking", "-e", help="Enable eyetracking", action="store_true",
     )
     parser.add_argument(
