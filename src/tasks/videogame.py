@@ -6,7 +6,6 @@ from psychopy import visual, core, data, logging, event, sound, constants
 from .task_base import Task
 
 from ..shared import config, utils
-from PIL import Image
 
 import retro
 
@@ -23,6 +22,11 @@ DEFAULT_KEY_SET = ["y", "a", "_", "_", "u", "d", "l", "r", "b", "_", "_", "_"]
 _keyPressBuffer = []
 _keyReleaseBuffer = []
 import pyglet
+
+GAME_EXTRA_MARKERS = {
+    "repetition-start": 4,
+    "repetition-stop": 5
+}
 
 
 def _onPygletKeyPress(symbol, modifier):
@@ -242,11 +246,15 @@ class VideoGame(VideoGameBase):
             wrapWidth=config.WRAP_WIDTH,
         )
 
-        for frameN in range(config.FRAME_RATE * config.INSTRUCTION_DURATION):
+        clock = self.task_timer if hasattr(self, "task_timer") else core.MonotonicClock(0)
+        last_win_flip = self._exp_win_last_flip_time or clock.getTime()
+        for frameN in range(2):
             screen_text.draw(exp_win)
             if ctl_win:
                 screen_text.draw(ctl_win)
             yield frameN < 2
+        utils.wait_until(clock, last_win_flip + config.INSTRUCTION_DURATION )
+        yield True
         yield True
 
     def _setup(self, exp_win):
@@ -340,9 +348,10 @@ class VideoGame(VideoGameBase):
                 "stim_file": self.movie_path,
             },
         )
+        self._extra_markers |= GAME_EXTRA_MARKERS["repetition-start"]
         yield True
-        self._rep_event = self._events[-1] #save event here to later add duration...
-        _nextFrameT = self.task_timer.getTime()
+        self._extra_markers &= ~GAME_EXTRA_MARKERS["repetition-start"]
+        _nextFrameT = self.task_timer.getTime()	+ self._retraceInterval
         while not _done:
             level_step += 1
             _nextFrameT += self._frameInterval
@@ -365,19 +374,12 @@ class VideoGame(VideoGameBase):
                     msg="VideoGame %s: %s stopped at %f"
                     % (self.game_name, self.state_name, time.time()),
                 )
-            if not level_step % int(self.game_fps):
+                self._extra_markers |= GAME_EXTRA_MARKERS["repetition-stop"]
+            if not level_step % config.FRAME_RATE:
                 exp_win.logOnFlip(level=logging.EXP, msg="level step: %d" % level_step)
-            while _nextFrameT > (self.task_timer.getTime() + self._retraceInterval*.9):
-                time.sleep(.0001)
-                utils.poll_windows()
-            if _nextFrameT < self.task_timer.getTime():
-                logging.warning(f"frame {level_step} dropped")
-                continue # drop frame
-            yield False
-
-        self._rep_event['nframes'] = level_step
-        self._rep_event['offset'] = self.task_timer.getTime()
-        self._rep_event['duration'] = self._rep_event['offset'] - self._rep_event['onset']
+            yield True
+            self._extra_markers &= ~GAME_EXTRA_MARKERS["repetition-stop"]
+            _nextFrameT += self._frameInterval
         self._completed = self._completed or self._game_info['lives'] > -1
         self.game_sound.flush()
         self.game_sound.stop()

@@ -16,6 +16,7 @@ EYETRACKING_ROI = (60, 30, 660, 450)
 
 EXP_SCREEN_XRANDR_NAME = "DP-2"
 
+
 EXP_MONITOR = Monitor(
     name='__blank__',
     width=55,
@@ -23,7 +24,7 @@ EXP_MONITOR = Monitor(
     )
 
 EXP_WINDOW = dict(
-    size=(1280, 1024),
+    size=(1920, 1080),
     screen=1,
     fullscr=True,
     gammaErrorPolicy="warn",
@@ -41,7 +42,7 @@ CTL_WINDOW = dict(
     waitBlanking=False,  # avoid ctrl window to block the script in case of differing refresh rate.
 )
 
-FRAME_RATE = 60
+FRAME_RATE = 120
 
 # task parameters
 INSTRUCTION_DURATION = 3
@@ -49,4 +50,4 @@ INSTRUCTION_DURATION = 3
 WRAP_WIDTH = 2
 
 # port for meg setup
-PARALLEL_PORT_ADDRESS = "/dev/parport0"
+PARALLEL_PORT_ADDRESS = "/dev/parport1"
