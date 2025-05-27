@@ -14,7 +14,7 @@ globalClock = core.MonotonicClock(0)
 logging.setDefaultClock(globalClock)
 
 from . import config  # import first separately
-from . import fmri, eyetracking, utils, meg, config
+from . import fmri, eyetracking, utils, meg, eeg, config
 from ..tasks import task_base, video
 
 
@@ -36,6 +36,9 @@ def run_task_loop(task, loop, exp_win, eyetracker=None, gaze_drawer=None, record
                 gaze_drawer.draw_gazepoint(gaze)
         if task.use_meg and task._extra_markers:
             exp_win.callOnFlip(meg.send_signal, task._extra_markers)
+        if task.use_eeg and task._extra_markers:
+            exp_win.callOnFlip(eeg.send_signal, task._extra_markers)
+
         if record_movie and frameN % 6 == 0:
             record_movie.getMovieFrame(buffer="back")
         # check for global event keys
@@ -74,6 +77,8 @@ def run_task(
     # send start trigger/marker to MEG + Biopac (or anything else on parallel port)
     if task.use_meg and not shortcut_evt:
         exp_win.callOnFlip(meg.send_signal, meg.MEG_settings["TASK_START_CODE"])
+    if task.use_eeg and not shortcut_evt:
+        exp_win.callOnFlip(eeg.send_signal, eeg.EEG_settings["TASK_START_CODE"])
 
     if not shortcut_evt:
         shortcut_evt = run_task_loop(
@@ -88,6 +93,8 @@ def run_task(
     # send stop trigger/marker to MEG + Biopac (or anything else on parallel port)
     if task.use_meg and not shortcut_evt:
         exp_win.callOnFlip(meg.send_signal, meg.MEG_settings["TASK_STOP_CODE"])
+    if task.use_meg and not shortcut_evt:
+        exp_win.callOnFlip(eeg.send_signal, eeg.EEG_settings["TASK_STOP_CODE"])
 
     if eyetracker:
         eyetracker.stop_recording()
@@ -313,6 +320,13 @@ Thanks for your participation!"""
         logging.exp(msg="user killing the program")
         logging.flush()
         print("you killing me!")
+
+        # Reset triggers to 0
+        if task.use_meg:
+            meg.send_signal(0)
+        if task.use_eeg:
+            eeg.send_signal(0)
+
     finally:
         if enable_eyetracker:
             eyetracker_client.join(TIMEOUT)

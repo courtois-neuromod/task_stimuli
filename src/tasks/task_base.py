@@ -56,6 +56,11 @@ class Task(object):
         if not hasattr(self, "_progress_bar_refresh_rate"):
             self._progress_bar_refresh_rate = config.FRAME_RATE
 
+        if meg.MEG_MARKERS_ON_FLIP and self.use_meg:
+            meg.send_signal(0)
+        if eeg.EEG_MARKERS_ON_FLIP and self.use_eeg:
+            eeg.send_signal(0)
+
     def _setup(self, exp_win):
         pass
 
@@ -134,6 +139,7 @@ class Task(object):
         # 2 flips to clear screen and backbuffer
         for i in range(2):
             self._flip_all_windows(exp_win, ctl_win, True)
+
 
     def restart(self):
         if hasattr(self, "_restart"):
