@@ -114,7 +114,7 @@ class Task(object):
             if meg.MEG_MARKERS_ON_FLIP and self.use_meg:
                 exp_win.callOnFlip(meg.send_signal, self.flags | (flip_idx%2))
             if eeg.EEG_MARKERS_ON_FLIP and self.use_eeg:
-                exp_win.callOnFlip(meg.send_signal, self.flags | (flip_idx%2))
+                exp_win.callOnFlip(eeg.send_signal, self.flags | (flip_idx%2))
             self._flip_all_windows(exp_win, ctl_win, clearBuffer)
             # increment the progress bar depending on task flip rate
             if self.progress_bar:
