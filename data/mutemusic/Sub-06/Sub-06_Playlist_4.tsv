@@ -1,0 +1,11 @@
+Groupe	category	title	path	silence_duration	total_duration	onset
+F	Orchestral	The_4_Seasons_Op_8_4_RV_297_Winter_silenced.wav	data/mutemusic/stimuli/Orchestral/The_4_Seasons_Op_8_4_RV_297_Winter_silenced.wav	15	60.0
+F	Lyrics	Material_Girl_silenced.wav	data/mutemusic/stimuli/Lyrics/Material_Girl_silenced.wav	12	50.0
+F	Orchestral	The_Pink_Panther_Theme_silenced.wav	data/mutemusic/stimuli/Orchestral/The_Pink_Panther_Theme_silenced.wav	11	45.0
+U	Orchestral	Another_Brick_In_The_Wall_(Part_1)_orchestral_silenced.wav	data/mutemusic/stimuli/Orchestral/Another_Brick_In_The_Wall_(Part_1)_silenced.wav	11	45.0
+U	Orchestral	The_Moldau_silenced.wav	data/mutemusic/stimuli/Orchestral/The_Moldau_silenced.wav	14	54.0
+F	Synthetic	Super_Mario_Bros_3_Underwater_Theme_silenced.wav	data/mutemusic/stimuli/Synthetic/Super_Mario_Bros_3_Underwater_Theme_silenced.wav	12	46.0
+U	Synthetic	Sid_Meiers_Civilization_SNES_OST_06_City_Menu_silenced.wav	data/mutemusic/stimuli/Synthetic/Sid_Meiers_Civilization_SNES_OST_06_City_Menu_silenced.wav	15	61.0
+U	Synthetic	Super_Mario_64_BobOmb_Battlefield_(Extended)_Theme_silenced.wav	data/mutemusic/stimuli/Synthetic/Super_Mario_64_BobOmb_Battlefield_(Extended)_Theme_silenced.wav	14	54.0
+U	Lyrics	Another_Brick_In_The_Wall_(Part_1)_lyrics_silenced.wav	data/mutemusic/stimuli/Lyrics/Another_Brick_In_The_Wall_(Part_1)_silenced.wav	15	60.0
+F	Synthetic	Super_Mario_Bros_(NES)_Music_Castle_Theme_silenced.wav	data/mutemusic/stimuli/Synthetic/Super_Mario_Bros_(NES)_Music_Castle_Theme_silenced.wav	12	47.0

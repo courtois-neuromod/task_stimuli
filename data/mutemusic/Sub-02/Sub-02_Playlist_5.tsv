@@ -1,0 +1,11 @@
+Groupe	category	title	path	silence_duration	total_duration	onset
+U	Synthetic	Streets_Of_Rage_1_OST_Stage_1_silenced.wav	data/mutemusic/stimuli/Synthetic/Streets_Of_Rage_1_OST_Stage_1_silenced.wav	11	45.0	2.0057711601257324
+F	Synthetic	Super_Mario_Bros_(NES)_Music_Underground_Theme_silenced.wav	data/mutemusic/stimuli/Synthetic/Super_Mario_Bros_(NES)_Music_Underground_Theme_silenced.wav	12	49.0	51.13074803352356
+U	Synthetic	Sonic_The_Hedgehog_OST_Green_Hill_Zone_silenced.wav	data/mutemusic/stimuli/Synthetic/Sonic_The_Hedgehog_OST_Green_Hill_Zone_silenced.wav	13	52.0	103.6566801071167
+U	Orchestral	Seinfeld_Official_Soundtrack_(Seinfeld_Theme)_silenced.wav	data/mutemusic/stimuli/Orchestral/Seinfeld_Official_Soundtrack_(Seinfeld_Theme)_silenced.wav	13	52.0	159.4308671951294
+F	Lyrics	Never_Gonna_Give_You_Up_silenced.wav	data/mutemusic/stimuli/Lyrics/Never_Gonna_Give_You_Up_silenced.wav	12	50.0	220.45827722549438
+F	Synthetic	Super_Mario_Bros_(NES)_Music_Castle_Theme_silenced.wav	data/mutemusic/stimuli/Synthetic/Super_Mario_Bros_(NES)_Music_Castle_Theme_silenced.wav	12	47.0	274.5574691295624
+F	Orchestral	The_Pink_Panther_Theme_silenced.wav	data/mutemusic/stimuli/Orchestral/The_Pink_Panther_Theme_silenced.wav	11	45.0	325.3131310939789
+U	Lyrics	Living_Together_silenced.wav	data/mutemusic/stimuli/Lyrics/Living_Together_silenced.wav	18	71.0	379.34477400779724
+U	Lyrics	Cant_Live_With_You_Cant_Live_Without_You_silenced.wav	data/mutemusic/stimuli/Lyrics/Cant_Live_With_You_Cant_Live_Without_You_silenced.wav	15	60.0	454.2597301006317
+F	Lyrics	Its_Raining_Men_silenced.wav	data/mutemusic/stimuli/Lyrics/Its_Raining_Men_silenced.wav	16	62.0	517.7739911079407

@@ -28,7 +28,8 @@ def get_tasks(parsed):
     tasks_completed = True
     sessions_loop_len = N_WORDS_SESSIONS + N_TRIPLETS_SESSIONS
     for run in range(1, N_RUNS_PER_SESSION+1):
-        if session % (sessions_loop_len) <= N_WORDS_SESSIONS:
+        if (session-1) % (sessions_loop_len) <  N_WORDS_SESSIONS:
+#        if session % (sessions_loop_len-1) < N_WORDS_SESSIONS:
             task = language.WordFamiliarity(
                 f"{TRIPLET_DATA_PATH}/words_designs/sub-{parsed.subject}_ses-{session:03d}_task-wordsfamiliarity_run-{run:02d}_design.tsv",
                 name=f"task-wordsfamiliarity_run-{run:02d}",

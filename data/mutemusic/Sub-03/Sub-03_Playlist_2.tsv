@@ -1,0 +1,11 @@
+Groupe	category	title	path	silence_duration	total_duration	onset
+U	Synthetic	Streets_Of_Rage_1_OST_Stage_1_silenced.wav	data/mutemusic/stimuli/Synthetic/Streets_Of_Rage_1_OST_Stage_1_silenced.wav	11	45.0
+F	Orchestral	Moonlight_Sonata_silenced.wav	data/mutemusic/stimuli/Orchestral/Moonlight_Sonata_silenced.wav	12	47.0
+U	Synthetic	Legend_of_Zelda_The_(NES)_Music_Overworld_Theme_silenced.wav	data/mutemusic/stimuli/Synthetic/Legend_of_Zelda_The_(NES)_Music_Overworld_Theme_silenced.wav	12	50.0
+F	Synthetic	Super_Mario_Bros_(NES)_Music_Overworld_Theme_silenced.wav	data/mutemusic/stimuli/Synthetic/Super_Mario_Bros_(NES)_Music_Overworld_Theme_silenced.wav	15	59.0
+F	Lyrics	Gangstas_Paradise_silenced.wav	data/mutemusic/stimuli/Lyrics/Gangstas_Paradise_silenced.wav	15	61.0
+U	Orchestral	il_porco_rosso_silenced.wav	data/mutemusic/stimuli/Orchestral/il_porco_rosso_silenced.wav	16	66.0
+U	Synthetic	Aladdin_Genesis_Music_Ending_silenced.wav	data/mutemusic/stimuli/Synthetic/Aladdin_Genesis_Music_Ending_silenced.wav	16	65.0
+F	Synthetic	Super_Mario_Bros_(NES)_Music_Castle_Theme_silenced.wav	data/mutemusic/stimuli/Synthetic/Super_Mario_Bros_(NES)_Music_Castle_Theme_silenced.wav	12	47.0
+F	Lyrics	No_Woman_No_Cry_silenced.wav	data/mutemusic/stimuli/Lyrics/No_Woman_No_Cry_silenced.wav	16	64.0
+U	Orchestral	Make_Em_Laugh_silenced.wav	data/mutemusic/stimuli/Orchestral/Make_Em_Laugh_silenced.wav	15	60.0

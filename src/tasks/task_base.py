@@ -12,9 +12,10 @@ class Task(object):
     DEFAULT_INSTRUCTION = ""
     PROGRESS_BAR_FORMAT = '{l_bar}{bar}{r_bar}'
 
-    def __init__(self, name, instruction=None, use_eyetracking=False):
+    def __init__(self, name, instruction=None, use_eyetracking=False, et_calibrate=True):
         self.name = name
         self.use_eyetracking = use_eyetracking
+        self.et_calibrate = et_calibrate
         if instruction is None:
             self.instruction = self.__class__.DEFAULT_INSTRUCTION
         else:
@@ -47,7 +48,10 @@ class Task(object):
         self._extra_markers = 0
 
         self._setup(exp_win)
-        # initialize a progress bar if we know the duration of the task
+        self._init_progress_bar()
+
+    # initialize a progress bar if we know the duration of the task
+    def _init_progress_bar(self):
         self.progress_bar = (
             tqdm.tqdm(total=self.duration,
             bar_format=self.PROGRESS_BAR_FORMAT,
@@ -88,15 +92,17 @@ class Task(object):
             ctl_win.timeOnFlip(self, '_ctl_win_last_flip_time')
             ctl_win.flip(clearBuffer=clearBuffer)
 
-        exp_win.flip(clearBuffer=clearBuffer)
-        # set callback for next flip, to be the first callback for other callbacks to use
-        exp_win.timeOnFlip(self, '_exp_win_last_flip_time')
+        if not clearBuffer is None:
+            exp_win.flip(clearBuffer=clearBuffer)
+            # set callback for next flip, to be the first callback for other callbacks to use
+            exp_win.timeOnFlip(self, '_exp_win_last_flip_time')
 
     def instructions(self, exp_win, ctl_win):
         if hasattr(self, "_instructions"):
             for clearBuffer in self._instructions(exp_win, ctl_win):
                 yield
-                self._flip_all_windows(exp_win, ctl_win, clearBuffer)
+                if clearBuffer is not None:
+                    self._flip_all_windows(exp_win, ctl_win, clearBuffer)
         # 2 flips to clear screen
         for i in range(2):
             yield
@@ -116,11 +122,15 @@ class Task(object):
         for clearBuffer in self._run(exp_win, ctl_win):
             # yield first to allow external draw before flip
             yield
+
             if meg.MEG_MARKERS_ON_FLIP and self.use_meg:
                 exp_win.callOnFlip(meg.send_signal, self.flags | (flip_idx%2))
             if eeg.EEG_MARKERS_ON_FLIP and self.use_eeg:
                 exp_win.callOnFlip(eeg.send_signal, self.flags | (flip_idx%2))
-            self._flip_all_windows(exp_win, ctl_win, clearBuffer)
+
+            if clearBuffer is not None:
+                self._flip_all_windows(exp_win, ctl_win, clearBuffer)
+
             # increment the progress bar depending on task flip rate
             if self.progress_bar:
                 if self._progress_bar_refresh_rate and flip_idx % self._progress_bar_refresh_rate == 0:
@@ -132,7 +142,8 @@ class Task(object):
         if hasattr(self, "_stop"):
             for clearBuffer in self._stop(exp_win, ctl_win):
                 yield
-                self._flip_all_windows(exp_win, ctl_win, clearBuffer)
+                if clearBuffer is not None:
+                    self._flip_all_windows(exp_win, ctl_win, clearBuffer)
         if self.progress_bar:
             self.progress_bar.clear()
             self.progress_bar.close()
@@ -142,6 +153,10 @@ class Task(object):
 
 
     def restart(self):
+        if self.progress_bar:
+            self.progress_bar.clear()
+            self.progress_bar.close()
+            self._init_progress_bar()
         if hasattr(self, "_restart"):
             self._restart()
 

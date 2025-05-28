@@ -1,0 +1,11 @@
+Groupe	category	title	path	silence_duration	total_duration	onset
+U	Orchestral	Lux_Aeterna_from_Requiem_for_a_Dream_silenced.wav	data/mutemusic/stimuli/Orchestral/Lux_Aeterna_from_Requiem_for_a_Dream_silenced.wav	15	60.0	3.001439094543457
+U	Lyrics	Gangstas_Paradise_silenced.wav	data/mutemusic/stimuli/Lyrics/Gangstas_Paradise_silenced.wav	15	61.0	71.0459520816803
+F	Orchestral	The_4_Seasons_Op_8_4_RV_297_Winter_silenced.wav	data/mutemusic/stimuli/Orchestral/The_4_Seasons_Op_8_4_RV_297_Winter_silenced.wav	15	60.0	141.09833908081055
+F	Lyrics	Make_Em_Laugh_silenced.wav	data/mutemusic/stimuli/Lyrics/Make_Em_Laugh_silenced.wav	16	65.0	210.14648294448853
+F	Orchestral	Another_Brick_In_The_Wall_(Part_1)_orchestral_silenced.wav	data/mutemusic/stimuli/Orchestral/Another_Brick_In_The_Wall_(Part_1)_orchestral_silenced.wav	11	45.0	284.15889406204224
+U	Synthetic	Castlevania_4_Bloody_Tears_(Super_Nintendo)_silenced.wav	data/mutemusic/stimuli/Synthetic/Castlevania_4_Bloody_Tears_(Super_Nintendo)_silenced.wav	14	58.0	338.19354009628296
+F	Orchestral	Game_of_Thrones_Main_Title_silenced.wav	data/mutemusic/stimuli/Orchestral/Game_of_Thrones_Main_Title_silenced.wav	14	56.0	405.22653698921204
+U	Lyrics	Why_You_Wanna_Trip_on_Me_silenced.wav	data/mutemusic/stimuli/Lyrics/Why_You_Wanna_Trip_on_Me_silenced.wav	13	53.0	465.0095589160919
+U	Orchestral	Back_To_The_Future_silenced.wav	data/mutemusic/stimuli/Orchestral/Back_To_The_Future_silenced.wav	12	48.0	526.0228040218353
+F	Lyrics	Everybody_Wants_To_Rule_The_World_silenced.wav	data/mutemusic/stimuli/Lyrics/Everybody_Wants_To_Rule_The_World_silenced.wav	14	58.0	577.9890410900116

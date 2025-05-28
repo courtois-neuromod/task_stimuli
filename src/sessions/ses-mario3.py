@@ -37,8 +37,8 @@ def generate_design_file(subject):
     ) % (2 ** 32 - 1) + 42 # add a fixed offset for the designs to differ from mario phase2
     print("seed", seed)
     random.seed(seed)
-
-    subject_levels = selected_levels() + sum([random.sample(selected_levels(),len(all_levels)) for rep in range(n_repetitions)],[])
+    
+    subject_levels = selected_levels() + sum([random.sample(selected_levels(),len(selected_levels())) for rep in range(n_repetitions)],[])
     subject_design = pandas.DataFrame(subject_levels, columns=('world','level'))
     out_fname = os.path.join(
         'data',

@@ -80,36 +80,40 @@ def run_task(
     if task.use_eeg and not shortcut_evt:
         exp_win.callOnFlip(eeg.send_signal, eeg.EEG_settings["TASK_START_CODE"])
 
-    if not shortcut_evt:
-        shortcut_evt = run_task_loop(
+    try:
+        if not shortcut_evt:
+            shortcut_evt = run_task_loop(
+                task,
+                task.run(exp_win, ctl_win),
+                eyetracker,
+                gaze_drawer,
+                record_movie=exp_win if record_movie else False,
+            )
+
+        # send stop trigger/marker to MEG + Biopac (or anything else on parallel port)
+        if task.use_meg and not shortcut_evt:
+            exp_win.callOnFlip(meg.send_signal, meg.MEG_settings["TASK_STOP_CODE"])
+        if task.use_eeg and not shortcut_evt:
+            exp_win.callOnFlip(eeg.send_signal, eeg.EEG_settings["TASK_STOP_CODE"])
+
+
+        if eyetracker:
+            eyetracker.stop_recording()
+
+        run_task_loop(
             task,
-            task.run(exp_win, ctl_win),
+            task.stop(exp_win, ctl_win),
             exp_win,
             eyetracker,
             gaze_drawer,
             record_movie=exp_win if record_movie else False,
         )
 
-    # send stop trigger/marker to MEG + Biopac (or anything else on parallel port)
-    if task.use_meg and not shortcut_evt:
-        exp_win.callOnFlip(meg.send_signal, meg.MEG_settings["TASK_STOP_CODE"])
-    if task.use_meg and not shortcut_evt:
-        exp_win.callOnFlip(eeg.send_signal, eeg.EEG_settings["TASK_STOP_CODE"])
-
-    if eyetracker:
-        eyetracker.stop_recording()
-
-    run_task_loop(
-        task,
-        task.stop(exp_win, ctl_win),
-        exp_win,
-        eyetracker,
-        gaze_drawer,
-        record_movie=exp_win if record_movie else False,
-    )
-
-    # now that time is less sensitive: save files
-    task.save()
+    except Exception as e:
+        raise e
+    finally: # attempt saving no matter what happened
+        # now that time is less sensitive: save files
+        task.save()
 
     return shortcut_evt
 
@@ -268,14 +272,17 @@ Thanks for your participation!"""
                 exp_win.winHandle.activate()
                 # record frame intervals for debug
 
-                shortcut_evt = run_task(
-                    task,
-                    exp_win,
-                    ctl_win,
-                    eyetracker_client,
-                    gaze_drawer,
-                    record_movie=record_movie,
-                )
+                try:
+                    shortcut_evt = run_task(
+                        task,
+                        exp_win,
+                        ctl_win,
+                        eyetracker_client,
+                        gaze_drawer,
+                        record_movie=record_movie,
+                    )
+                except Exception:
+                    task
                 logging.flush()
 
                 if shortcut_evt == "n":
@@ -309,7 +316,7 @@ Thanks for your participation!"""
                 # do that only if the task was not aborted to save time
                 # there is anyway the duration of the instruction before listening to TTL
                 for i in range(DELAY_BETWEEN_TASK * config.FRAME_RATE):
-                    exp_win.flip(clearBuffer=False)
+                    exp_win.flip(clearBuffer=i<2)
 
         exp_win.saveFrameIntervals("exp_win_frame_intervals.txt")
         if ctl_win:

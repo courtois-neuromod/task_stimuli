@@ -43,6 +43,7 @@ def get_tasks(parsed):
             name=f"task-emotionvideos_run-{1+savestate['index']:02d}",
             use_eyetracking=True,
             target_duration=TARGET_GIFS_DURATION + initial_wait + final_wait,
+
         )
         yield task
 

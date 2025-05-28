@@ -14,7 +14,7 @@ OUTPUT_DIR = "output"
 
 EYETRACKING_ROI = (60, 30, 660, 450)
 
-EXP_SCREEN_XRANDR_NAME = "DP-2"
+EXP_SCREEN_XRANDR_NAME = "eDP-1"
 
 
 EXP_MONITOR = Monitor(
@@ -29,6 +29,7 @@ EXP_WINDOW = dict(
     fullscr=True,
     gammaErrorPolicy="warn",
     #waitBlanking=False,
+    waitBlanking=True,
 )
 
 EXP_MONITOR.setSizePix(EXP_WINDOW['size'])

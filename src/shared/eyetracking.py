@@ -12,7 +12,7 @@ from .ellipse import Ellipse
 from ..tasks.task_base import Task
 from . import config
 
-INSTRUCTION_DURATION = 4
+INSTRUCTION_DURATION = 2
 STARTCUE_DURATION = 2
 FEEDBACK_DURATION = 3
 CALIBRATE_HOTKEY = "c"
@@ -248,7 +248,10 @@ class EyetrackerCalibration_targets(Task):
                 )
 
                 print('Ǹumber of received gaze: ', str(len(self._gaze_list)))
-                val_qc = self.eyetracker.validate(self._gaze_list, self.all_refs_per_flip)
+                val_qc = self.eyetracker.validate(self._gaze_list,
+                                                  self.all_refs_per_flip,
+                                                  self.marker_duration_frames - (self.calibration_lead_in + self.calibration_lead_out),
+                                                  )
 
                 # If self.feedback = True, display calib results on screen
                 if self.feedback:
@@ -264,7 +267,7 @@ class EyetrackerCalibration_targets(Task):
                         else:
                             fill_col = (1, 1, 1) # white indicates no fixations reccorded for that marker
                         qc_dots.append(visual.Circle(exp_win, units='pix', pos=pos, radius=self.marker_size*0.8,
-                                                     lineWidth=0, fillColor=fill_col))
+                                                     lineWidth=1, fillColor=fill_col))
 
                 if self.feedback:
                     for frameN in range(config.FRAME_RATE * FEEDBACK_DURATION):
@@ -306,6 +309,8 @@ class EyetrackerCalibration_targets(Task):
                         calibration_success = notes['topic'].startswith("notify.calibration.successful")
                         if not calibration_success:
                             print('#### CALIBRATION FAILED: restart with <c> ####')
+                        else:
+                            print('##### CALIBRATION SUCCESSFUL')
                         break
         self.eyetracker.pause()
 
@@ -362,7 +367,6 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
 
         for frameN in range(config.FRAME_RATE * INSTRUCTION_DURATION):
             screen_text.draw(exp_win)
-            screen_text.draw(ctl_win)
             yield True
 
     def _setup(self, exp_win):
@@ -462,7 +466,6 @@ While awaiting for the calibration to start you will be asked to roll your eyes.
                 for f, r in enumerate(radius_anim):
                     circle_marker.radius = r
                     circle_marker.draw(exp_win)
-                    circle_marker.draw(ctl_win)
 
                     if (
                         f > self.calibration_lead_in
@@ -685,6 +688,7 @@ class EyeTrackerClient(threading.Thread):
         self._req_socket.send_string("SUB_PORT")
         self._ipc_sub_port = int(self._req_socket.recv())
         logging.info(f"ipc_sub_port: {self._ipc_sub_port}")
+        self.resume()
 
     def start_source(self):
         self.send_recv_notification(
@@ -763,7 +767,11 @@ class EyeTrackerClient(threading.Thread):
             self.pupil_monitor = Msg_Receiver(
 
                 self._ctx, f"tcp://localhost:{self._ipc_sub_port}",
-                topics=("gaze", "pupil", "fixations", "notify.calibration.successful", "notify.calibration.failed", "notify.aravis")
+                topics=(
+                    "gaze", "pupil", "fixations",
+                    "notify.calibration.successful",
+                    "notify.calibration.failed",
+                    "notify.aravis")
 
             )
             self.paused = False
@@ -800,6 +808,9 @@ class EyeTrackerClient(threading.Thread):
                         elif topic.startswith("notify.aravis.start_capture"):
                             self._aravis_notification = tmp
         logging.info("eyetracker listener: stopping")
+
+
+
 
     def set_pupil_cb(self, pupil_cb):
         self._pupil_cb = pupil_cb
@@ -848,8 +859,7 @@ class EyeTrackerClient(threading.Thread):
 
     def assign_gaze_to_markers(self, gaze_list, markers_dict):
         '''
-        Assign gaze/fixations to markers based on their onset.
-        A fixation is assigned to a marker if its ONSET overlaps with the time the marker is on the screen
+        Assign gaze to markers based on their timestamp
         '''
         i = 0
         #print(markers_dict[0]['onset'], fixation_list[0]['timestamp'])
@@ -875,7 +885,7 @@ class EyeTrackerClient(threading.Thread):
         return markers_dict
 
 
-    def gaze_to_marker_distances(self, markers_dict, conf_thresh = 0.9):
+    def gaze_qc_per_marker(self, markers_dict, frames_per_marker, conf_thresh = 0.80):
         '''
         estimated eye-to-screen distance in pixels
         based on screen dim in pixels ((1280, 1024)) and screen deg of visual angle (17.5, 14)
@@ -883,20 +893,23 @@ class EyeTrackerClient(threading.Thread):
         dist_in_pix = 4164 # in pixels
 
         val_qc = []
-        print('Distance between gaze and target in degrees of visual angle')
-        print('Good < 0.5 deg ; Fair = [0.5, 1.5[ deg ; Poor >= 1.5 deg')
+        #print('Distance between gaze and target in degrees of visual angle')
+        #print('Good < 0.5 deg ; Fair = [0.5, 1.5[ deg ; Poor >= 1.5 deg')
 
         for count in range(len(markers_dict.keys())):
             m = markers_dict[count]
-            print('Marker ' + str(count) + ', Normalized position: ' +  str(m['norm_pos']))
-            # transform marker's normalized position into dim = (3,) vector in pixel space
-            m_vecpos = np.concatenate(((np.array(m['norm_pos']) - 0.5)*(1280, 1024), np.array([dist_in_pix])), axis=0)
+            #print(f"Marker {count}, Normalized position: {m['norm_pos']}")
 
-            if len(m['gaze_data']['timestamps']) > 0:
-                # filtrate gaze based on confidence threshold
+            num_gz = len(m['gaze_data']['timestamps'])
+            expected_gz_count = 250*(frames_per_marker/60)
+
+            if num_gz:
+                # transform marker's normalized position into dim = (3,) vector in pixel space
+                m_vecpos = np.concatenate(((np.array(m['norm_pos']) - 0.5)*(1280, 1024), np.array([dist_in_pix])), axis=0)
+
                 g_conf = np.array(m['gaze_data']['confidence'])
+                # filtrate gaze based on confidence threshold
                 g_filter = g_conf > conf_thresh
-
                 g_pos = np.array(m['gaze_data']['norm_pos'])[g_filter]
                 g_times = np.array(m['gaze_data']['timestamps'])[g_filter]
 
@@ -910,31 +923,55 @@ class EyeTrackerClient(threading.Thread):
                     distances.append(distance[0])
 
                 distances = np.array(distances)
-                assert(len(distances)==len(g_times))
                 markers_dict[count]['gaze_data']['distances'] = {'distances': distances,
                                                                  'timestamps': g_times,
                                                                  }
 
-                num_gz = len(distances)
-                good = np.sum(distances < 0.5) / num_gz
-                fair = np.sum((distances >= 0.5)*(distances < 1.5)) / num_gz
-                poor = np.sum(distances >= 1.5) / num_gz
+                num_dist = len(distances)
+                good = np.sum(distances < 0.5) / num_dist
+                fair = np.sum((distances >= 0.5)*(distances < 1.5)) / num_dist
+                poor = np.sum(distances >= 1.5) / num_dist
 
-                print('Total gaze:' + str(num_gz) + ' , Good:' + str(good) + ' , Fair:' + str(fair) + ' , Poor:' + str(poor))
+                #print('Total gaze:' + str(num_gz) + ' , Good:' + str(good) + ' , Fair:' + str(fair) + ' , Poor:' + str(poor))
                 val_qc.append({
                     'marker': count,
                     'norm_pos': m['norm_pos'],
                     'num_gz': num_gz,
+                    'gz_count_ratio': num_gz/expected_gz_count,
+                    'above_70conf_ratio': np.sum(g_conf > 0.7)/num_gz,
+                    'above_80conf_ratio': np.sum(g_conf > 0.8)/num_gz,
+                    'above_90conf_ratio': np.sum(g_conf > 0.9)/num_gz,
+                    'median_distance': np.median(distances),
                     'good': good,
                     'fair': fair,
-                    'poor': poor
+                    'poor': poor,
                 })
             else:
                 val_qc.append({
                     'marker': count,
                     'norm_pos': m['norm_pos'],
-                    'num_gz': 0
+                    'num_gz': 0,
                 })
+
+        def abc_mapping(val_num, cutoff_vals):
+            if val_num > cutoff_vals[0]:
+                return 'A'
+            elif val_num > cutoff_vals[1]:
+                return 'B'
+            else:
+                return 'C'
+
+        print('EYE-TRACKING VALIDATION METRICS (per marker)')
+        print(f"RATIO OF DETECTED PUPILS: {[round(x['gz_count_ratio'], 3) for x in val_qc if 'gz_count_ratio' in x]}")
+        print(f"CONFIDENCE >0.7 RATIO: {[round(x['above_70conf_ratio'], 3) for x in val_qc if 'above_70conf_ratio' in x]}")
+        print(f"CONFIDENCE >0.8 RATIO: {[round(x['above_80conf_ratio'], 3) for x in val_qc if 'above_80conf_ratio' in x]}")
+        print(f"CONFIDENCE >0.9 RATIO: {[round(x['above_90conf_ratio'], 3) for x in val_qc if 'above_90conf_ratio' in x]}")
+        print(f"MEDIAN DISTANCE 2 TARGET (deg of visual angle): {[round(x['median_distance'], 3) for x in val_qc if 'median_distance' in x]}")
+        print('****************QUICK SUMMARY*********************')
+        print(f"PUPIL DETECTION: {[abc_mapping(x['gz_count_ratio'], [0.97, 0.95]) for x in val_qc if 'gz_count_ratio' in x]}")
+        print(f">70% CONF: {[abc_mapping(x['above_70conf_ratio'], [0.90, 0.80]) for x in val_qc if 'above_70conf_ratio' in x]}")
+        print(f">80% CONF: {[abc_mapping(x['above_80conf_ratio'], [0.85, 0.75]) for x in val_qc if 'above_80conf_ratio' in x]}")
+        print(f"DISTANCE: {[abc_mapping(x['median_distance']*(-1), [-1.2, -2.2]) for x in val_qc if 'median_distance' in x]}")
 
         return markers_dict, val_qc
 
@@ -942,7 +979,7 @@ class EyeTrackerClient(threading.Thread):
     def interleave_calibration(self, tasks):
         calibration_index=0
         for task in tasks:
-            if task.use_eyetracking:
+            if task.use_eyetracking and task.et_calibrate:
                 calibration_index += 1
                 if self.use_targets:
                     yield EyetrackerCalibration_targets(
@@ -961,6 +998,12 @@ class EyeTrackerClient(threading.Thread):
                         validation=True
                         )
             yield task
+            if task.use_eyetracking and self.validate_calib:
+                yield EyetrackerCalibration_targets(
+                    self,
+                    name=f"eyeTrackercalib-validate-{calibration_index}",
+                    validation=True
+                    )
 
     def calibrate(self, pupil_list, ref_list):
         if len(pupil_list) < 100:
@@ -978,17 +1021,20 @@ class EyeTrackerClient(threading.Thread):
                 "subject": "start_plugin",
                 "name": "Gazer2D",
                 "args": {"calib_data": calib_data},
-                "raise_calibration_error": False,
+                "raise_calibration_error": True,
             }
         )
         logging.info("calibration data sent to pupil")
         logging.flush()
 
-    def validate(self, gaze_list, ref_list):
+    def validate(self, gaze_list, ref_list, frames_per_marker):
 
         markers_dict = self.get_marker_dictionary(ref_list)
         markers_dict = self.assign_gaze_to_markers(gaze_list, markers_dict)
-        markers_dict, val_qc = self.gaze_to_marker_distances(markers_dict, conf_thresh = 0.9)
+        markers_dict, val_qc = self.gaze_qc_per_marker(markers_dict,
+                                                       frames_per_marker,
+                                                       conf_thresh = 0.80,
+                                                       )
 
         return val_qc
 
