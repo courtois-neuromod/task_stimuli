@@ -1,1 +1,121 @@
-../../../.git/annex/objects/ww/7P/MD5E-s4331--b225b41a96c216781817484b5d9d1e4f.svg/MD5E-s4331--b225b41a96c216781817484b5d9d1e4f.svg
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:osb="http://www.openswatchbook.org/uri/2009/osb"
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="210mm"
+   height="297mm"
+   viewBox="0 0 210 297"
+   version="1.1"
+   id="svg8"
+   inkscape:version="1.0.1 (0767f8302a, 2020-10-17)"
+   sodipodi:docname="response_mapping.svg"
+   inkscape:export-filename="/home/basile/data/projects/task_stimuli/data/things/images/response_mapping.png"
+   inkscape:export-xdpi="89.187027"
+   inkscape:export-ydpi="89.187027">
+  <defs
+     id="defs2">
+    <linearGradient
+       id="linearGradient883"
+       osb:paint="solid">
+      <stop
+         style="stop-color:#000000;stop-opacity:1;"
+         offset="0"
+         id="stop881" />
+    </linearGradient>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.4"
+     inkscape:cx="412.72087"
+     inkscape:cy="134.46077"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     inkscape:document-rotation="0"
+     showgrid="false"
+     inkscape:window-width="1515"
+     inkscape:window-height="1016"
+     inkscape:window-x="112"
+     inkscape:window-y="27"
+     inkscape:window-maximized="0"
+     showguides="true"
+     inkscape:guide-bbox="true">
+    <sodipodi:guide
+       position="53.704353,244.30876"
+       orientation="0,-1"
+       id="guide871" />
+    <sodipodi:guide
+       position="59.950764,239.90016"
+       orientation="1,0"
+       id="guide873" />
+    <sodipodi:guide
+       position="77.424149,249.61477"
+       orientation="1,0"
+       id="guide875" />
+    <sodipodi:guide
+       position="94.966516,253.81623"
+       orientation="1,0"
+       id="guide877" />
+    <sodipodi:guide
+       position="112.44791,257.02903"
+       orientation="1,0"
+       id="guide879" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="opacity:1;fill:#df432e;fill-opacity:1;stroke:#ffffff;stroke-width:1.05833333;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+       id="rect833"
+       width="13.17471"
+       height="1.5621517"
+       x="77.268951"
+       y="51.938816"
+       inkscape:export-xdpi="94.451927"
+       inkscape:export-ydpi="94.451927" />
+    <rect
+       style="opacity:1;fill:#df432e;fill-opacity:1;stroke:#ffffff;stroke-width:1.05833333;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+       id="rect835"
+       width="13.17471"
+       height="4.1411853"
+       x="59.950764"
+       y="50.619434"
+       inkscape:export-xdpi="94.451927"
+       inkscape:export-ydpi="94.451927" />
+    <path
+       id="rect837"
+       style="opacity:1;fill:#00c657;fill-opacity:1;stroke:#ffffff;stroke-width:1.05833333;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+       d="m 100.62501,46.132426 v 5.806365 h -5.806327 v 1.562177 h 5.806327 v 5.806366 h 1.56218 v -5.806366 h 5.80636 v -1.562177 h -5.80636 v -5.806365 z"
+       inkscape:export-xdpi="94.451927"
+       inkscape:export-ydpi="94.451927" />
+    <path
+       id="rect846"
+       style="opacity:1;fill:#00c657;fill-opacity:1;stroke:#ffffff;stroke-width:1.05833333;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+       d="m 116.96443,46.125926 v 4.517038 h -4.51652 v 4.140833 h 4.51652 v 4.517035 h 4.14135 v -4.517035 h 4.51652 v -4.140833 h -4.51652 v -4.517038 z"
+       inkscape:export-xdpi="94.451927"
+       inkscape:export-ydpi="94.451927" />
+  </g>
+</svg>
