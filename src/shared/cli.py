@@ -266,6 +266,7 @@ Thanks for your participation!"""
                 use_eeg=use_eeg,
             )
             print("READY")
+            shortcut_evt=None
 
             while True:
                 # force focus on the task window to ensure getting keys, TTL, ...
@@ -281,8 +282,10 @@ Thanks for your participation!"""
                         gaze_drawer,
                         record_movie=record_movie,
                     )
-                except Exception:
-                    task
+                except Exception as e:
+                    print(e)
+                    print(traceback.format_exc())
+                    task.save()
                 logging.flush()
 
                 if shortcut_evt == "n":

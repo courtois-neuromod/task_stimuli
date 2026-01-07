@@ -50,7 +50,7 @@ def get_tasks(parsed):
     from ..tasks import videogame, task_base
     from .game_questionnaires import flow_ratings, other_ratings
     import json
-    import retro
+    import stable_retro as retro 
     # point to a copy of the whole gym-retro with custom states and scenarii
     retro.data.Integrations.add_custom_path(
             os.path.join(os.getcwd(), "data", "videogames", "mario")
