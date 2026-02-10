@@ -1,8 +1,9 @@
-numpy==1.24
+numpy<2.0
+scipy==1.14.1
 attrdict
-PsychoPy #==2024
+PsychoPy
 stable-retro
-pandas>=1.1.1
+pandas
 python-dotenv
 tqdm>=4.60.0
 textdistance
@@ -10,4 +11,5 @@ colorama
 psychopy-sounddevice
 termcolor
 pyaudio
-moviepy
+moviepy>2.0.0
+python-vlc>=3.0.12118

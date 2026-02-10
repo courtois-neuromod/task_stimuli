@@ -3,7 +3,7 @@ docker run \
   --network host \
   --device=/dev/dri \
   --device=/dev/snd  \
-#  -v $PWD/src/:/src/task_stimuli/src/ \
+  -v $PWD/src/:/src/task_stimuli/src/ \
   -v /run/user/$(id -u)/pulse:/run/user/$(id -u)/pulse \
   -v $PWD/data:/src/task_stimuli/data\
   -v ~/data/tests/test_docker:/data\
