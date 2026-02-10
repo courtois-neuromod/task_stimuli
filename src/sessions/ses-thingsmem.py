@@ -167,15 +167,15 @@ def generate_design_file(subject):
             session_props = props
 
         img_unseen_between = img_unseen_between.sample(frac=1).reset_index(drop=True) #randomize
-        img_unseen_between["run"] = np.hstack([r+1]*prop for r,prop in enumerate(session_props.unseen_between))
+        img_unseen_between["run"] = np.hstack([[r+1]*prop for r,prop in enumerate(session_props.unseen_between)])
         img_unseen_within = img_unseen_within.sample(frac=1).reset_index(drop=True) #randomize
-        img_unseen_within["run"] = np.hstack([r+1]*prop for r,prop in enumerate(session_props.unseen_within))
+        img_unseen_within["run"] = np.hstack([[r+1]*prop for r,prop in enumerate(session_props.unseen_within)])
 
         if session > 0:
             img_within_between = img_within_between.sample(frac=1).reset_index(drop=True) #randomize
-            img_within_between["run"] = np.hstack([r+1]*prop for r,prop in enumerate(session_props.seen_within_between))
+            img_within_between["run"] = np.hstack([[r+1]*prop for r,prop in enumerate(session_props.seen_within_between)])
             img_between_within = img_between_within.sample(frac=1).reset_index(drop=True) #randomize
-            img_between_within["run"] = np.hstack([r+1]*prop for r,prop in enumerate(session_props.seen_between_within))
+            img_between_within["run"] = np.hstack([[r+1]*prop for r,prop in enumerate(session_props.seen_between_within)])
 
 
         # here it is more complex due to temporal dependencies of within session repetitions
@@ -185,12 +185,12 @@ def generate_design_file(subject):
         for run in range(n_runs_session):
             img_unseen_within_run = img_unseen_within[img_unseen_within.run == run+1]
             # aggregate all the unused repetitions
-            all_unseen_within = all_unseen_within.append(img_unseen_within_run)
+            all_unseen_within = pandas.concat([all_unseen_within, img_unseen_within_run])
             # randomely sample the unused repetitions
             img_seen_within_run = all_unseen_within.sample(n=session_props.seen_within[run])
             all_unseen_within = all_unseen_within.drop(img_seen_within_run.index) # without replacement
             img_seen_within_run['run'] = run+1
-            img_seen_within = img_seen_within.append(img_seen_within_run)
+            img_seen_within = pandas.concat([img_seen_within, img_seen_within_run])
 
 #        img_seen_within.set_index(
 #            img_seen_within.index+np.random.randint(1, n_trials/2, img_seen_within.shape[0]),
@@ -206,12 +206,12 @@ def generate_design_file(subject):
             for run in range(n_runs_session):
                 img_between_within_run = img_between_within[img_between_within.run == run+1]
                 # aggregate all the unused repetitions
-                all_between_within = all_between_within.append(img_between_within_run)
+                all_between_within = pandas.concat([all_between_within,img_between_within_run])
                 # randomely sample the unused repetitions
                 img_between_within_run = all_between_within.sample(n=session_props.seen_between_within2[run])
                 all_between_within = all_between_within.drop(img_between_within_run.index) # without replacement
                 img_between_within_run['run'] = run+1
-                img_between_within2 = img_between_within2.append(img_between_within_run)
+                img_between_within2 = pandas.concat([img_between_within2, img_between_within_run])
             #img_between_within2['repetition'] = 3
             #img_between_within2 = img_between_within2.reset_index(drop=True)
 #            img_between_within2.set_index(

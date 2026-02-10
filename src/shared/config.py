@@ -43,7 +43,7 @@ CTL_WINDOW = dict(
     waitBlanking=False,  # avoid ctrl window to block the script in case of differing refresh rate.
 )
 
-FRAME_RATE = 120
+FRAME_RATE = 60
 
 # task parameters
 INSTRUCTION_DURATION = 3

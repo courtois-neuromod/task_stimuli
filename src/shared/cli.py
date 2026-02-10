@@ -29,7 +29,7 @@ def listen_shortcuts():
 
 
 def run_task_loop(task, loop, exp_win, eyetracker=None, gaze_drawer=None, record_movie=False):
-    for frameN, _ in enumerate(loop):
+    for frameN, clearBuffer in enumerate(loop):
         if gaze_drawer:
             gaze = eyetracker.get_gaze()
             if not gaze is None:
@@ -39,8 +39,6 @@ def run_task_loop(task, loop, exp_win, eyetracker=None, gaze_drawer=None, record
         if task.use_eeg and task._extra_markers:
             exp_win.callOnFlip(eeg.send_signal, task._extra_markers)
 
-        if record_movie and frameN % 6 == 0:
-            record_movie.getMovieFrame(buffer="back")
         # check for global event keys
         shortcut_evt = listen_shortcuts()
         if shortcut_evt:
@@ -84,10 +82,9 @@ def run_task(
         if not shortcut_evt:
             shortcut_evt = run_task_loop(
                 task,
-                task.run(exp_win, ctl_win),
+                task.run(exp_win, ctl_win, record_movie=record_movie),
                 eyetracker,
-                gaze_drawer,
-                record_movie=exp_win if record_movie else False,
+                gaze_drawer
             )
 
         # send stop trigger/marker to MEG + Biopac (or anything else on parallel port)
@@ -308,7 +305,8 @@ Thanks for your participation!"""
                     task.output_path, "%s_%s.mp4" % (task.output_fname_base, task.name)
                 )
                 print(f"saving movie as {out_fname}")
-                exp_win.saveMovieFrames(out_fname, fps=10)
+                task.save_movie(out_fname, clear=True)
+                #exp_win.saveMovieFrames(out_fname, fps=10)
             task.unload()
 
             if shortcut_evt == "q":

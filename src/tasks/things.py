@@ -217,7 +217,7 @@ The button mapping will change from trial to trial as indicated at the center of
                 stimuli.draw(ctl_win)
                 self._response_mapping.draw(ctl_win)
             # wait onset
-            utils.wait_until(self.task_timer, trial["onset"] - 1 / config.FRAME_RATE)
+            yield from utils.wait_until_yield(self.task_timer, trial["onset"] - 1 / config.FRAME_RATE)
             keypresses = event.getKeys(self.RESPONSE_KEYS) # flush response keys
             yield True  # flip
             trial["onset_flip"] = (
@@ -238,7 +238,7 @@ The button mapping will change from trial to trial as indicated at the center of
                 self._exp_win_last_flip_time - self._exp_win_first_flip_time
             )
 
-            utils.wait_until(self.task_timer, trial["onset"] + RESPONSE_TIME - 1 / config.FRAME_RATE)
+            yield from utils.wait_until_yield(self.task_timer, trial["onset"] + RESPONSE_TIME - 1 / config.FRAME_RATE)
 
             keypresses = event.getKeys(self.RESPONSE_KEYS, timeStamped=self.task_timer)
             if len(keypresses):
@@ -274,4 +274,4 @@ The button mapping will change from trial to trial as indicated at the center of
 
             trial["duration_flip"] = trial["offset_flip"] - trial["onset_flip"]
 
-        utils.wait_until(self.task_timer, trial["onset"] + RESPONSE_TIME + FINAL_WAIT)
+        yield from utils.wait_until_yield(self.task_timer, trial["onset"] + RESPONSE_TIME + FINAL_WAIT)

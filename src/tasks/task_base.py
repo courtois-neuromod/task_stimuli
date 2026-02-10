@@ -108,10 +108,14 @@ class Task(object):
             yield
             self._flip_all_windows(exp_win, ctl_win, True)
 
-    def run(self, exp_win, ctl_win):
+    def run(self, exp_win, ctl_win, record_movie=False):
+        self.frames, self.frame_timestamps = [], []
         # needs to be the 1rst callbacks
         exp_win.timeOnFlip(self, '_exp_win_first_flip_time')
         self._flip_all_windows(exp_win, ctl_win, True)
+        if record_movie:
+            self.frames.append(exp_win._getFrame(buffer="front"))
+            self.frame_timestamps.append(0)
         #sync to first screen flip
         self.task_timer = core.MonotonicClock(self._exp_win_first_flip_time)
 
@@ -121,7 +125,7 @@ class Task(object):
 
         for clearBuffer in self._run(exp_win, ctl_win):
             # yield first to allow external draw before flip
-            yield
+            yield clearBuffer
 
             if meg.MEG_MARKERS_ON_FLIP and self.use_meg:
                 exp_win.callOnFlip(meg.send_signal, self.flags | (flip_idx%2))
@@ -130,9 +134,12 @@ class Task(object):
 
             if clearBuffer is not None:
                 self._flip_all_windows(exp_win, ctl_win, clearBuffer)
+                if record_movie:
+                    self.frames.append(exp_win._getFrame(buffer="front"))
+                    self.frame_timestamps.append(self._exp_win_last_flip_time - self._exp_win_first_flip_time)
 
             # increment the progress bar depending on task flip rate
-            if self.progress_bar:
+            if self.progress_bar and clearBuffer:
                 if self._progress_bar_refresh_rate and flip_idx % self._progress_bar_refresh_rate == 0:
                     self.progress_bar.update(1)
             flip_idx += 1
@@ -182,6 +189,32 @@ class Task(object):
             df = pandas.DataFrame(self._events)
             df.to_csv(fname, sep="\t", index=False)
 
+    def save_movie(self, path, clear=True):
+        import av
+        from fractions import Fraction
+        import numpy as np
+
+        container = av.open(path, mode="w")
+        time_base = Fraction(1, 65535)
+        last_pts = -1000
+        video_stream = container.add_stream("libx265", time_base=time_base)
+        video_stream.options = {
+            'lossless': '1',
+            'preset': 'slow',
+        }
+        for frame, timestamp in zip(self.frames, self.frame_timestamps):
+            print(timestamp)
+            av_frame = av.VideoFrame.from_image(frame)
+            pts = int(timestamp / time_base)
+            pts = max(pts, last_pts + 1)
+            av_frame.pts = pts
+            last_pts = pts
+            for packet in video_stream.encode(av_frame):
+                container.mux(packet)
+        for packet in video_stream.encode(None):
+            container.mux(packet)
+        container.close()
+        self.frames, self.frame_timestamps = [], []
 
 class Pause(Task):
     def __init__(self, text="Taking a short break, relax...", **kwargs):
