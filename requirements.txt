@@ -10,3 +10,4 @@ colorama
 psychopy-sounddevice
 termcolor
 pyaudio
+moviepy
