@@ -34,8 +34,12 @@ def run_task_loop(loop, eyetracker=None, gaze_drawer=None, record_movie=False):
             gaze = eyetracker.get_gaze()
             if not gaze is None:
                 gaze_drawer.draw_gazepoint(gaze)
-        if record_movie and frameN % 6 == 0:
-            record_movie.getMovieFrame(buffer="back")
+        if record_movie and frameN % 2 == 0:
+        #if record_movie and frameN % 2 == 0:  # 30 fps...
+        #if record_movie and frameN % 6 == 0:  # 10 fps...
+        #if record_movie:  # capture all frames...
+            record_movie.getMovieFrame()
+            #record_movie.getMovieFrame(buffer="back")
         # check for global event keys
         shortcut_evt = listen_shortcuts()
         if shortcut_evt:
@@ -55,7 +59,8 @@ def run_task(
         task.instructions(exp_win, ctl_win),
         eyetracker,
         gaze_drawer,
-        record_movie=exp_win if record_movie else False,
+        record_movie=False,  # Do NOT record movie frames during instructions
+        #record_movie=exp_win if record_movie else False,
     )
 
     if task.use_fmri and not shortcut_evt:
@@ -247,6 +252,8 @@ Thanks for your participation!"""
                 use_fmri=use_fmri,
                 use_meg=use_meg,
             )
+            if record_movie:
+                exp_win.movieFrames = []
             print("READY")
 
             while True:
@@ -287,7 +294,7 @@ Thanks for your participation!"""
                     task.output_path, "%s_%s.mp4" % (task.output_fname_base, task.name)
                 )
                 print(f"saving movie as {out_fname}")
-                exp_win.saveMovieFrames(out_fname, fps=10)
+                exp_win.saveMovieFrames(out_fname, fps=config.FRAME_RATE // 2)  # // 2  -> 30 fps; // 6 -> 10 fps
             task.unload()
 
             if shortcut_evt == "q":

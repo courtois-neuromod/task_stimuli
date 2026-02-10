@@ -66,7 +66,6 @@ Press the button when you see an unrecognizable object that was generated."""
             yield ()
 
     def _run(self, exp_win, ctl_win):
-
         exp_win.logOnFlip(
             level=logging.EXP, msg="Things: task starting at %f" % time.time()
         )
@@ -76,39 +75,78 @@ Press the button when you see an unrecognizable object that was generated."""
         yield True
 
         for trial_n, (trial, stimuli) in enumerate(zip(self.trials, self._stimuli)):
-            exp_win.logOnFlip(
-                level=logging.EXP,
-                msg=f"image: {trial['condition']}:{trial['image_path']}",
-            )
             self.progress_bar.set_description(
                 f"Trial {trial_n}:: {trial['condition']}:{trial['image_path']}"
             )
 
-            # draw to backbuffer
-            stimuli.draw(exp_win)
-            self.fixation_cross.draw(exp_win)
-            if ctl_win:
-                stimuli.draw(ctl_win)
-                self.fixation_cross.draw(ctl_win)
-            # wait onset
-            utils.wait_until(self.task_timer, trial["onset"] - 1 / config.FRAME_RATE)
-            yield True  # flip
-            trial["onset_flip"] = (
-                self._exp_win_last_flip_time - self._exp_win_first_flip_time
-            )
+            # PRE-IMAGE PERIOD
+            deadline = trial["onset"] - 1 / config.FRAME_RATE
+            while self.task_timer.getTime() < deadline: 
+                self.fixation_cross.draw(exp_win)
+                if ctl_win:
+                    self.fixation_cross.draw(ctl_win)
+                yield True
 
-            # draw to backbuffer
+            # IMAGE PRESENTATION PERIOD
+            exp_win.logOnFlip(
+                level=logging.EXP,
+                msg=f"image: {trial['condition']}:{trial['image_path']}",
+            )
+            not_started = True
+            deadline = trial["onset"] + trial["duration"] - 1 / config.FRAME_RATE
+            while self.task_timer.getTime() < deadline: 
+                stimuli.draw(exp_win)
+                self.fixation_cross.draw(exp_win)
+                if ctl_win:
+                    stimuli.draw(exp_win)
+                    self.fixation_cross.draw(ctl_win)
+                yield True
+                if not_started:
+                    trial["onset_flip"] = (
+                        self._exp_win_last_flip_time - self._exp_win_first_flip_time
+                    )  
+                    not_started = False
+
+            # INTER-STIMULUS INTERVAL
             exp_win.logOnFlip(level=logging.EXP, msg="fixation")
-            self.fixation_cross.draw(exp_win)
-            if ctl_win:
-                self.fixation_cross.draw(ctl_win)
-            utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] - 1 / config.FRAME_RATE)
-            yield True  # flip
-            trial["offset_flip"] = (
-                self._exp_win_last_flip_time - self._exp_win_first_flip_time
-            )
+            deadline = trial["onset"] + RESPONSE_TIME - 1 / config.FRAME_RATE
+            not_started = True
+            while self.task_timer.getTime() < deadline: 
+                self.fixation_cross.draw(exp_win)
+                if ctl_win:
+                    self.fixation_cross.draw(ctl_win)
+                yield True
+                if not_started:
+                    trial["offset_flip"] = (
+                        self._exp_win_last_flip_time - self._exp_win_first_flip_time
+                    )
+                    not_started = False
 
-            utils.wait_until(self.task_timer, trial["onset"] + RESPONSE_TIME - 1 / config.FRAME_RATE)
+            # draw to backbuffer
+            #stimuli.draw(exp_win)
+            #self.fixation_cross.draw(exp_win)
+            #if ctl_win:
+            #    stimuli.draw(ctl_win)
+            #    self.fixation_cross.draw(ctl_win)
+            # wait onset
+            #utils.wait_until(self.task_timer, trial["onset"] - 1 / config.FRAME_RATE)
+            #yield True  # flip
+            #trial["onset_flip"] = (
+            #    self._exp_win_last_flip_time - self._exp_win_first_flip_time
+            #)
+
+            # draw to backbuffer
+            #exp_win.logOnFlip(level=logging.EXP, msg="fixation")
+            #self.fixation_cross.draw(exp_win)
+            #if ctl_win:
+            #    self.fixation_cross.draw(ctl_win)
+            #utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] - 1 / config.FRAME_RATE)
+            #yield True  # flip
+            #trial["offset_flip"] = (
+            #    self._exp_win_last_flip_time - self._exp_win_first_flip_time
+            #)
+
+            #utils.wait_until(self.task_timer, trial["onset"] + RESPONSE_TIME - 1 / config.FRAME_RATE)
 
             keypress = event.getKeys([RESPONSE_KEY], timeStamped=self.task_timer)
             trial["response"] = len(keypress) > 0
@@ -117,7 +155,12 @@ Press the button when you see an unrecognizable object that was generated."""
             )
             trial["duration_flip"] = trial["offset_flip"] - trial["onset_flip"]
 
-        utils.wait_until(self.task_timer, trial["onset"] + RESPONSE_TIME + FINAL_WAIT)
+        deadline = trial["onset"] + RESPONSE_TIME + FINAL_WAIT
+        while self.task_timer.getTime() < deadline: 
+            self.fixation_cross.draw(exp_win)
+            if ctl_win:
+                self.fixation_cross.draw(ctl_win)
+            yield True
 
     def _restart(self):
         self.trials = data.TrialHandler(self.design, 1, method="sequential")
@@ -201,44 +244,90 @@ The button mapping will change from trial to trial as indicated at the center of
         yield True
 
         for trial_n, (trial, stimuli) in enumerate(zip(self.trials, self._stimuli)):
+            exp_win.winHandle.activate()
+
+            # PRE-IMAGE PERIOD
+            deadline = trial["onset"] - 1 / config.FRAME_RATE
+            while self.task_timer.getTime() < deadline: 
+                self.fixation_cross.draw(exp_win)
+                if ctl_win:
+                    self.fixation_cross.draw(ctl_win)
+                yield True
+            
+            # IMAGE PRESENTATION PERIOD
+            self.progress_bar.set_description(
+                f"Trial {trial_n}:: {trial['condition']}:{trial['image_path']}"
+            )            
             exp_win.logOnFlip(
                 level=logging.EXP,
                 msg=f"image: {trial['condition']}:{trial['image_path']}",
             )
-            exp_win.winHandle.activate()
-
-            # draw to backbuffer
-            stimuli.draw(exp_win)
             self._response_mapping.flipHoriz = trial["response_mapping_flip_h"]
             self._response_mapping.flipVert = trial["response_mapping_flip_v"]
             self._response_mapping.pos = (0,0) #force update to flip
-            self._response_mapping.draw(exp_win)
-            if ctl_win:
-                stimuli.draw(ctl_win)
-                self._response_mapping.draw(ctl_win)
-            # wait onset
-            utils.wait_until(self.task_timer, trial["onset"] - 1 / config.FRAME_RATE)
             keypresses = event.getKeys(self.RESPONSE_KEYS) # flush response keys
-            yield True  # flip
-            trial["onset_flip"] = (
-                self._exp_win_last_flip_time - self._exp_win_first_flip_time
-            )
-            self.progress_bar.set_description(
-                f"Trial {trial_n}:: {trial['condition']}:{trial['image_path']}"
-            )
+            not_started = True
+            deadline = trial["onset"] + trial["duration"] - 1 / config.FRAME_RATE
+            while self.task_timer.getTime() < deadline: 
+                stimuli.draw(exp_win)
+                self._response_mapping.draw(exp_win)
+                if ctl_win:
+                    stimuli.draw(exp_win)
+                    self._response_mapping.draw(ctl_win)
+                yield True
+                if not_started:
+                    trial["onset_flip"] = (
+                        self._exp_win_last_flip_time - self._exp_win_first_flip_time
+                    )  
+                    not_started = False
+
+            # INTER-STIMULUS INTERVAL
+            exp_win.logOnFlip(level=logging.EXP, msg="fixation")
+            deadline = trial["onset"] + RESPONSE_TIME - 1 / config.FRAME_RATE
+            not_started = True
+            while self.task_timer.getTime() < deadline: 
+                self.fixation_cross.draw(exp_win)
+                if ctl_win:
+                    self.fixation_cross.draw(ctl_win)
+                yield True
+                if not_started:
+                    trial["offset_flip"] = (
+                        self._exp_win_last_flip_time - self._exp_win_first_flip_time
+                    )
+                    not_started = False
 
             # draw to backbuffer
-            exp_win.logOnFlip(level=logging.EXP, msg="fixation")
-            self.fixation_cross.draw(exp_win)
-            if ctl_win:
-                self.fixation_cross.draw(ctl_win)
-            utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] - 1 / config.FRAME_RATE)
-            yield True  # flip
-            trial["offset_flip"] = (
-                self._exp_win_last_flip_time - self._exp_win_first_flip_time
-            )
+            #stimuli.draw(exp_win)
+            #self._response_mapping.flipHoriz = trial["response_mapping_flip_h"]
+            #self._response_mapping.flipVert = trial["response_mapping_flip_v"]
+            #self._response_mapping.pos = (0,0) #force update to flip
+            #self._response_mapping.draw(exp_win)
+            #if ctl_win:
+            #    stimuli.draw(ctl_win)
+            #    self._response_mapping.draw(ctl_win)
+            # wait onset
+            #utils.wait_until(self.task_timer, trial["onset"] - 1 / config.FRAME_RATE)
+            #keypresses = event.getKeys(self.RESPONSE_KEYS) # flush response keys
+            #yield True  # flip
+            #trial["onset_flip"] = (
+            #    self._exp_win_last_flip_time - self._exp_win_first_flip_time
+            #)
+            #self.progress_bar.set_description(
+            #    f"Trial {trial_n}:: {trial['condition']}:{trial['image_path']}"
+            #)
 
-            utils.wait_until(self.task_timer, trial["onset"] + RESPONSE_TIME - 1 / config.FRAME_RATE)
+            # draw to backbuffer
+            #exp_win.logOnFlip(level=logging.EXP, msg="fixation")
+            #self.fixation_cross.draw(exp_win)
+            #if ctl_win:
+            #    self.fixation_cross.draw(ctl_win)
+            #utils.wait_until(self.task_timer, trial["onset"] + trial["duration"] - 1 / config.FRAME_RATE)
+            #yield True  # flip
+            #trial["offset_flip"] = (
+            #    self._exp_win_last_flip_time - self._exp_win_first_flip_time
+            #)
+
+            #utils.wait_until(self.task_timer, trial["onset"] + RESPONSE_TIME - 1 / config.FRAME_RATE)
 
             keypresses = event.getKeys(self.RESPONSE_KEYS, timeStamped=self.task_timer)
             if len(keypresses):
@@ -274,4 +363,11 @@ The button mapping will change from trial to trial as indicated at the center of
 
             trial["duration_flip"] = trial["offset_flip"] - trial["onset_flip"]
 
-        utils.wait_until(self.task_timer, trial["onset"] + RESPONSE_TIME + FINAL_WAIT)
+        deadline = trial["onset"] + RESPONSE_TIME + FINAL_WAIT
+        while self.task_timer.getTime() < deadline: 
+            self.fixation_cross.draw(exp_win)
+            if ctl_win:
+                self.fixation_cross.draw(ctl_win)
+            yield True
+
+        #utils.wait_until(self.task_timer, trial["onset"] + RESPONSE_TIME + FINAL_WAIT)
