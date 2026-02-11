@@ -198,12 +198,14 @@ class Task(object):
         time_base = Fraction(1, 65535)
         last_pts = -1000
         video_stream = container.add_stream("libx265", time_base=time_base)
+        video_stream.width = self.frames[0].size[0]
+        video_stream.height = self.frames[0].size[1]
         video_stream.options = {
             'lossless': '1',
-            'preset': 'slow',
+#            'preset': 'slow',
         }
+        video_stream.bit_rate = 50000 * 10e3
         for frame, timestamp in zip(self.frames, self.frame_timestamps):
-            print(timestamp)
             av_frame = av.VideoFrame.from_image(frame)
             pts = int(timestamp / time_base)
             pts = max(pts, last_pts + 1)
