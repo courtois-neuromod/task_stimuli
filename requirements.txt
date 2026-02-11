@@ -13,3 +13,4 @@ termcolor
 pyaudio
 moviepy>2.0.0
 python-vlc>=3.0.12118
+av
