@@ -133,9 +133,10 @@ class Task(object):
                 exp_win.callOnFlip(eeg.send_signal, self.flags | (flip_idx%2))
 
             if clearBuffer is not None:
+                if record_movie: # get from back buffer, fails from frontbuffer with xvfb
+                    self.frames.append(exp_win._getFrame(buffer="back"))
                 self._flip_all_windows(exp_win, ctl_win, clearBuffer)
                 if record_movie:
-                    self.frames.append(exp_win._getFrame(buffer="front"))
                     self.frame_timestamps.append(self._exp_win_last_flip_time - self._exp_win_first_flip_time)
 
             # increment the progress bar depending on task flip rate
