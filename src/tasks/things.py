@@ -117,7 +117,9 @@ Press the button when you see an unrecognizable object that was generated."""
             )
             trial["duration_flip"] = trial["offset_flip"] - trial["onset_flip"]
 
+        self.fixation_cross.draw(exp_win)
         utils.wait_until(self.task_timer, trial["onset"] + RESPONSE_TIME + FINAL_WAIT)
+        yield True  # final flip
 
     def _restart(self):
         self.trials = data.TrialHandler(self.design, 1, method="sequential")
