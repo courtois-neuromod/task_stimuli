@@ -276,4 +276,6 @@ The button mapping will change from trial to trial as indicated at the center of
 
             trial["duration_flip"] = trial["offset_flip"] - trial["onset_flip"]
 
+        self.fixation_cross.draw(exp_win)
         yield from utils.wait_until_yield(self.task_timer, trial["onset"] + RESPONSE_TIME + FINAL_WAIT)
+        yield True  # final flip
