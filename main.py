@@ -12,7 +12,7 @@ from src.shared.didyoumean import suggest_session_tasks
 
 def run(parsed):
     # initializing the screen need to be done before loading any psychopy
-    if not parsed.no_force_resolution and config.EXP_WINDOW['fullscr']:
+    if not parsed.no_force_resolution:
         screen.init_exp_screen()
     try:
         ses_mod = importlib.import_module('src.sessions.ses-%s'%parsed.tasks)
