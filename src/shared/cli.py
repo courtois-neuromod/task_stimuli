@@ -153,10 +153,10 @@ def main_loop(
     log_path = os.path.abspath(os.path.join(output_ds, "sourcedata", *bids_sub_ses))
     if not os.path.exists(log_path):
         os.makedirs(log_path, exist_ok=True)
-    log_name_prefix = "sub-%s_ses-%s_%s" % (
+    log_name_prefix = "sub-%s_ses-%s" % (
         subject,
         session,
-        datetime.datetime.now().strftime("%Y%m%d-%H%M%S"),
+#        datetime.datetime.now().strftime("%Y%m%d-%H%M%S"),
     )
     logfile_path = os.path.join(log_path, log_name_prefix + ".log")
     log_file = logging.LogFile(logfile_path, level=logging.INFO, filemode="w")
@@ -227,15 +227,6 @@ We are coming to get you out of the scanner shortly."""
                 all_tasks,
             )
 
-
-    else:
-        all_tasks = itertools.chain(
-            all_tasks,
-            [task_base.Pause(
-                """We are done with the tasks for today.
-Thanks for your participation!"""
-            )],
-        )
 
     if not isinstance(all_tasks, Iterator):
 
