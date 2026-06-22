@@ -362,6 +362,7 @@ class VideoGame(VideoGameBase):
             self._handle_controller_presses(exp_win)
             keys = [k in self.pressed_keys for k in self.key_set]
             _obs, _rew, _done, _trunc, self._game_info = self.emulator.step(keys)
+            print(time.time()- self._exp_win_last_flip_time)
             total_reward += _rew
             if _rew > 0:
                 exp_win.logOnFlip(level=logging.EXP, msg="Reward %f" % (total_reward))

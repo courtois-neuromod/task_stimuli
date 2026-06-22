@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:26.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -12,35 +12,32 @@ RUN apt-get update \
 RUN apt-get update \
   && apt-get -y install libxml2-dev libglib2.0-dev cmake libusb-1.0-0-dev gobject-introspection \
      libgtk-3-dev gtk-doc-tools  xsltproc libgstreamer1.0-dev \
-     libgstreamer-plugins-base1.0-dev libgstreamer-plugins-good1.0-dev \
-     libgirepository1.0-dev gettext ninja-build vlc libvlc-dev\
+     libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-good \
+     libgirepository-2.0-dev gir1.2-girepository-2.0-dev gettext ninja-build vlc libvlc-dev libjpeg-turbo8-dev\
   && apt-get autoremove && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN wget -O libjpeg-turbo.tar.gz https://sourceforge.net/projects/libjpeg-turbo/files/1.5.1/libjpeg-turbo-1.5.1.tar.gz/download \
-  && tar xvzf libjpeg-turbo.tar.gz \
-  && cd libjpeg-turbo-1.5.1 \
-  && ./configure --enable-static=no --prefix=/usr/local \
-  && make install \
-  && ldconfig \
-  && cd .. \
-  && rm -Rf libjpeg*
 
 RUN git clone https://github.com/pupil-labs/libuvc \
   && cd libuvc \
-  && git checkout v0.0.7\
   && mkdir build \
   && cd build \
   && cmake .. \
   && make && make install \
   && cd ../../ && rm -Rf libuvc
 
-RUN pip3 install --no-cache-dir --upgrade meson "numpy<1.24" scipy ipython pip
+RUN apt-get update \
+  && apt-get -y install libturbojpeg0-dev\
+  && apt-get autoremove && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install --no-cache-dir --break-system-packages --upgrade meson
+
+#RUN pip install --no-cache-dir --break-system-packages ndsi@git+https://github.com/berndie/pyndsi.git@ffmpeg-6 pyglui@git+https://github.com/pupil-labs/pyglui.git
 
 RUN mkdir /src/ && cd /src \
   && git clone https://github.com/courtois-neuromod/pupil.git \
   && cd pupil \
   && git checkout testing \
-  && pip install --no-cache-dir -r requirements.txt
+  && pip install --no-cache-dir --break-system-packages -r requirements.txt --no-deps ndsi
 
 ARG ARAVIS_VERSION=0.8.36
 

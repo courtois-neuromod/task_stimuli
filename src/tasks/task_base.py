@@ -204,7 +204,7 @@ class Task(object):
             'lossless': '1',
 #            'preset': 'slow',
         }
-        video_stream.bit_rate = 50000 * 10e3
+        video_stream.bit_rate = 200000 * 10e3
         for frame, timestamp in zip(self.frames, self.frame_timestamps):
             av_frame = av.VideoFrame.from_image(frame)
             pts = int(timestamp / time_base)

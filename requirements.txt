@@ -14,3 +14,7 @@ pyaudio
 moviepy>2.0.0
 python-vlc>=3.0.12118
 av
+
+# fixes for pupil
+ndsi@git+https://github.com/berndie/pyndsi.git@ffmpeg-6
+pyglui@git+https://github.com/pupil-labs/pyglui.git
