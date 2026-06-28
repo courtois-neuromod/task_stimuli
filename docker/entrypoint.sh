@@ -1,4 +1,5 @@
 #!/bin/bash
+. /src/.venv/bin/activate
 
 USERNAME=user
 HOST_UID=${HOST_UID:?set HOST_UID}

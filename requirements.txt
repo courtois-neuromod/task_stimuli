@@ -1,5 +1,3 @@
-#numpy<2.0
-#scipy==1.14.1
 attrdict
 PsychoPy
 stable-retro
@@ -14,3 +12,4 @@ pyaudio
 moviepy>2.0.0
 python-vlc>=3.0.12118
 av
+dotenv
