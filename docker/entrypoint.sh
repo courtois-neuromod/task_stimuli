@@ -1,13 +1,21 @@
 #!/bin/bash
 . /src/.venv/bin/activate
 
-USERNAME=user
-HOST_UID=${HOST_UID:?set HOST_UID}
-HOST_UID=${HOST_GID:?set HOST_GID}
+if [ $(id -u) -eq 0 ];
+    USERNAME=user
+    HOST_UID=${HOST_UID:?set HOST_UID}
+    HOST_UID=${HOST_GID:?set HOST_GID}
 
-useradd -u "${HOST_UID}" -o -m "${USERNAME}"
-groupmod -g "${HOST_GID}" "${USERNAME}"
+    useradd -u "${HOST_UID}" -o -m "${USERNAME}"
+    groupmod -g "${HOST_GID}" "${USERNAME}"
+fi
 
+source /src/.venv/bin/activate
 cd /src/task_stimuli/
-gosu $USERNAME $@
+
+if [ $(id -u) -eq 0 ];
+    gosu $USERNAME $@
+else
+    $@
+fi
 #gosu $USERNAME /usr/bin/python3 /src/task_stimuli/main.py $@
