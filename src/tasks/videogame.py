@@ -452,9 +452,9 @@ class VideoGame(VideoGameBase):
                 continue # drop frame
             yield False
         self.flags = 0
-        self._rep_event['nframes'] = level_step
-        self._rep_event['offset'] = self.task_timer.getTime()
-        self._rep_event['duration'] = self._rep_event['offset'] - self._rep_event['onset']
+        #self._rep_event['nframes'] = level_step
+        #self._rep_event['offset'] = self.task_timer.getTime()
+        #self._rep_event['duration'] = self._rep_event['offset'] - self._rep_event['onset']
         self._completed = self._completed or self._game_info['lives'] > -1
         self.game_sound.flush()
         self.game_sound.stop()
@@ -482,6 +482,9 @@ class VideoGame(VideoGameBase):
         # deactivate custom keys handling
         exp_win.winHandle.on_key_press = event._onPygletKey
         # del exp_win.winHandle.on_key_release
+        if getattr(self, "_joystick", None) is not None:
+            self._joystick.close()
+            self._joystick = None
 
     def _run(self, exp_win, ctl_win):
 
