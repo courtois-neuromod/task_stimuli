@@ -1,6 +1,7 @@
 import os, sys, time, queue
 import numpy as np
 import threading
+import pyglet
 
 from psychopy import visual, core, data, logging, event, sound, constants
 from .task_base import Task
@@ -17,11 +18,23 @@ DEFAULT_GAME_NAME = "ShinobiIIIReturnOfTheNinjaMaster-Genesis"
 # KEY_SET = ['x','z','_','_','up','down','left','right','c','_','_','_']
 DEFAULT_KEY_SET = ["y", "a", "_", "_", "u", "d", "l", "r", "b", "_", "_", "_"]
 
+JOY_BUTTON_MAP = {
+    0: "x",
+    1: "a",
+    2: "b",
+    3: "y",
+    4: "l",
+    5: "r",
+    6: "_",
+    7: "_",
+    8: "SELECT",
+    9: "START"   # unused — adjust to match what you found
+}
+
 # KEY_SET = '0123456789'
 
 _keyPressBuffer = []
 _keyReleaseBuffer = []
-import pyglet
 
 GAME_EXTRA_MARKERS = {
     "repetition-start": 4,
@@ -297,27 +310,80 @@ class VideoGame(VideoGameBase):
         logging.exp("VideoGame: recording movie in %s" % self.movie_path)
         self.emulator.record_movie(self.movie_path)
 
+    def _poll_joystick(self):
+        global _keyPressBuffer, _keyReleaseBuffer
+        if getattr(self, "_joystick", None) is None:
+            return
+        pyglet.app.platform_event_loop.step(0)
+        now = core.getTime()
+
+        for idx, key in JOY_BUTTON_MAP.items():
+            if key == "_":
+                continue
+            pressed = self._joystick.buttons[idx]
+            was = self._joy_prev_buttons.get(idx, False)
+            if pressed and not was:
+                logging.data("ButtonPress: %s" % key)
+                _keyPressBuffer.append((key, now))
+            elif was and not pressed:
+                logging.data("ButtonRelease: %s" % key)
+                _keyReleaseBuffer.append((key, now))
+            self._joy_prev_buttons[idx] = pressed
+
+        dpad = {
+            "l": self._joystick.x < -0.5,
+            "r": self._joystick.x > 0.5,
+            "u": self._joystick.y < -0.5,
+            "d": self._joystick.y > 0.5,
+        }
+        for key, pressed in dpad.items():
+            was = self._joy_prev_dpad.get(key, False)
+            if pressed and not was:
+                logging.data(f"ButtonPress: {key}")
+                _keyPressBuffer.append((key, now))
+            elif was and not pressed:
+                logging.data(f"ButtonRelease: {key}")
+                _keyReleaseBuffer.append((key, now))
+        self._joy_prev_dpad = dpad
+
     def _handle_controller_presses(self, exp_win):
-        exp_win.winHandle.dispatch_events()
+        
         global _keyPressBuffer, _keyReleaseBuffer
 
-        for k in _keyReleaseBuffer:
-            if k[0] in self.pressed_keys:
-                event = {
-                    'trial_type': 'keypress',
-                    'key': k[0],
-                    'onset': self.pressed_keys[k[0]][1] - self.task_timer._timeAtLastReset + core.monotonicClock._timeAtLastReset,
-                    'offset': k[1] - self.task_timer._timeAtLastReset + core.monotonicClock._timeAtLastReset,
-                    'duration': k[1] - self.pressed_keys[k[0]][1],
-                    'sample': time.monotonic(),
-                    }
-                self._events.append(event)
-                del self.pressed_keys[k[0]]
-        _keyReleaseBuffer.clear()
-        for k in _keyPressBuffer:
-            self.pressed_keys[k[0]] = k
-        self._new_key_pressed = _keyPressBuffer[:] #copy
+        self._poll_joystick()
+        exp_win.winHandle.dispatch_events()
+
+        events = [
+            (key, timestamp, True)
+            for key, timestamp in _keyPressBuffer
+        ] + [
+            (key, timestamp, False)
+            for key, timestamp in _keyReleaseBuffer
+        ]
+        events.sort(key=lambda item: item[1])
+
+        self._new_key_pressed = _keyPressBuffer[:]
         _keyPressBuffer.clear()
+        _keyReleaseBuffer.clear()
+
+        for key, timestamp, is_press in events:
+            if is_press:
+                self.pressed_keys[key] = (key, timestamp)
+
+            elif key in self.pressed_keys:
+                press_time = self.pressed_keys.pop(key)[1]
+                clock_offset = (
+                    core.monotonicClock._timeAtLastReset
+                    - self.task_timer._timeAtLastReset
+                )
+                self._events.append({
+                    "trial_type": "keypress",
+                    "key": key,
+                    "onset": press_time + clock_offset,
+                    "offset": timestamp + clock_offset,
+                    "duration": timestamp - press_time,
+                    "sample": time.monotonic(),
+                })
 
     def clear_key_buffers(self):
         global _keyPressBuffer, _keyReleaseBuffer
@@ -397,8 +463,19 @@ class VideoGame(VideoGameBase):
     def _set_key_handler(self, exp_win):
         # activate repeat keys
         self.pressed_keys = dict()
-        exp_win.winHandle.on_key_press = _onPygletKeyPress
-        exp_win.winHandle.on_key_release = _onPygletKeyRelease
+        self._joystick = None
+        joysticks = pyglet.input.get_joysticks()
+
+        if joysticks:
+            self._joystick = joysticks[0]
+            self._joystick.open()
+            self._joy_prev_buttons = {}
+            self._joy_prev_dpad = {}
+            logging.exp(f"Joystick connected: {self._joystick.device.name}")
+        else:
+            exp_win.winHandle.on_key_press = _onPygletKeyPress
+            exp_win.winHandle.on_key_release = _onPygletKeyRelease
+            logging.warning("No joystick found; using keyboard")
 
 
     def _unset_key_handler(self, exp_win):
