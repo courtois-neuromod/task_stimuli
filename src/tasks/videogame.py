@@ -148,7 +148,7 @@ class VideoGameBase(Task):
 
         super()._setup(exp_win)
 
-        self._first_frame = self.emulator.reset()
+        self._first_frame, _ = self.emulator.reset()
         first_sound_chunk = self.emulator.em.get_audio()
         blockSize = first_sound_chunk.shape[0]
         audio_rate = self.emulator.em.get_audio_rate()
@@ -273,7 +273,8 @@ class VideoGame(VideoGameBase):
             state=self.state_name,
             scenario=self.scenario,
             record=False,
-            inttype=self.inttype
+            inttype=self.inttype,
+            render_mode=None
         )
 
         self.game_fps = self.emulator.em.get_screen_rate()
@@ -357,7 +358,7 @@ class VideoGame(VideoGameBase):
             _nextFrameT += self._frameInterval
             self._handle_controller_presses(exp_win)
             keys = [k in self.pressed_keys for k in self.key_set]
-            _obs, _rew, _done, self._game_info = self.emulator.step(keys)
+            _obs, _rew, _done, _trunc, self._game_info = self.emulator.step(keys)
             total_reward += _rew
             if _rew > 0:
                 exp_win.logOnFlip(level=logging.EXP, msg="Reward %f" % (total_reward))
@@ -710,7 +711,7 @@ class VideoGameMultiLevel(VideoGame):
                         yield from self._instructions(exp_win, ctl_win)
 
                 for n_repeat in range(self._n_repeats_level):
-                    self._first_frame = self.emulator.reset()
+                    self._first_frame, _ = self.emulator.reset()
 
                     self._set_recording_file()
 
