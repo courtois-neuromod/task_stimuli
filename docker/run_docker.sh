@@ -15,5 +15,5 @@ docker run \
   -v ${XAUTHORITY}:${XAUTHORITY} \
   -e PUPIL_PATH=/src/pupil \
   -it \
-  task_stimuli \
+  task_stimuli:latest \
   python3 main.py $@

@@ -105,14 +105,8 @@ RUN . /src/.venv/bin/activate \
   && echo 'scipy==1.18' >> /tmp/constraints.txt \
   && uv pip install --no-cache-dir -r /src/task_stimuli/requirements.txt --excludes /tmp/excludes.txt --constraints /tmp/constraints.txt
 
-# ── Copy project files and finish Python env ──────────────────────────────
-COPY pulse-client.conf /etc/pulse/client.conf
-COPY ./.env.docker /src/task_stimuli/.env
-COPY ./entrypoint.sh /entrypoint.sh
-
 RUN . /src/.venv/bin/activate \
   && uv pip install --no-cache-dir dotenv \
-  && chmod +x /entrypoint.sh \
   && chown -R 1000:1000 /src/pupil
 
 # ── Final runtime image – slim, only what's needed to run ─────────────────
@@ -121,8 +115,6 @@ FROM runtime-base AS runtime
 # Copy everything built by the builder stage
 COPY --from=builder /src /src
 COPY --from=builder /usr/local/lib /usr/local/lib
-COPY --from=builder /etc/pulse/client.conf /etc/pulse/client.conf
-COPY --from=builder /entrypoint.sh /entrypoint.sh
 
 ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib/x86_64-linux-gnu
 ENV GI_TYPELIB_PATH=/src/.venv/lib/x86_64-linux-gnu/girepository-1.0/
@@ -140,5 +132,12 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 RUN for ex in /src/.venv/bin/arv-* /src/.venv/bin/python* ; do setcap cap_net_raw+ep $(readlink -f $ex) ;done
+
+# ── Copy project files and finish Python env ──────────────────────────────
+COPY pulse-client.conf /etc/pulse/client.conf
+COPY ./.env.docker /src/task_stimuli/.env
+COPY ./entrypoint.sh /entrypoint.sh
+
+RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
