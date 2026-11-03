@@ -94,10 +94,11 @@ RUN . /src/.venv/bin/activate \
   && uv pip install --no-cache-dir https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04/wxpython-4.2.5-cp314-cp314-linux_x86_64.whl
 
 # ── Install task_stimuli Python requirements ─────────────────────────────
-RUN cd /src \
-  && wget https://github.com/courtois-neuromod/task_stimuli/archive/refs/heads/update_deps.zip \
-  && unzip update_deps.zip \
-  && mv task_stimuli-* task_stimuli
+#RUN cd /src \
+#  && wget https://github.com/courtois-neuromod/task_stimuli/archive/refs/heads/update_deps.zip \
+#  && unzip update_deps.zip \
+#  && mv task_stimuli-* task_stimuli
+COPY ./ /src/task_stimuli
 
 RUN . /src/.venv/bin/activate \
   && echo 'ffpyplayer' >> /tmp/excludes.txt \
@@ -134,9 +135,9 @@ RUN apt-get update \
 RUN for ex in /src/.venv/bin/arv-* /src/.venv/bin/python* ; do setcap cap_net_raw+ep $(readlink -f $ex) ;done
 
 # ── Copy project files and finish Python env ──────────────────────────────
-COPY pulse-client.conf /etc/pulse/client.conf
-COPY ./.env.docker /src/task_stimuli/.env
-COPY ./entrypoint.sh /entrypoint.sh
+COPY docker/pulse-client.conf /etc/pulse/client.conf
+COPY docker/.env.docker /src/task_stimuli/.env
+COPY docker/entrypoint.sh /entrypoint.sh
 
 RUN chmod +x /entrypoint.sh
 
