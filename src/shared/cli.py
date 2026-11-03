@@ -147,7 +147,7 @@ def main_loop(
             return
 
     bids_sub_ses = ("sub-%s" % subject, "ses-%s" % session)
-    log_path = os.path.abspath(os.path.join(output_ds, "sourcedata", *bids_sub_ses))
+    log_path = os.path.abspath(os.path.join(output_ds, *bids_sub_ses))
     if not os.path.exists(log_path):
         os.makedirs(log_path, exist_ok=True)
     log_name_prefix = "sub-%s_ses-%s_%s" % (
