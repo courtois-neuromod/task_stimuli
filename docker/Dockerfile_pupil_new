@@ -7,7 +7,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
   && apt-get -y install --no-install-recommends \
        gosu \
-       python3-minimal \
+       python3 \
        libusb-1.0-0 libportaudio2 \
        libasound2t64 pulseaudio libpulse0 \
        libsdl3-0 \
