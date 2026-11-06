@@ -50,19 +50,7 @@ MARKER_POSITIONS_9 = np.asarray(
     ]
 )
 
-
-# Pupil settings
-PUPIL_REMOTE_PORT = 50123
-CAPTURE_SETTINGS = {
-    "frame_size": [640, 480],
-    "frame_rate": 250,
-    "exposure_time": 4000,
-    "global_gain": 1,
-    "gev_packet_size": 1400,
-    "uid": "Aravis-Fake-GV01",  # for test purposes
-    #"uid": "MRC Systems GmbH-GVRD-MRC HighSpeed-MR_CAM_HS_0019",
-}
-
+from .config import  PUPIL_REMOTE_PORT, CAPTURE_SETTINGS
 
 class EyetrackerCalibration_targets(Task):
     def __init__(
