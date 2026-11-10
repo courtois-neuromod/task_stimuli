@@ -290,11 +290,7 @@ class VideoGame(VideoGameBase):
             scenario=self.scenario,
             record=False,
             inttype=self.inttype,
-<<<<<<< HEAD
             render_mode=None,
-=======
-            render_mode=None
->>>>>>> 72be10e (Fix Gym Retro API usage)
         )
 
         self.game_fps = self.emulator.em.get_screen_rate()
@@ -354,7 +350,7 @@ class VideoGame(VideoGameBase):
         self._joy_prev_dpad = dpad
 
     def _handle_controller_presses(self, exp_win):
-        
+
         global _keyPressBuffer, _keyReleaseBuffer
 
         self._poll_joystick()
