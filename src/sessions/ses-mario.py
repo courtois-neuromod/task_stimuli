@@ -1,18 +1,17 @@
 import os
 import random
-import retro
 import json
-
-# point to a copy of the whole gym-retro with custom states and scenarii
-retro.data.Integrations.add_custom_path(
-        os.path.join(os.getcwd(), "data", "videogames", "mario")
-)
 
 from psychopy import logging
 from ..tasks import images, videogame, memory, task_base
 
 from .game_questionnaires import flow_ratings
 
+import stable_retro.data as retro_data
+# point to a copy of the whole gym-retro with custom states and scenarii
+retro_data.Integrations.add_custom_path(
+        os.path.join(os.getcwd(), "data", "videogames", "mario")
+)
 scenario = "scenario"
 
 exclude_list = [(2,2),(7,2)] # all levels 4 are excluded below
@@ -20,6 +19,7 @@ exclude_list = [(2,2),(7,2)] # all levels 4 are excluded below
 # code adaptive design for learning phase
 
 def get_tasks(parsed):
+
     bids_sub = "sub-%s" % parsed.subject
     savestate_path = os.path.abspath(os.path.join(parsed.output, "sourcedata", bids_sub, f"{bids_sub}_task-mario_savestate.json"))
 

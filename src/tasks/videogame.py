@@ -8,7 +8,7 @@ from .task_base import Task
 
 from ..shared import config, utils
 from PIL import Image
-import retro
+import stable_retro as retro
 
 DEFAULT_GAME_NAME = "ShinobiIIIReturnOfTheNinjaMaster-Genesis"
 
@@ -181,13 +181,14 @@ class VideoGameBase(Task):
         height = int(min_ratio * self._first_frame.shape[0] * self._scaling)
 
         self.game_vis_stim = visual.ImageStim(
-            exp_win,
+            win=exp_win,
             size=(width, height),
             units="pix",
             interpolate=False,
             flipVert=True,
             autoLog=False,
         )
+
         from ..shared.eyetracking import fixation_dot
         self.fixation_dot = fixation_dot(exp_win)
 
@@ -259,14 +260,16 @@ class VideoGame(VideoGameBase):
             wrapWidth=config.WRAP_WIDTH,
         )
 
-        clock = self.task_timer if hasattr(self, "task_timer") else core.MonotonicClock(0)
-        last_win_flip = self._exp_win_last_flip_time or clock.getTime()
+        if hasattr(self, "task_timer"):
+            clock = self.task_timer
+        else:
+            clock = core.MonotonicClock(0)
         for frameN in range(2):
             screen_text.draw(exp_win)
             if ctl_win:
                 screen_text.draw(ctl_win)
             yield frameN < 2
-        utils.wait_until(clock, last_win_flip + config.INSTRUCTION_DURATION )
+        utils.wait_until(clock, clock.getTime() + config.INSTRUCTION_DURATION )
         yield True
         yield True
 
@@ -287,7 +290,7 @@ class VideoGame(VideoGameBase):
             scenario=self.scenario,
             record=False,
             inttype=self.inttype,
-            render_mode=None
+            render_mode=None,
         )
 
         self.game_fps = self.emulator.em.get_screen_rate()
@@ -400,7 +403,6 @@ class VideoGame(VideoGameBase):
 
         # flush all keys to avoid unwanted actions
         self.clear_key_buffers()
-
         # render the initial frame and audio
         self._render_graphics_sound(
             self._first_frame, self.emulator.em.get_audio(), exp_win, ctl_win
@@ -412,11 +414,12 @@ class VideoGame(VideoGameBase):
                 "trial_type": "gym-retro_game",
                 "game": self.game_name,
                 "level": self.state_name,
-                "stim_file": self.movie_path,
+                "stim_file": self.movie_path
             },
         )
         self._extra_markers |= GAME_EXTRA_MARKERS["repetition-start"]
         yield True
+        self._rep_event = self._events[-1]
         self._extra_markers &= ~GAME_EXTRA_MARKERS["repetition-start"]
         _nextFrameT = self.task_timer.getTime()	+ self._retraceInterval
         while not _done:
@@ -863,6 +866,7 @@ class VideoGameReplay(VideoGameBase):
             scenario=self.scenario,
             # use_restricted_actions=retro.Actions.ALL,
             players=self.movie.players,
+            render_mode=None,
         )
 
         self.emulator.initial_state = self.movie.get_state()
@@ -882,7 +886,7 @@ class VideoGameReplay(VideoGameBase):
                 for i in range(self.emulator.num_buttons):
                     keys.append(self.movie.get_key(i, p))
 
-            _obs, _rew, _done, _info = self.emulator.step(keys)
+            _obs, _rew, _done, _trunc, _info = self.emulator.step(keys)
 
             total_reward += _rew
             if _rew > 0:

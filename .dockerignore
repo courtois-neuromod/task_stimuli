@@ -1,3 +1,4 @@
 data/**
 Dockerfile
 .git/**
+*.sif

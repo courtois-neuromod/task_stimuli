@@ -1,0 +1,144 @@
+FROM ubuntu:26.04 AS runtime-base
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+# ── Runtime-only system dependencies    ──────────────────────────────────────
+# (no build tools, no -dev headers – those belong in the builder stage)
+RUN apt-get update \
+  && apt-get -y install --no-install-recommends \
+       gosu \
+       python3 \
+       libusb-1.0-0 libportaudio2 \
+       libasound2t64 pulseaudio libpulse0 \
+       libsdl3-0 \
+       x11-xserver-utils \
+       libavformat62 libavcodec62 libavdevice62 libavutil60 libswscale9 libswresample6 ffmpeg x264 x265 \
+       libopencv-core410 libopencv-imgproc410 \
+       libglew2.2 libtbb12 \
+       libgstreamer1.0-0 gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+       libgtk-3-0t64 \
+       gir1.2-girepository-2.0 \
+       libturbojpeg0 vlc libvlc5 \
+       libglut3.12 libglu1-mesa \
+       libtiff6 libcurl4t64 libpcre2-32-0 git libgirepository-2.0-0 \
+  && apt-get autoremove \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* \
+  && rm -Rf /usr/share/doc
+
+# ── Builder stage – compiles from source + installs Python deps ────────────
+FROM runtime-base AS builder
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Build and development dependencies (not needed at runtime)
+RUN apt-get update \
+  && apt-get -y install  --no-install-recommends \
+       wget curl unzip \
+       build-essential cmake make nasm meson ninja-build pkg-config swig \
+       python3-dev python3-pip python3-setuptools \
+       libusb-1.0-0-dev portaudio19-dev libasound2-dev libpulse-dev \
+       qtbase5-dev \
+       libglew-dev libtbb-dev \
+       libavformat-dev libavcodec-dev libavdevice-dev libavutil-dev libswscale-dev libswresample-dev \
+       libopencv-dev libeigen3-dev \
+       libxml2-dev libglib2.0-dev gobject-introspection \
+       libgtk-3-dev gtk-doc-tools xsltproc \
+       libgstreamer1.0-dev \
+       libgstreamer-plugins-base1.0-dev \
+       libgirepository-2.0-dev gir1.2-girepository-2.0-dev gettext \
+       libturbojpeg0-dev libvlc-dev \
+       libsdl3-dev \
+  && apt-get autoremove \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
+
+# Install uv (Python package manager) from official image
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
+ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib/x86_64-linux-gnu
+ENV GI_TYPELIB_PATH=/usr/local/lib/x86_64-linux-gnu/girepository-1.0/
+
+RUN uv venv /src/.venv --system-site-packages
+
+# ── Build libuvc from source ──────────────────────────────────────────────
+RUN git clone https://github.com/pupil-labs/libuvc \
+  && cd libuvc \
+  && mkdir build && cd build \
+  && cmake .. \
+  && make && make install \
+  && cd ../.. && rm -rf libuvc
+
+# ── Build Aravis from source ──────────────────────────────────────────────
+ARG ARAVIS_VERSION=0.8.36
+RUN cd /tmp/ \
+  && wget https://github.com/AravisProject/aravis/archive/refs/tags/${ARAVIS_VERSION}.tar.gz \
+  && tar -xzf ${ARAVIS_VERSION}.tar.gz \
+  && cd aravis-$ARAVIS_VERSION \
+  && meson --prefix /src/.venv build && cd build \
+  && ninja && ninja install \
+  && cd ../.. && rm -rf aravis-$ARAVIS_VERSION ${ARAVIS_VERSION}.tar.gz
+
+# ── Clone pupil-labs/pupil and install its Python requirements ────────────
+RUN mkdir -p /src && cd /src \
+  && git clone https://github.com/courtois-neuromod/pupil.git \
+  && cd pupil \
+  && git checkout testing  \
+  && . /src/.venv/bin/activate \
+  && uv pip install --no-cache-dir -r requirements.txt
+
+# ── Install wxPython pre-built wheel ──────────────────────────────────────
+RUN . /src/.venv/bin/activate \
+  && uv pip install --no-cache-dir https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04/wxpython-4.2.5-cp314-cp314-linux_x86_64.whl
+
+# ── Install task_stimuli Python requirements ─────────────────────────────
+#RUN cd /src \
+#  && wget https://github.com/courtois-neuromod/task_stimuli/archive/refs/heads/update_deps.zip \
+#  && unzip update_deps.zip \
+#  && mv task_stimuli-* task_stimuli
+COPY ./ /src/task_stimuli
+
+RUN . /src/.venv/bin/activate \
+  && echo 'ffpyplayer' >> /tmp/excludes.txt \
+  && echo 'pyqt' >> /tmp/excludes.txt \
+  && echo 'scipy==1.18' >> /tmp/constraints.txt \
+  && uv pip install --no-cache-dir -r /src/task_stimuli/requirements.txt --excludes /tmp/excludes.txt --constraints /tmp/constraints.txt
+
+RUN . /src/.venv/bin/activate \
+  && uv pip install --no-cache-dir dotenv \
+  && chown -R 1000:1000 /src/pupil
+
+# ── Final runtime image – slim, only what's needed to run ─────────────────
+FROM runtime-base AS runtime
+
+# Copy everything built by the builder stage
+COPY --from=builder /src /src
+COPY --from=builder /usr/local/lib /usr/local/lib
+
+ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib/x86_64-linux-gnu
+ENV GI_TYPELIB_PATH=/src/.venv/lib/x86_64-linux-gnu/girepository-1.0/
+ENV PATH=$PATH:/src/.venv/bin
+ENV LD_LIBRARY_PATH=/src/.venv/lib/x86_64-linux-gnu/:$LD_LIBRARY_PATH
+
+WORKDIR /src/task_stimuli/
+RUN git config --global --add safe.directory /src/pupil
+
+RUN apt-get update \
+  && apt-get -y install \
+       attr \
+  && apt-get autoremove \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN for ex in /src/.venv/bin/arv-* /src/.venv/bin/python* ; do setcap cap_net_raw+ep $(readlink -f $ex) ;done
+
+# ── Copy project files and finish Python env ──────────────────────────────
+COPY docker/pulse-client.conf /etc/pulse/client.conf
+COPY docker/.env.docker /src/task_stimuli/.env
+COPY docker/entrypoint.sh /entrypoint.sh
+
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]

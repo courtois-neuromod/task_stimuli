@@ -3,6 +3,8 @@ from subprocess import Popen
 
 
 def init_exp_screen():
+    if not config.EXP_WINDOW['fullscr']:
+        return
     xrandr = Popen(
         [
             "xrandr",
@@ -17,6 +19,8 @@ def init_exp_screen():
 
 
 def reset_exp_screen():
+    if not config.EXP_WINDOW['fullscr']:
+        return
     xrandr = Popen(
         [
             "xrandr",

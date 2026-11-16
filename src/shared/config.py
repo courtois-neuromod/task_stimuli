@@ -24,9 +24,9 @@ EXP_MONITOR = Monitor(
     )
 
 EXP_WINDOW = dict(
-    size=(1920, 1080),
+    size=(1280, 1024),
     screen=1,
-    fullscr=True,
+    fullscr=False,
     gammaErrorPolicy="warn",
     #waitBlanking=False,
     waitBlanking=True,
@@ -43,7 +43,7 @@ CTL_WINDOW = dict(
     waitBlanking=False,  # avoid ctrl window to block the script in case of differing refresh rate.
 )
 
-FRAME_RATE = 120
+FRAME_RATE = 60
 
 # task parameters
 INSTRUCTION_DURATION = 3
@@ -55,3 +55,15 @@ PARALLEL_PORT_ADDRESS = "/dev/parport1"
 
 # serial port for eeg setup
 SERIAL_PORT_ADDRESS = "/dev/ttyACM0"
+
+# Pupil settings
+PUPIL_REMOTE_PORT = 50123
+CAPTURE_SETTINGS = {
+    "frame_size": [640, 480],
+    "frame_rate": 250,
+    "exposure_time": 4000,
+    "global_gain": 1,
+    "gev_packet_size": 1400,
+    "uid": "Aravis-Fake-GV01",  # for test purposes
+    #"uid": "MRC Systems GmbH-GVRD-MRC HighSpeed-MR_CAM_HS_0019",
+}

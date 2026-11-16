@@ -1,7 +1,7 @@
 import psutil
 import time
 from psychopy import core, logging
-import os, glob
+import os, glob, sys
 from inspect import getframeinfo, stack
 
 def check_power_plugged():
@@ -47,6 +47,9 @@ def wait_until_yield(clock, deadline, hogCPUperiod=0.1, keyboard_accuracy=.0005)
         current_time = clock.getTime()
 
 def get_subject_soundcheck_video(subject):
+    setup_video_path = os.environ.get("SOUNDCHECK_PATH", None)
+    if setup_video_path:
+        return setup_video_path
     setup_video_path = glob.glob(
         os.path.join("data", "videos", "subject_setup_videos", "sub-%s_*" % subject)
     )

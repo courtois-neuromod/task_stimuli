@@ -109,3 +109,4 @@ data/gamepad/designs/*
 docker/*.sif
 
 .DS_Store
+*.sif

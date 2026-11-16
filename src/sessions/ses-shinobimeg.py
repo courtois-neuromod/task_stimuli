@@ -1,6 +1,6 @@
 import os
 import random
-import retro
+import stable_retro as retro 
 
 # point to a copy of the whole gym-retro with custom states and scenarii
 retro.data.Integrations.add_custom_path(

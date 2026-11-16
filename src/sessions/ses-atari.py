@@ -1,6 +1,6 @@
 import os
 import random
-import retro
+import stable_retro as retro 
 import json
 
 retro.data.Integrations.add_custom_path(
