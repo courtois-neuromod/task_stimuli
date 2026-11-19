@@ -350,7 +350,7 @@ class VideoGame(VideoGameBase):
         self._joy_prev_dpad = dpad
 
     def _handle_controller_presses(self, exp_win):
-
+        
         global _keyPressBuffer, _keyReleaseBuffer
 
         self._poll_joystick()
