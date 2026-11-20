@@ -93,18 +93,16 @@ RUN mkdir -p /src && cd /src \
 RUN . /src/.venv/bin/activate \
   && uv pip install --no-cache-dir https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04/wxpython-4.2.5-cp314-cp314-linux_x86_64.whl
 
-# ── Install task_stimuli Python requirements ─────────────────────────────
-#RUN cd /src \
-#  && wget https://github.com/courtois-neuromod/task_stimuli/archive/refs/heads/update_deps.zip \
-#  && unzip update_deps.zip \
-#  && mv task_stimuli-* task_stimuli
-COPY ./ /src/task_stimuli
+# ── Install task_stimuli Python requirements separately from codebase for docker caching ─────────────────────────────
+COPY ./requirements.txt /tmp/requirements.txt
 
 RUN . /src/.venv/bin/activate \
 #  && echo 'ffpyplayer' >> /tmp/excludes.txt \
   && echo 'pyqt' >> /tmp/excludes.txt \
   && echo 'scipy==1.18' >> /tmp/constraints.txt \
-  && uv pip install --no-cache-dir -r /src/task_stimuli/requirements.txt --excludes /tmp/excludes.txt --constraints /tmp/constraints.txt
+  && uv pip install --no-cache-dir -r /tmp/requirements.txt --excludes /tmp/excludes.txt --constraints /tmp/constraints.txt
+
+COPY ./ /src/task_stimuli
 
 RUN . /src/.venv/bin/activate \
   && uv pip install --no-cache-dir dotenv \

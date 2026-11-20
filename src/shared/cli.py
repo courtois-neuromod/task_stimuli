@@ -220,7 +220,7 @@ We are coming to get you out of the scanner shortly."""
                 task_base.Pause(
                     """Setup: we will soon run a soundcheck to check that the sensimetrics is adequately setup."""
                 ),
-                video.VideoAudioCheckLoop(setup_video_path, name="setup_soundcheck_video",)],
+                video.VideoAudioCheckLoop(setup_video_path, name="setup_soundcheck_video", loop=True)],
                 all_tasks,
             )
 

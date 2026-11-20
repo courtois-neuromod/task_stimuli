@@ -27,6 +27,7 @@ and fixate the dot whenever it appears."""
         self._inmovie_fixations = kwargs.pop("inmovie_fixations", False)
         self._infix_freq = kwargs.pop("infix_freq", 20)
         self._infix_dur = kwargs.pop("infix_dur", 1.5)
+        self.loop = kwargs.pop("loop", False)
         instruct = self.__class__.FIXTASK_INSTRUCTION if self._inmovie_fixations else self.__class__.DEFAULT_INSTRUCTION
         super().__init__(instruction=instruct, **kwargs)
         self.filepath = filepath
@@ -98,7 +99,7 @@ and fixate the dot whenever it appears."""
             self.marker_duration = 1.5 # 60 fps, 4s = 240; 60fps, 1.5s = 90 frames
 
         #self.movie_stim = visual.MovieStim3(exp_win, self.filepath, units="pix")
-        self.movie_stim = visual.MovieStim(exp_win, self.filepath, units="pix")
+        self.movie_stim = visual.MovieStim(exp_win, self.filepath, units="pix", loop=self.loop)
 
         # print(self.movie_stim._audioStream.__class__)
         aspect_ratio = (
@@ -128,7 +129,6 @@ and fixate the dot whenever it appears."""
         exp_win.logOnFlip(
             level=logging.EXP, msg="video: task starting at %f" % time.time()
         )
-        mv_FPS = self.movie_stim.getFPS()
         fixation_on = False  # "switch" to determine fixation onset/offset time for logs
         self.movie_stim.play()
 
@@ -141,7 +141,7 @@ and fixate the dot whenever it appears."""
             #next_frame_num = int(next_frame_time * mv_FPS)
             # MovieStim2: https://github.com/psychopy/psychopy/blob/b77e73a78e41365cb999fac2f288bc659377ccf6/psychopy/visual/movie2.py#L581
             next_frame_num = self.movie_stim.frameIndex
-            next_frame_time = next_frame_num/self.movie_stim.fps
+            next_frame_time = next_frame_num/self.movie_stim._player.frameRate
 
             if ctl_win:
                 self.movie_stim.draw(ctl_win)
@@ -269,7 +269,5 @@ We will play your personalized video so that you can ensure you can see the full
 
     def _setup(self, exp_win):
         super()._setup(exp_win)
-        # set infinite loop for setup, need to be skipped
-        self.movie_stim.loop = -1
         self.use_fmri = False
         self.use_eyetracking = False
