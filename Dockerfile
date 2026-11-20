@@ -101,7 +101,7 @@ RUN . /src/.venv/bin/activate \
 COPY ./ /src/task_stimuli
 
 RUN . /src/.venv/bin/activate \
-  && echo 'ffpyplayer' >> /tmp/excludes.txt \
+#  && echo 'ffpyplayer' >> /tmp/excludes.txt \
   && echo 'pyqt' >> /tmp/excludes.txt \
   && echo 'scipy==1.18' >> /tmp/constraints.txt \
   && uv pip install --no-cache-dir -r /src/task_stimuli/requirements.txt --excludes /tmp/excludes.txt --constraints /tmp/constraints.txt
